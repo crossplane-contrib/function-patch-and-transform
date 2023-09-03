@@ -212,7 +212,7 @@ func Combine(c v1beta1.Combine, vars []any) (any, error) {
 		if c.String == nil {
 			return nil, errors.Errorf(errFmtCombineConfigMissing, c.Strategy)
 		}
-		out, err = CombineString(c.String.Format, vars)
+		out = CombineString(c.String.Format, vars)
 	default:
 		return nil, errors.Errorf(errFmtCombineStrategyNotSupported, c.Strategy)
 	}
@@ -224,8 +224,8 @@ func Combine(c v1beta1.Combine, vars []any) (any, error) {
 
 // CombineString returns a single output by running a string format with all of
 // its input variables.
-func CombineString(format string, vars []any) (any, error) {
-	return fmt.Sprintf(format, vars...), nil
+func CombineString(format string, vars []any) string {
+	return fmt.Sprintf(format, vars...)
 }
 
 // ComposedTemplates returns the supplied composed resource templates with any
