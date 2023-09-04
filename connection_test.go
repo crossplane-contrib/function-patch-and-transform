@@ -44,7 +44,7 @@ func TestExtractConnectionDetails(t *testing.T) {
 				},
 			},
 			want: want{
-				err: errors.Wrap(errors.New("name: Required value: name is required"), errInvalidConnectionDetail),
+				err: errors.Wrap(errors.New("name: Required value: name is required"), "invalid"),
 			},
 		},
 		"FetchConfigSuccess": {

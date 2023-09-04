@@ -12,15 +12,6 @@ import (
 	"github.com/negz/function-patch-and-transform/input/v1beta1"
 )
 
-// Error strings.
-const (
-	errInvalidConnectionDetail = "invalid"
-
-	errFmtConnDetailKey  = "connection detail of type %q key is not set"
-	errFmtConnDetailVal  = "connection detail of type %q value is not set"
-	errFmtConnDetailPath = "connection detail of type %q fromFieldPath is not set"
-)
-
 // ConnectionDetailsExtractor extracts the connection details of a resource.
 type ConnectionDetailsExtractor interface {
 	// ExtractConnection of the supplied resource.
@@ -43,7 +34,7 @@ func ExtractConnectionDetails(cd resource.Composed, data managed.ConnectionDetai
 	out := map[string][]byte{}
 	for _, cfg := range cfgs {
 		if err := ValidateConnectionDetail(cfg); err != nil {
-			return nil, errors.Wrap(err, errInvalidConnectionDetail)
+			return nil, errors.Wrap(err, "invalid")
 		}
 		switch cfg.Type {
 		case v1beta1.ConnectionDetailTypeFromValue:
