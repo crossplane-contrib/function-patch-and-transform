@@ -12,7 +12,7 @@ Note that this is a beta-style Function. It won't work with Crossplane v1.13 or
 earlier - it targets the [implementation of Functions][function-pr] coming with
 Crossplane v1.14 in late October.
 
-Take [this example](docs-composition) from https://docs.crossplane.io. Using
+Take [this example][docs-composition] from https://docs.crossplane.io. Using
 this Function, it would look like this:
 
 ```yaml
