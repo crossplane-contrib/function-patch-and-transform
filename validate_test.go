@@ -100,6 +100,141 @@ func TestValidateReadinessCheck(t *testing.T) {
 	}
 }
 
+func TestValidateConnectionDetail(t *testing.T) {
+	type args struct {
+		cd v1beta1.ConnectionDetail
+	}
+	type want struct {
+		output *field.Error
+	}
+
+	cases := map[string]struct {
+		reason string
+		args   args
+		want   want
+	}{
+		"InvalidType": {
+			reason: "An invalid type should cause a validation error",
+			args: args{
+				cd: v1beta1.ConnectionDetail{Type: v1beta1.ConnectionDetailType("wat")},
+			},
+			want: want{
+				output: &field.Error{
+					Type:  field.ErrorTypeInvalid,
+					Field: "type",
+				},
+			},
+		},
+		"EmptyName": {
+			reason: "An empty name should cause a validation error",
+			args: args{
+				cd: v1beta1.ConnectionDetail{
+					Type: v1beta1.ConnectionDetailTypeFromValue,
+					Name: "",
+				},
+			},
+			want: want{
+				output: &field.Error{
+					Type:  field.ErrorTypeRequired,
+					Field: "name",
+				},
+			},
+		},
+		"InvalidValue": {
+			reason: "An invalid value should cause a validation error",
+			args: args{
+				cd: v1beta1.ConnectionDetail{
+					Type: v1beta1.ConnectionDetailTypeFromValue,
+					Name: "cool",
+				},
+			},
+			want: want{
+				output: &field.Error{
+					Type:  field.ErrorTypeRequired,
+					Field: "value",
+				},
+			},
+		},
+		"InvalidFromConnectionSecretKey": {
+			reason: "An invalid from connection secret key should cause a validation error",
+			args: args{
+				cd: v1beta1.ConnectionDetail{
+					Type: v1beta1.ConnectionDetailTypeFromConnectionSecretKey,
+					Name: "cool",
+				},
+			},
+			want: want{
+				output: &field.Error{
+					Type:  field.ErrorTypeRequired,
+					Field: "fromConnectionSecretKey",
+				},
+			},
+		},
+		"InvalidFromFieldPath": {
+			reason: "An invalid from field path should cause a validation error",
+			args: args{
+				cd: v1beta1.ConnectionDetail{
+					Type: v1beta1.ConnectionDetailTypeFromFieldPath,
+					Name: "cool",
+				},
+			},
+			want: want{
+				output: &field.Error{
+					Type:  field.ErrorTypeRequired,
+					Field: "fromFieldPath",
+				},
+			},
+		},
+		"ValidValue": {
+			reason: "An valid value should not cause a validation error",
+			args: args{
+				cd: v1beta1.ConnectionDetail{
+					Type:  v1beta1.ConnectionDetailTypeFromValue,
+					Name:  "cool",
+					Value: pointer.String("cooler"),
+				},
+			},
+			want: want{
+				output: nil,
+			},
+		},
+		"ValidFromConnectionSecretKey": {
+			reason: "An valid from connection secret key should not cause a validation error",
+			args: args{
+				cd: v1beta1.ConnectionDetail{
+					Type:                    v1beta1.ConnectionDetailTypeFromConnectionSecretKey,
+					Name:                    "cool",
+					FromConnectionSecretKey: pointer.String("key"),
+				},
+			},
+			want: want{
+				output: nil,
+			},
+		},
+		"ValidFromFieldPath": {
+			reason: "An valid from field path should not cause a validation error",
+			args: args{
+				cd: v1beta1.ConnectionDetail{
+					Type:          v1beta1.ConnectionDetailTypeFromFieldPath,
+					Name:          "cool",
+					FromFieldPath: pointer.String("status.coolness"),
+				},
+			},
+			want: want{
+				output: nil,
+			},
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			got := ValidateConnectionDetail(tc.args.cd)
+			if diff := cmp.Diff(tc.want.output, got, cmpopts.IgnoreFields(field.Error{}, "Detail", "BadValue")); diff != "" {
+				t.Errorf("%s\nValidateConnectionDetail(...): -want, +got:\n%s", tc.reason, diff)
+			}
+		})
+	}
+}
+
 func TestValidatePatch(t *testing.T) {
 	type args struct {
 		patch v1beta1.Patch

@@ -250,3 +250,28 @@ func ValidateConvertTransform(t *v1beta1.ConvertTransform) *field.Error {
 	}
 	return nil
 }
+
+// ValidateConnectionDetail checks if the connection detail is logically valid.
+func ValidateConnectionDetail(cd v1beta1.ConnectionDetail) *field.Error {
+	if !cd.Type.IsValid() {
+		return field.Invalid(field.NewPath("type"), string(cd.Type), "unknown connection detail type")
+	}
+	if cd.Name == "" {
+		return field.Required(field.NewPath("name"), "name is required")
+	}
+	switch cd.Type {
+	case v1beta1.ConnectionDetailTypeFromValue:
+		if cd.Value == nil {
+			return field.Required(field.NewPath("value"), "value connection detail requires a value")
+		}
+	case v1beta1.ConnectionDetailTypeFromConnectionSecretKey:
+		if cd.FromConnectionSecretKey == nil {
+			return field.Required(field.NewPath("fromConnectionSecretKey"), "from connection secret key connection detail requires a key")
+		}
+	case v1beta1.ConnectionDetailTypeFromFieldPath:
+		if cd.FromFieldPath == nil {
+			return field.Required(field.NewPath("fromFieldPath"), "from field path connection detail requires a field path")
+		}
+	}
+	return nil
+}

@@ -31,29 +31,35 @@ type PatchSet struct {
 	Patches []Patch `json:"patches"`
 }
 
-// ComposedTemplate is used to provide information about how the composed resource
-// should be processed.
+// ComposedTemplate is used to provide information about how the composed
+// resource should be processed.
 type ComposedTemplate struct {
 	// A Name uniquely identifies this entry within its resources array.
 	Name string `json:"name"`
 
-	// Base is the target resource that the patches will be applied on.
+	// Base of the composed resource that patches will be applied to and from.
+	// If base is omitted, a previous Function within the pipeline must have
+	// produced the named composed resource. Patches will be applied to and from
+	// that resource. If base is specified, and a previous Function within the
+	// pipeline produced the name composed resource, it will be overwritten.
 	// +kubebuilder:pruning:PreserveUnknownFields
 	// +kubebuilder:validation:EmbeddedResource
-	Base runtime.RawExtension `json:"base"`
+	// +optional
+	Base *runtime.RawExtension `json:"base,omitempty"`
 
-	// Patches will be applied as overlay to the base resource.
+	// Patches to and from the composed resource.
 	// +optional
 	Patches []Patch `json:"patches,omitempty"`
 
-	// ConnectionDetails lists the propagation secret keys from this target
+	// ConnectionDetails lists the propagation secret keys from this composed
 	// resource to the composition instance connection secret.
 	// +optional
 	ConnectionDetails []ConnectionDetail `json:"connectionDetails,omitempty"`
 
-	// ReadinessChecks allows users to define custom readiness checks. All checks
-	// have to return true in order for resource to be considered ready. The
-	// default readiness check is to have the "Ready" condition to be "True".
+	// ReadinessChecks allows users to define custom readiness checks. All
+	// checks have to return true in order for resource to be considered ready.
+	// The default readiness check is to have the "Ready" condition to be
+	// "True".
 	// +optional
 	// +kubebuilder:default={{type:"MatchCondition",matchCondition:{type:"Ready",status:"True"}}}
 	ReadinessChecks []ReadinessCheck `json:"readinessChecks,omitempty"`
@@ -73,10 +79,16 @@ const (
 	ReadinessCheckTypeNone           ReadinessCheckType = "None"
 )
 
-// IsValid returns nil if the readiness check type is valid, or an error otherwise.
+// IsValid returns true if the readiness check type is valid.
 func (t *ReadinessCheckType) IsValid() bool {
 	switch *t {
-	case ReadinessCheckTypeNonEmpty, ReadinessCheckTypeMatchString, ReadinessCheckTypeMatchInteger, ReadinessCheckTypeMatchTrue, ReadinessCheckTypeMatchFalse, ReadinessCheckTypeMatchCondition, ReadinessCheckTypeNone:
+	case ReadinessCheckTypeNonEmpty,
+		ReadinessCheckTypeMatchString,
+		ReadinessCheckTypeMatchInteger,
+		ReadinessCheckTypeMatchTrue,
+		ReadinessCheckTypeMatchFalse,
+		ReadinessCheckTypeMatchCondition,
+		ReadinessCheckTypeNone:
 		return true
 	}
 	return false
@@ -123,32 +135,34 @@ type ConnectionDetailType string
 
 // ConnectionDetailType types.
 const (
-	ConnectionDetailTypeUnknown                 ConnectionDetailType = "Unknown"
 	ConnectionDetailTypeFromConnectionSecretKey ConnectionDetailType = "FromConnectionSecretKey"
 	ConnectionDetailTypeFromFieldPath           ConnectionDetailType = "FromFieldPath"
 	ConnectionDetailTypeFromValue               ConnectionDetailType = "FromValue"
 )
 
+// IsValid returns true if the connection detail type is valid.
+func (t *ConnectionDetailType) IsValid() bool {
+	switch *t {
+	case ConnectionDetailTypeFromConnectionSecretKey,
+		ConnectionDetailTypeFromFieldPath,
+		ConnectionDetailTypeFromValue:
+		return true
+	}
+	return false
+}
+
 // ConnectionDetail includes the information about the propagation of the connection
 // information from one secret to another.
 type ConnectionDetail struct {
 	// Name of the connection secret key that will be propagated to the
-	// connection secret of the composition instance. Leave empty if you'd like
-	// to use the same key name.
-	// +optional
-	Name *string `json:"name,omitempty"`
+	// connection secret of the composed resource.
+	Name string `json:"name"`
 
-	// Type sets the connection detail fetching behaviour to be used. Each
+	// Type sets the connection detail fetching behavior to be used. Each
 	// connection detail type may require its own fields to be set on the
-	// ConnectionDetail object. If the type is omitted Crossplane will attempt
-	// to infer it based on which other fields were specified. If multiple
-	// fields are specified the order of precedence is:
-	// 1. FromValue
-	// 2. FromConnectionSecretKey
-	// 3. FromFieldPath
-	// +optional
+	// ConnectionDetail object.
 	// +kubebuilder:validation:Enum=FromConnectionSecretKey;FromFieldPath;FromValue
-	Type *ConnectionDetailType `json:"type,omitempty"`
+	Type ConnectionDetailType `json:"type"`
 
 	// FromConnectionSecretKey is the key that will be used to fetch the value
 	// from the composed resource's connection secret.
@@ -166,11 +180,4 @@ type ConnectionDetail struct {
 	// value, for example a well-known port.
 	// +optional
 	Value *string `json:"value,omitempty"`
-}
-
-// A StoreConfigReference references a secret store config that may be used to
-// write connection details.
-type StoreConfigReference struct {
-	// Name of the referenced StoreConfig.
-	Name string `json:"name"`
 }

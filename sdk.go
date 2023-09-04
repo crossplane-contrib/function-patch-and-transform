@@ -21,8 +21,11 @@ import (
 
 	"github.com/crossplane/crossplane-runtime/pkg/certificates"
 	"github.com/crossplane/crossplane-runtime/pkg/logging"
+	"github.com/crossplane/crossplane-runtime/pkg/reconciler/managed"
+	"github.com/crossplane/crossplane-runtime/pkg/resource/unstructured/composed"
 	"github.com/crossplane/crossplane-runtime/pkg/resource/unstructured/composite"
 
+	"github.com/crossplane/function-sdk-go/proto/v1beta1"
 	fnv1beta1 "github.com/crossplane/function-sdk-go/proto/v1beta1"
 )
 
@@ -70,8 +73,11 @@ func (c *CLI) Run() error {
 	}
 	fnv1beta1.RegisterFunctionRunnerServiceServer(srv, &Function{log: log})
 	return errors.Wrap(srv.Serve(lis), "cannot serve gRPC connections")
-
 }
+
+// TODO(negz): Less dumb API for NewServer.
+// TODO(negz): Inject (and configure) gRPC otel interceptor.
+// TODO(negz): Do we need to handle cancelled contexts and deadlines ourself?
 
 // NewInsecureServer returns a gRPC server with no transport security.
 func NewInsecureServer() *grpc.Server {
@@ -112,7 +118,7 @@ func NewLogger(debug bool) (logging.Logger, error) {
 	return logging.NewLogrLogger(zapr.NewLogger(zl)), nil
 }
 
-// GetObject the supplied Kubernetes object from the supplied protobuf struct.
+// GetObject gets the supplied Kubernetes object from the supplied struct.
 func GetObject(o runtime.Object, from *structpb.Struct) error {
 	b, err := protojson.Marshal(from)
 	if err != nil {
@@ -121,6 +127,20 @@ func GetObject(o runtime.Object, from *structpb.Struct) error {
 
 	if err := json.Unmarshal(b, o); err != nil {
 		return errors.Wrapf(err, "cannot unmarshal JSON from %T into %T", from, o)
+	}
+
+	return nil
+}
+
+// GetStruct gets the supplied struct from the supplied Kubernetes object.
+func GetStruct(s *structpb.Struct, from runtime.Object) error {
+	b, err := json.Marshal(from)
+	if err != nil {
+		return errors.Wrapf(err, "cannot marshal %T to JSON", from)
+	}
+
+	if err := protojson.Unmarshal(b, s); err != nil {
+		return errors.Wrapf(err, "cannot unmarshal JSON from %T into %T", from, s)
 	}
 
 	return nil
@@ -149,16 +169,132 @@ func Fatal(rsp *fnv1beta1.RunFunctionResponse, err error) {
 	})
 }
 
-// GetObservedComposite resource from the supplied request.
-func GetObservedComposite(req *fnv1beta1.RunFunctionRequest) (*composite.Unstructured, error) {
-	cd := composite.New()
-	err := GetObject(cd, req.GetObserved().GetComposite().GetResource())
-	return cd, err
+// Warning adds a warning result to the supplied RunFunctionResponse.
+func Warning(rsp *fnv1beta1.RunFunctionResponse, err error) {
+	if rsp.Results == nil {
+		rsp.Results = make([]*fnv1beta1.Result, 0, 1)
+	}
+	rsp.Results = append(rsp.Results, &fnv1beta1.Result{
+		Severity: fnv1beta1.Severity_SEVERITY_WARNING,
+		Message:  err.Error(),
+	})
 }
 
-// GetDesiredComposite resource from the supplied request.
-func GetDesiredComposite(req *fnv1beta1.RunFunctionRequest) (*composite.Unstructured, error) {
-	cd := composite.New()
-	err := GetObject(cd, req.GetDesired().GetComposite().GetResource())
-	return cd, err
+// A CompositeResource - aka an XR.
+type CompositeResource struct {
+	Resource          *composite.Unstructured
+	ConnectionDetails managed.ConnectionDetails
+}
+
+// GetObservedCompositeResource from the supplied request.
+func GetObservedCompositeResource(req *fnv1beta1.RunFunctionRequest) (*CompositeResource, error) {
+	xr := &CompositeResource{
+		Resource:          composite.New(),
+		ConnectionDetails: req.GetObserved().GetComposite().GetConnectionDetails(),
+	}
+	err := GetObject(xr.Resource, req.GetObserved().GetComposite().GetResource())
+	return xr, err
+}
+
+// GetDesiredCompositeResource from the supplied request.
+func GetDesiredCompositeResource(req *fnv1beta1.RunFunctionRequest) (*CompositeResource, error) {
+	xr := &CompositeResource{
+		Resource:          composite.New(),
+		ConnectionDetails: req.GetDesired().GetComposite().GetConnectionDetails(),
+	}
+	err := GetObject(xr.Resource, req.GetDesired().GetComposite().GetResource())
+	return xr, err
+}
+
+// A ComposedResourceName uniquely identifies a composed resource within a
+// Composition Function pipeline. It's not the resource's metadata.name.
+type ComposedResourceName string
+
+// An ObservedComposedResource is the observed state of a composed resource.
+type ObservedComposedResource struct {
+	Resource          *composed.Unstructured
+	ConnectionDetails managed.ConnectionDetails
+}
+
+// ObservedComposedResources indexed by resource name.
+type ObservedComposedResources map[ComposedResourceName]ObservedComposedResource
+
+// GetObservedComposedResources from the supplied request.
+func GetObservedComposedResources(req *fnv1beta1.RunFunctionRequest) (ObservedComposedResources, error) {
+	ocds := ObservedComposedResources{}
+	for name, r := range req.GetObserved().GetResources() {
+		ocd := ObservedComposedResource{Resource: composed.New(), ConnectionDetails: r.GetConnectionDetails()}
+		if err := GetObject(ocd.Resource, r.GetResource()); err != nil {
+			return nil, err
+		}
+		ocds[ComposedResourceName(name)] = ocd
+	}
+	return ocds, nil
+}
+
+// A DesiredComposedResource is the desired state of a composed resource.
+type DesiredComposedResource struct {
+	Resource *composed.Unstructured
+
+	// TODO(negz): Ternary enum for readiness - unknown, true, false? Is this
+	// actually something we'd return in the desired resource, or observed?
+	// We're observing that the resource is ready, not desiring it to be ready.
+}
+
+// DesiredComposedResources  indexed by resource name.
+type DesiredComposedResources map[ComposedResourceName]DesiredComposedResource
+
+// GetDesiredComposedResources from the supplied request.
+func GetDesiredComposedResources(req *fnv1beta1.RunFunctionRequest) (DesiredComposedResources, error) {
+	ocds := DesiredComposedResources{}
+	for name, r := range req.GetDesired().GetResources() {
+		ocd := DesiredComposedResource{Resource: composed.New()}
+		if err := GetObject(ocd.Resource, r.GetResource()); err != nil {
+			return nil, err
+		}
+		ocds[ComposedResourceName(name)] = ocd
+	}
+	return ocds, nil
+}
+
+// NewDesiredComposedResource returns a new, empty desired composed resource.
+func NewDesiredComposedResource() DesiredComposedResource {
+	return DesiredComposedResource{Resource: composed.New()}
+}
+
+// SetDesiredCompositeResource sets the desired composite resource in the
+// supplied response. The caller must be sure to avoid overwriting the desired
+// state that may have been accumulated by previous Functions in the pipeline,
+// unless they intend to.
+func SetDesiredCompositeResource(rsp *v1beta1.RunFunctionResponse, xr *CompositeResource) error {
+	if rsp.Desired == nil {
+		rsp.Desired = &v1beta1.State{}
+	}
+	rsp.Desired.Composite = &v1beta1.Resource{
+		Resource:          &structpb.Struct{},
+		ConnectionDetails: xr.ConnectionDetails,
+	}
+	return GetStruct(rsp.Desired.Composite.Resource, xr.Resource)
+}
+
+// SetDesiredComposedResources sets the desired composed resources in the
+// supplied response. The caller must be sure to avoid overwriting the desired
+// state that may have been accumulated by previous Functions in the pipeline,
+// unless they intend to.
+func SetDesiredComposedResources(rsp *v1beta1.RunFunctionResponse, dcds DesiredComposedResources) error {
+	if rsp.Desired == nil {
+		rsp.Desired = &v1beta1.State{}
+	}
+	if rsp.Desired.Resources == nil {
+		rsp.Desired.Resources = map[string]*fnv1beta1.Resource{}
+	}
+	for name, dcd := range dcds {
+		rsp.Desired.Resources[string(name)] = &v1beta1.Resource{
+			Resource: &structpb.Struct{},
+		}
+		if err := GetStruct(rsp.Desired.Composite.Resource, dcd.Resource); err != nil {
+			return err
+		}
+	}
+	return nil
 }

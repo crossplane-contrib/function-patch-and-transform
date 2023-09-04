@@ -357,14 +357,18 @@ spec:
                 the composed resource should be processed.
               properties:
                 base:
-                  description: Base is the target resource that the patches will be
-                    applied on.
+                  description: Base of the composed resource that patches will be
+                    applied to and from. If base is omitted, a previous Function within
+                    the pipeline must have produced the named composed resource. Patches
+                    will be applied to and from that resource. If base is specified,
+                    and a previous Function within the pipeline produced the name
+                    composed resource, it will be overwritten.
                   type: object
                   x-kubernetes-embedded-resource: true
                   x-kubernetes-preserve-unknown-fields: true
                 connectionDetails:
                   description: ConnectionDetails lists the propagation secret keys
-                    from this target resource to the composition instance connection
+                    from this composed resource to the composition instance connection
                     secret.
                   items:
                     description: ConnectionDetail includes the information about the
@@ -383,17 +387,12 @@ spec:
                         type: string
                       name:
                         description: Name of the connection secret key that will be
-                          propagated to the connection secret of the composition instance.
-                          Leave empty if you'd like to use the same key name.
+                          propagated to the connection secret of the composed resource.
                         type: string
                       type:
-                        description: 'Type sets the connection detail fetching behaviour
+                        description: Type sets the connection detail fetching behavior
                           to be used. Each connection detail type may require its
-                          own fields to be set on the ConnectionDetail object. If
-                          the type is omitted Crossplane will attempt to infer it
-                          based on which other fields were specified. If multiple
-                          fields are specified the order of precedence is: 1. FromValue
-                          2. FromConnectionSecretKey 3. FromFieldPath'
+                          own fields to be set on the ConnectionDetail object.
                         enum:
                         - FromConnectionSecretKey
                         - FromFieldPath
@@ -405,6 +404,9 @@ spec:
                           fixed, non-sensitive connection secret value, for example
                           a well-known port.
                         type: string
+                    required:
+                    - name
+                    - type
                     type: object
                   type: array
                 name:
@@ -412,7 +414,7 @@ spec:
                     array.
                   type: string
                 patches:
-                  description: Patches will be applied as overlay to the base resource.
+                  description: Patches to and from the composed resource.
                   items:
                     description: Patch objects are applied between composite and composed
                       resources. Their behaviour depends on the Type selected. The
@@ -774,7 +776,6 @@ spec:
                     type: object
                   type: array
               required:
-              - base
               - name
               type: object
             type: array
