@@ -204,12 +204,15 @@ a lot more explicit and less ambiguous.
 The initial implementation has the following limitations:
 
 * It's not actually packaged as an installable Function yet. :)
+* It can't report that composed resources are ready, because this isn't yet
+  supported by `RunFunctionRequest`.
 * `EnvironmentConfig` and its associated patches aren't supported yet. This is
   just because Crossplane doesn't yet send the `EnvironmentConfig` along with
   the `RunFunctionRequest`. Once we do, these should be easy to (re)implement.
 * `patches[i].policy.mergeOptions` is not supported yet. Part of the
   implementation relied on `ApplyOptions`, which don't exist in Functions. I
   need to follow-up to see how to re-add support.
+* All of the code in `sdk.go` needs to move to crossplane/function-sdk-go.
 
 ## Developing
 
