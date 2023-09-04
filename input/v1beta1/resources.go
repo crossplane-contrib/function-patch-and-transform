@@ -24,11 +24,10 @@ type Resources struct {
 
 	// PatchSets define a named set of patches that may be included by any
 	// resource. PatchSets cannot themselves refer to other PatchSets.
-	// +optionl
+	// +optional
 	PatchSets []PatchSet `json:"patchSets,omitempty"`
 
 	// Resources is a list of resource templates that will be used when a
-	// composite resourceis created.
-	// +optional
-	Resources []ComposedTemplate `json:"resources,omitempty"`
+	// composite resource is created.
+	Resources []ComposedTemplate `json:"resources"`
 }

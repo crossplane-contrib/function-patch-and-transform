@@ -31,6 +31,9 @@ import (
 
 // TODO(negz): Move all of this to github.com/crossplane/function-sdk-go.
 
+// DefaultTTL is the default TTL for which a Function response can be cached.
+const DefaultTTL = 1 * time.Minute
+
 // CLI of this Function.
 type CLI struct {
 	Debug bool `short:"d" help:"Emit debug logs in addition to info logs."`
@@ -157,6 +160,9 @@ func NewResponseTo(req *fnv1beta1.RunFunctionRequest, ttl time.Duration) *fnv1be
 		Desired: req.Desired,
 	}
 }
+
+// TODO(negz): Inject the step name into the RunFunctionRequest so folks can
+// tell which Function returned which results.
 
 // Fatal adds a fatal result to the supplied RunFunctionResponse.
 func Fatal(rsp *fnv1beta1.RunFunctionResponse, err error) {
@@ -289,12 +295,33 @@ func SetDesiredComposedResources(rsp *v1beta1.RunFunctionResponse, dcds DesiredC
 		rsp.Desired.Resources = map[string]*fnv1beta1.Resource{}
 	}
 	for name, dcd := range dcds {
-		rsp.Desired.Resources[string(name)] = &v1beta1.Resource{
-			Resource: &structpb.Struct{},
-		}
-		if err := GetStruct(rsp.Desired.Composite.Resource, dcd.Resource); err != nil {
+		r := &v1beta1.Resource{Resource: &structpb.Struct{}}
+		if err := GetStruct(r.Resource, dcd.Resource); err != nil {
 			return err
 		}
+		rsp.Desired.Resources[string(name)] = r
 	}
 	return nil
+}
+
+// TODO(negz): Stuff below this line is intended for testing.
+
+// MustStructObject returns the supplied object as a struct.
+// It panics if it can't.
+func MustStructObject(o runtime.Object) *structpb.Struct {
+	s := &structpb.Struct{}
+	if err := GetStruct(s, o); err != nil {
+		panic(err)
+	}
+	return s
+}
+
+// MustStructJSON returns the supplied JSON string as a struct.
+// It panics if it can't.
+func MustStructJSON(j string) *structpb.Struct {
+	s := &structpb.Struct{}
+	if err := protojson.Unmarshal([]byte(j), s); err != nil {
+		panic(err)
+	}
+	return s
 }

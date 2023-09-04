@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"time"
 
 	"github.com/crossplane/crossplane-runtime/pkg/errors"
 	"github.com/crossplane/crossplane-runtime/pkg/logging"
@@ -26,11 +25,18 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 	f.log.Info("Running Function", "tag", req.GetMeta().GetTag())
 
 	// TODO(negz): We can probably use a longer TTL if all resources are ready.
-	rsp := NewResponseTo(req, 1*time.Minute)
+	rsp := NewResponseTo(req, DefaultTTL)
 
 	in := &v1beta1.Resources{}
 	if err := GetObject(in, req.GetInput()); err != nil {
 		Fatal(rsp, errors.Wrapf(err, "cannot get Function input from %T", req))
+		return rsp, nil
+	}
+
+	// Our input is an opaque object nested in a Composition, so unfortunately
+	// it won't handle validation for us.
+	if err := ValidateResources(in); err != nil {
+		Fatal(rsp, errors.Wrap(err, "invalid Function input"))
 		return rsp, nil
 	}
 
@@ -71,8 +77,37 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 	for _, t := range cts {
 		dcd := NewDesiredComposedResource()
 
+		// If we have a base template, render it into our desired resource. If a
+		// previous Function produced a desired resource with this name we'll
+		// overwrite it. If we don't have a base template we'll try to patch to
+		// and from a desired resource produced by a previous Function in the
+		// pipeline.
+		switch t.Base {
+		case nil:
+			cd, ok := desired[ComposedResourceName(t.Name)]
+			if !ok {
+				Fatal(rsp, errors.Errorf("composed resource %q has no base template, and was not produced by a previous Function in the pipeline", t.Name))
+				return rsp, nil
+			}
+			// We want to return this resource unmutated if rendering fails.
+			// TODO(negz): Unstructured should have its own DeepCopy methods.
+			dcd.Resource.Unstructured = *cd.Resource.GetUnstructured().DeepCopy()
+		default:
+			if err := RenderFromJSON(dcd.Resource, t.Base.Raw); err != nil {
+				Fatal(rsp, errors.Wrapf(err, "cannot parse base template of composed resource %q", t.Name))
+				return rsp, nil
+			}
+		}
+
 		ocd, ok := observed[ComposedResourceName(t.Name)]
 		if ok {
+			// If this template corresponds to an existing observed resource we
+			// want to keep them associated. We copy only the namespace and
+			// name, not the entire observed state, because we're trying to
+			// produce only a partial 'overlay' of desired state.
+			dcd.Resource.SetNamespace(ocd.Resource.GetNamespace())
+			dcd.Resource.SetName(ocd.Resource.GetName())
+
 			conn, err := ExtractConnectionDetails(ocd.Resource, ocd.ConnectionDetails, t.ConnectionDetails...)
 			if err != nil {
 				Warning(rsp, errors.Wrapf(err, "cannot extract composite resource connection details from composed resource %q", t.Name))
@@ -88,50 +123,27 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 				Warning(rsp, errors.Wrapf(err, "cannot check readiness of composed resource %q", t.Name))
 			}
 
-			// We want to patch _to_ the XR from observed composed resources,
-			// not from desired state that we've accumulated but not yet
-			// applied. This is because folks will typically be patching from a
-			// field that is set once the observed resource is applied such as
-			// its status. Failures to patch the XR are terminal. We don't want
-			// to apply the XR if a Required patch did not work, for example.
+			// TODO(negz): Should failures to patch the XR be terminal? It could
+			// indicate a required patch failed. A required patch means roughly
+			// "this patch has to succeed before you mutate the resource". This
+			// is useful to make sure we never create a composed resource in the
+			// wrong state. It's less clear how useful it is for the XR, given
+			// we'll only ever be updating it, not creating it.
+
+			// We want to patch the XR from observed composed resources, not
+			// from desired state. This is because folks will typically be
+			// patching from a field that is set once the observed resource is
+			// applied such as its status.
 			if err := RenderToCompositePatches(dxr.Resource, ocd.Resource, t.Patches); err != nil {
-				Fatal(rsp, errors.Wrapf(err, "cannot render ToComposite patches for composed resource %q", t.Name))
-				return rsp, nil
+				Warning(rsp, errors.Wrapf(err, "cannot render ToComposite patches for composed resource %q", t.Name))
 			}
-
-			// If this template corresponds to an existing observed resource we
-			// want to keep them associated. We copy only the namespace and
-			// name, not the entire observed state, because we're trying to
-			// produce only a partial 'overlay' of desired state.
-			dcd.Resource.SetNamespace(ocd.Resource.GetNamespace())
-			dcd.Resource.SetName(ocd.Resource.GetName())
-		}
-
-		// If we have a base template, render it into our desired resource. If a
-		// previous Function produced a desired resource with this name we'll
-		// overwrite it. If we don't have a base template we'll try to patch to
-		// and from a desired resource produced by a previous Function in the
-		// pipeline.
-		switch t.Base {
-		case nil:
-			if err := RenderFromJSON(dcd.Resource, t.Base.Raw); err != nil {
-				Fatal(rsp, errors.Wrapf(err, "cannot parse base template of composed resource %q", t.Name))
-				return rsp, nil
-			}
-		default:
-			cd, ok := desired[ComposedResourceName(t.Name)]
-			if !ok {
-				Fatal(rsp, errors.Wrapf(err, "composed resource %q has no base template, and was not produced by a previous Function in the pipeline", t.Name))
-				return rsp, nil
-			}
-			// We want to return this resource unmutated if rendering fails.
-			// TODO(negz): Unstructured should have its own DeepCopy methods.
-			dcd.Resource.Unstructured = *cd.Resource.GetUnstructured().DeepCopy()
 		}
 
 		// If this returns an error, most likely a required FromComposite patch
-		// failed. We don't want to add this resource to our accumulated desired
-		// state.
+		// failed. A required patch means roughly "this patch has to succeed
+		// before you mutate the resource." This is useful to make sure we never
+		// create a composed resource in the wrong state. To that end, we don't
+		// want to add this resource to our accumulated desired state.
 		if err := RenderFromCompositePatches(dcd.Resource, oxr.Resource, t.Patches); err != nil {
 			Warning(rsp, errors.Wrapf(err, "cannot render FromComposite patches for composed resource %q", t.Name))
 			continue

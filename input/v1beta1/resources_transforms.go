@@ -25,7 +25,6 @@ const (
 // Transform is a unit of process whose input is transformed into an output with
 // the supplied configuration.
 type Transform struct {
-
 	// Type of the transform to be run.
 	// +kubebuilder:validation:Enum=map;match;math;string;convert
 	Type TransformType `json:"type"`

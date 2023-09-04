@@ -32,6 +32,61 @@ func WrapFieldErrorList(errs field.ErrorList, path *field.Path) field.ErrorList 
 	return errs
 }
 
+// ValidateResources validates the Resources object.
+func ValidateResources(r *v1beta1.Resources) *field.Error {
+	for _, ps := range r.PatchSets {
+		if err := ValidatePatchSet(ps); err != nil {
+			return err
+		}
+	}
+	if len(r.Resources) == 0 {
+		return field.Required(field.NewPath("resources"), "resources is required")
+	}
+
+	for _, r := range r.Resources {
+		if err := ValidateComposedTemplate(r); err != nil {
+			return field.Invalid(field.NewPath("resources"), r, "invalid resource")
+		}
+	}
+	return nil
+}
+
+// ValidateComposedTemplate validates a ComposedTemplate.
+func ValidateComposedTemplate(t v1beta1.ComposedTemplate) *field.Error {
+	if t.Name == "" {
+		return field.Required(field.NewPath("name"), "name is required")
+	}
+	for _, p := range t.Patches {
+		if err := ValidatePatch(p); err != nil {
+			return field.Invalid(field.NewPath("patches"), t.Patches, "invalid patches")
+		}
+	}
+	for _, cd := range t.ConnectionDetails {
+		if err := ValidateConnectionDetail(cd); err != nil {
+			return field.Invalid(field.NewPath("connectionDetails"), t.Patches, "invalid connection details")
+		}
+	}
+	for _, rc := range t.ReadinessChecks {
+		if err := ValidateReadinessCheck(rc); err != nil {
+			return field.Invalid(field.NewPath("readinessChecks"), t.Patches, "invalid readiness checks")
+		}
+	}
+	return nil
+}
+
+// ValidatePatchSet validates a PatchSet.
+func ValidatePatchSet(ps v1beta1.PatchSet) *field.Error {
+	if ps.Name == "" {
+		return field.Required(field.NewPath("name"), "name is required")
+	}
+	for _, p := range ps.Patches {
+		if err := ValidatePatch(p); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // ValidateReadinessCheck checks if the readiness check is logically valid.
 func ValidateReadinessCheck(r v1beta1.ReadinessCheck) *field.Error { //nolint:gocyclo // This function is not that complex, just a switch
 	if !r.Type.IsValid() {

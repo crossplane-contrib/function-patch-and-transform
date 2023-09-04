@@ -351,7 +351,7 @@ spec:
             type: array
           resources:
             description: Resources is a list of resource templates that will be used
-              when a composite resourceis created.
+              when a composite resource is created.
             items:
               description: ComposedTemplate is used to provide information about how
                 the composed resource should be processed.
@@ -779,6 +779,8 @@ spec:
               - name
               type: object
             type: array
+        required:
+        - resources
         type: object
     served: true
     storage: true

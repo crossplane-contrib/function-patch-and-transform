@@ -59,7 +59,7 @@ type Patch struct {
 	FromFieldPath *string `json:"fromFieldPath,omitempty"`
 
 	// Combine is the patch configuration for a CombineFromComposite,
-	//CombineToComposite patch.
+	// CombineToComposite patch.
 	// +optional
 	Combine *Combine `json:"combine,omitempty"`
 
