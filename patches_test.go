@@ -16,7 +16,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/pkg/resource/fake"
 	"github.com/crossplane/crossplane-runtime/pkg/test"
 
-	"github.com/negz/function-patch-and-transform/input/v1beta1"
+	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
 )
 
 func TestPatchApply(t *testing.T) {

@@ -226,8 +226,8 @@ $ go generate ./...
 
 # Run tests
 $ go test -cover ./...
-?       github.com/negz/function-patch-and-transform/input/v1beta1      [no test files]
-ok      github.com/negz/function-patch-and-transform    0.021s  coverage: 76.1% of statements
+?       github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1      [no test files]
+ok      github.com/crossplane-contrib/function-patch-and-transform    0.021s  coverage: 76.1% of statements
 
 # Lint the code
 $ docker run --rm -v $(pwd):/app -v ~/.cache/golangci-lint/v1.54.2:/root/.cache -w /app golangci/golangci-lint:v1.54.2 golangci-lint run

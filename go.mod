@@ -1,4 +1,4 @@
-module github.com/negz/function-patch-and-transform
+module github.com/crossplane-contrib/function-patch-and-transform
 
 go 1.20
 

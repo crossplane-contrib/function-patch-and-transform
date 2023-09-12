@@ -8,7 +8,7 @@ import (
 
 	fnv1beta1 "github.com/crossplane/function-sdk-go/proto/v1beta1"
 
-	"github.com/negz/function-patch-and-transform/input/v1beta1"
+	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
 )
 
 // Function performs patch-and-transform style Composition.

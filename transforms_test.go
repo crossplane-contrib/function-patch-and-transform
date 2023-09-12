@@ -14,7 +14,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/pkg/errors"
 	"github.com/crossplane/crossplane-runtime/pkg/test"
 
-	"github.com/negz/function-patch-and-transform/input/v1beta1"
+	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
 )
 
 func TestMapResolve(t *testing.T) {
