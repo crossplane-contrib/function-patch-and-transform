@@ -122,9 +122,12 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 
 			// TODO(negz): Extend RunFunctionResponse so we can report that this
 			// composed resource is now ready.
-			_, err = IsReady(ctx, ocd.Resource, t.ReadinessChecks...)
+			ready, err := IsReady(ctx, ocd.Resource, t.ReadinessChecks...)
 			if err != nil {
 				response.Warning(rsp, errors.Wrapf(err, "cannot check readiness of composed resource %q", t.Name))
+			}
+			if ready {
+				dcd.Ready = resource.ReadyTrue
 			}
 
 			// TODO(negz): Should failures to patch the XR be terminal? It could
