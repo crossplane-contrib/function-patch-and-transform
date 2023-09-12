@@ -15,6 +15,8 @@ import (
 	"github.com/crossplane/crossplane-runtime/pkg/logging"
 
 	fnv1beta1 "github.com/crossplane/function-sdk-go/proto/v1beta1"
+	"github.com/crossplane/function-sdk-go/resource"
+	"github.com/crossplane/function-sdk-go/response"
 
 	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
 )
@@ -42,7 +44,7 @@ func TestRunFunction(t *testing.T) {
 			},
 			want: want{
 				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(DefaultTTL)},
+					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
@@ -56,7 +58,7 @@ func TestRunFunction(t *testing.T) {
 			reason: "A simple base template with no patches should be rendered and returned as a desired object.",
 			args: args{
 				req: &fnv1beta1.RunFunctionRequest{
-					Input: MustStructObject(&v1beta1.Resources{
+					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
 							{
 								Name: "cool-resource",
@@ -66,26 +68,26 @@ func TestRunFunction(t *testing.T) {
 					}),
 					Observed: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
-							Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
 					},
 					Desired: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
-							Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
 					},
 				},
 			},
 			want: want{
 				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(DefaultTTL)},
+					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
 					Desired: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
-							Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
 						Resources: map[string]*fnv1beta1.Resource{
 							"cool-resource": {
-								Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD"}`),
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD"}`),
 							},
 						},
 					},
@@ -96,7 +98,7 @@ func TestRunFunction(t *testing.T) {
 			reason: "Desired resources from previous Functions in the pipeline and without a corresponding ComposedTemplate are passed through untouched.",
 			args: args{
 				req: &fnv1beta1.RunFunctionRequest{
-					Input: MustStructObject(&v1beta1.Resources{
+					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
 							{
 								Name: "cool-resource",
@@ -106,16 +108,16 @@ func TestRunFunction(t *testing.T) {
 					}),
 					Observed: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
-							Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
 					},
 					Desired: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
-							Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
 						Resources: map[string]*fnv1beta1.Resource{
 							"existing-resource": {
-								Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"ExistingCD"}`),
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"ExistingCD"}`),
 							},
 						},
 					},
@@ -123,17 +125,17 @@ func TestRunFunction(t *testing.T) {
 			},
 			want: want{
 				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(DefaultTTL)},
+					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
 					Desired: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
-							Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
 						Resources: map[string]*fnv1beta1.Resource{
 							"existing-resource": {
-								Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"ExistingCD"}`),
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"ExistingCD"}`),
 							},
 							"cool-resource": {
-								Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD"}`),
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD"}`),
 							},
 						},
 					},
@@ -144,7 +146,7 @@ func TestRunFunction(t *testing.T) {
 			reason: "A base template with simple patches should be rendered and returned as a desired object.",
 			args: args{
 				req: &fnv1beta1.RunFunctionRequest{
-					Input: MustStructObject(&v1beta1.Resources{
+					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
 							{
 								Name: "cool-resource",
@@ -175,26 +177,26 @@ func TestRunFunction(t *testing.T) {
 					}),
 					Observed: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
-							Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
 						},
 					},
 					Desired: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
-							Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
 						},
 					},
 				},
 			},
 			want: want{
 				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(DefaultTTL)},
+					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
 					Desired: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
-							Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
 						},
 						Resources: map[string]*fnv1beta1.Resource{
 							"cool-resource": {
-								Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":30}}`),
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":30}}`),
 							},
 						},
 					},
@@ -205,7 +207,7 @@ func TestRunFunction(t *testing.T) {
 			reason: "It should be possible to patch & transform a desired resource returned by a previous Function in the pipeline.",
 			args: args{
 				req: &fnv1beta1.RunFunctionRequest{
-					Input: MustStructObject(&v1beta1.Resources{
+					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
 							{
 								// This template base no base, so we try to
@@ -238,16 +240,16 @@ func TestRunFunction(t *testing.T) {
 					}),
 					Observed: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
-							Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
 						},
 					},
 					Desired: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
-							Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
 						},
 						Resources: map[string]*fnv1beta1.Resource{
 							"cool-resource": {
-								Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD"}`),
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD"}`),
 							},
 						},
 					},
@@ -255,14 +257,14 @@ func TestRunFunction(t *testing.T) {
 			},
 			want: want{
 				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(DefaultTTL)},
+					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
 					Desired: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
-							Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
 						},
 						Resources: map[string]*fnv1beta1.Resource{
 							"cool-resource": {
-								Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":30}}`),
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":30}}`),
 							},
 						},
 					},
@@ -273,7 +275,7 @@ func TestRunFunction(t *testing.T) {
 			reason: "We should return an error if we're trying to patch a desired resource that doesn't exist.",
 			args: args{
 				req: &fnv1beta1.RunFunctionRequest{
-					Input: MustStructObject(&v1beta1.Resources{
+					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
 							{
 								// This template base no base, so we try to
@@ -292,22 +294,22 @@ func TestRunFunction(t *testing.T) {
 					}),
 					Observed: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
-							Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
 						},
 					},
 					Desired: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
-							Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
 						},
 					},
 				},
 			},
 			want: want{
 				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(DefaultTTL)},
+					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
 					Desired: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
-							Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
 						},
 					},
 					Results: []*fnv1beta1.Result{
@@ -323,7 +325,7 @@ func TestRunFunction(t *testing.T) {
 			reason: "A simple base template with no patches should be rendered and replace an existing desired object with the same name.",
 			args: args{
 				req: &fnv1beta1.RunFunctionRequest{
-					Input: MustStructObject(&v1beta1.Resources{
+					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
 							{
 								Name: "cool-resource",
@@ -333,16 +335,16 @@ func TestRunFunction(t *testing.T) {
 					}),
 					Observed: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
-							Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
 					},
 					Desired: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
-							Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
 						Resources: map[string]*fnv1beta1.Resource{
 							"cool-resource": {
-								Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":42}}`),
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":42}}`),
 							},
 						},
 					},
@@ -350,14 +352,14 @@ func TestRunFunction(t *testing.T) {
 			},
 			want: want{
 				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(DefaultTTL)},
+					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
 					Desired: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
-							Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
 						Resources: map[string]*fnv1beta1.Resource{
 							"cool-resource": {
-								Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"widgets":9001}}`),
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"widgets":9001}}`),
 							},
 						},
 					},
@@ -368,7 +370,7 @@ func TestRunFunction(t *testing.T) {
 			reason: "If we fail to patch a desired resource produced by a previous Function in the pipeline we should return a warning result, and leave the original desired resource untouched.",
 			args: args{
 				req: &fnv1beta1.RunFunctionRequest{
-					Input: MustStructObject(&v1beta1.Resources{
+					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
 							{
 								// This template base no base, so we try to
@@ -402,16 +404,16 @@ func TestRunFunction(t *testing.T) {
 					}),
 					Observed: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
-							Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
 						},
 					},
 					Desired: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
-							Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
 						},
 						Resources: map[string]*fnv1beta1.Resource{
 							"cool-resource": {
-								Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":42}}`),
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":42}}`),
 							},
 						},
 					},
@@ -419,16 +421,16 @@ func TestRunFunction(t *testing.T) {
 			},
 			want: want{
 				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(DefaultTTL)},
+					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
 					Desired: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
-							Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
 						},
 						Resources: map[string]*fnv1beta1.Resource{
 							"cool-resource": {
 								// spec.watchers would be "10" if we didn't
 								// discard the patch that worked.
-								Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":42}}`),
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":42}}`),
 							},
 						},
 					},
@@ -445,7 +447,7 @@ func TestRunFunction(t *testing.T) {
 			reason: "If a template corresponds to an existing observed resource we should keep its name (and namespace).",
 			args: args{
 				req: &fnv1beta1.RunFunctionRequest{
-					Input: MustStructObject(&v1beta1.Resources{
+					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
 							{
 								Name: "cool-resource",
@@ -455,31 +457,31 @@ func TestRunFunction(t *testing.T) {
 					}),
 					Observed: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
-							Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
 						Resources: map[string]*fnv1beta1.Resource{
 							"cool-resource": {
-								Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","metadata":{"namespace":"default","name":"cool-42"}}`),
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","metadata":{"namespace":"default","name":"cool-42"}}`),
 							},
 						},
 					},
 					Desired: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
-							Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
 					},
 				},
 			},
 			want: want{
 				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(DefaultTTL)},
+					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
 					Desired: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
-							Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
 						Resources: map[string]*fnv1beta1.Resource{
 							"cool-resource": {
-								Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","metadata":{"namespace":"default","name":"cool-42"}}`),
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","metadata":{"namespace":"default","name":"cool-42"}}`),
 							},
 						},
 					},
@@ -490,7 +492,7 @@ func TestRunFunction(t *testing.T) {
 			reason: "We should extract any XR connection details specified by a composed template.",
 			args: args{
 				req: &fnv1beta1.RunFunctionRequest{
-					Input: MustStructObject(&v1beta1.Resources{
+					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
 							{
 								Name: "cool-resource",
@@ -507,11 +509,11 @@ func TestRunFunction(t *testing.T) {
 					}),
 					Observed: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
-							Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
 						Resources: map[string]*fnv1beta1.Resource{
 							"cool-resource": {
-								Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","metadata":{"namespace":"default","name":"cool-42"}}`),
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","metadata":{"namespace":"default","name":"cool-42"}}`),
 								ConnectionDetails: map[string][]byte{
 									"very": []byte("secret"),
 								},
@@ -520,7 +522,7 @@ func TestRunFunction(t *testing.T) {
 					},
 					Desired: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
-							Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 							ConnectionDetails: map[string][]byte{
 								"existing": []byte("supersecretvalue"),
 							},
@@ -530,10 +532,10 @@ func TestRunFunction(t *testing.T) {
 			},
 			want: want{
 				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(DefaultTTL)},
+					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
 					Desired: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
-							Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 							ConnectionDetails: map[string][]byte{
 								"existing": []byte("supersecretvalue"),
 								"very":     []byte("secret"),
@@ -541,7 +543,7 @@ func TestRunFunction(t *testing.T) {
 						},
 						Resources: map[string]*fnv1beta1.Resource{
 							"cool-resource": {
-								Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","metadata":{"namespace":"default","name":"cool-42"}}`),
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","metadata":{"namespace":"default","name":"cool-42"}}`),
 							},
 						},
 					},
@@ -552,7 +554,7 @@ func TestRunFunction(t *testing.T) {
 			reason: "A basic ToCompositeFieldPath patch should work.",
 			args: args{
 				req: &fnv1beta1.RunFunctionRequest{
-					Input: MustStructObject(&v1beta1.Resources{
+					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
 							{
 								Name: "cool-resource",
@@ -583,31 +585,31 @@ func TestRunFunction(t *testing.T) {
 					}),
 					Observed: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
-							Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
 						Resources: map[string]*fnv1beta1.Resource{
 							"cool-resource": {
-								Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","metadata":{"namespace":"default","name":"cool-42"},"spec":{"widgets":"10"}}`),
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","metadata":{"namespace":"default","name":"cool-42"},"spec":{"widgets":"10"}}`),
 							},
 						},
 					},
 					Desired: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
-							Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
 					},
 				},
 			},
 			want: want{
 				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(DefaultTTL)},
+					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
 					Desired: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
-							Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"watchers":30}}`),
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"watchers":30}}`),
 						},
 						Resources: map[string]*fnv1beta1.Resource{
 							"cool-resource": {
-								Resource: MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","metadata":{"namespace":"default","name":"cool-42"}}`),
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","metadata":{"namespace":"default","name":"cool-42"}}`),
 							},
 						},
 					},

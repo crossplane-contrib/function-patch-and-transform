@@ -5,8 +5,12 @@ import (
 
 	"github.com/crossplane/crossplane-runtime/pkg/errors"
 	"github.com/crossplane/crossplane-runtime/pkg/logging"
+	"github.com/crossplane/crossplane-runtime/pkg/reconciler/managed"
 
 	fnv1beta1 "github.com/crossplane/function-sdk-go/proto/v1beta1"
+	"github.com/crossplane/function-sdk-go/request"
+	"github.com/crossplane/function-sdk-go/resource"
+	"github.com/crossplane/function-sdk-go/response"
 
 	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
 )
@@ -25,57 +29,57 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 	f.log.Info("Running Function", "tag", req.GetMeta().GetTag())
 
 	// TODO(negz): We can probably use a longer TTL if all resources are ready.
-	rsp := NewResponseTo(req, DefaultTTL)
+	rsp := response.To(req, response.DefaultTTL)
 
-	in := &v1beta1.Resources{}
-	if err := GetObject(in, req.GetInput()); err != nil {
-		Fatal(rsp, errors.Wrapf(err, "cannot get Function input from %T", req))
+	input := &v1beta1.Resources{}
+	if err := request.GetInput(req, input); err != nil {
+		response.Fatal(rsp, errors.Wrap(err, "cannot get Function input"))
 		return rsp, nil
 	}
 
 	// Our input is an opaque object nested in a Composition, so unfortunately
 	// it won't handle validation for us.
-	if err := ValidateResources(in); err != nil {
-		Fatal(rsp, errors.Wrap(err, "invalid Function input"))
+	if err := ValidateResources(input); err != nil {
+		response.Fatal(rsp, errors.Wrap(err, "invalid Function input"))
 		return rsp, nil
 	}
 
 	// The composite resource that actually exists.
-	oxr, err := GetObservedCompositeResource(req)
+	oxr, err := request.GetObservedCompositeResource(req)
 	if err != nil {
-		Fatal(rsp, errors.Wrap(err, "cannot get observed composite resource"))
+		response.Fatal(rsp, errors.Wrap(err, "cannot get observed composite resource"))
 		return rsp, nil
 	}
 
 	// The composite resource desired by previous functions in the pipeline.
-	dxr, err := GetDesiredCompositeResource(req)
+	dxr, err := request.GetDesiredCompositeResource(req)
 	if err != nil {
-		Fatal(rsp, errors.Wrap(err, "cannot get desired composite resource"))
+		response.Fatal(rsp, errors.Wrap(err, "cannot get desired composite resource"))
 		return rsp, nil
 	}
 
 	// The composed resources that actually exist.
-	observed, err := GetObservedComposedResources(req)
+	observed, err := request.GetObservedComposedResources(req)
 	if err != nil {
-		Fatal(rsp, errors.Wrapf(err, "cannot get observed composed resources from %T", req))
+		response.Fatal(rsp, errors.Wrapf(err, "cannot get observed composed resources from %T", req))
 		return rsp, nil
 	}
 
 	// The composed resources desired by any previous Functions in the pipeline.
-	desired, err := GetDesiredComposedResources(req)
+	desired, err := request.GetDesiredComposedResources(req)
 	if err != nil {
-		Fatal(rsp, errors.Wrapf(err, "cannot get desired composed resources from %T", req))
+		response.Fatal(rsp, errors.Wrapf(err, "cannot get desired composed resources from %T", req))
 		return rsp, nil
 	}
 
-	cts, err := ComposedTemplates(in.PatchSets, in.Resources)
+	cts, err := ComposedTemplates(input.PatchSets, input.Resources)
 	if err != nil {
-		Fatal(rsp, errors.Wrap(err, "cannot resolve PatchSets"))
+		response.Fatal(rsp, errors.Wrap(err, "cannot resolve PatchSets"))
 		return rsp, nil
 	}
 
 	for _, t := range cts {
-		dcd := NewDesiredComposedResource()
+		dcd := resource.NewDesiredComposedResource()
 
 		// If we have a base template, render it into our desired resource. If a
 		// previous Function produced a desired resource with this name we'll
@@ -84,9 +88,9 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 		// pipeline.
 		switch t.Base {
 		case nil:
-			cd, ok := desired[ComposedResourceName(t.Name)]
+			cd, ok := desired[resource.Name(t.Name)]
 			if !ok {
-				Fatal(rsp, errors.Errorf("composed resource %q has no base template, and was not produced by a previous Function in the pipeline", t.Name))
+				response.Fatal(rsp, errors.Errorf("composed resource %q has no base template, and was not produced by a previous Function in the pipeline", t.Name))
 				return rsp, nil
 			}
 			// We want to return this resource unmutated if rendering fails.
@@ -94,12 +98,12 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 			dcd.Resource.Unstructured = *cd.Resource.GetUnstructured().DeepCopy()
 		default:
 			if err := RenderFromJSON(dcd.Resource, t.Base.Raw); err != nil {
-				Fatal(rsp, errors.Wrapf(err, "cannot parse base template of composed resource %q", t.Name))
+				response.Fatal(rsp, errors.Wrapf(err, "cannot parse base template of composed resource %q", t.Name))
 				return rsp, nil
 			}
 		}
 
-		ocd, ok := observed[ComposedResourceName(t.Name)]
+		ocd, ok := observed[resource.Name(t.Name)]
 		if ok {
 			// If this template corresponds to an existing observed resource we
 			// want to keep them associated. We copy only the namespace and
@@ -108,9 +112,9 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 			dcd.Resource.SetNamespace(ocd.Resource.GetNamespace())
 			dcd.Resource.SetName(ocd.Resource.GetName())
 
-			conn, err := ExtractConnectionDetails(ocd.Resource, ocd.ConnectionDetails, t.ConnectionDetails...)
+			conn, err := ExtractConnectionDetails(ocd.Resource, managed.ConnectionDetails(ocd.ConnectionDetails), t.ConnectionDetails...)
 			if err != nil {
-				Warning(rsp, errors.Wrapf(err, "cannot extract composite resource connection details from composed resource %q", t.Name))
+				response.Warning(rsp, errors.Wrapf(err, "cannot extract composite resource connection details from composed resource %q", t.Name))
 			}
 			for k, v := range conn {
 				dxr.ConnectionDetails[k] = v
@@ -120,7 +124,7 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 			// composed resource is now ready.
 			_, err = IsReady(ctx, ocd.Resource, t.ReadinessChecks...)
 			if err != nil {
-				Warning(rsp, errors.Wrapf(err, "cannot check readiness of composed resource %q", t.Name))
+				response.Warning(rsp, errors.Wrapf(err, "cannot check readiness of composed resource %q", t.Name))
 			}
 
 			// TODO(negz): Should failures to patch the XR be terminal? It could
@@ -135,7 +139,7 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 			// patching from a field that is set once the observed resource is
 			// applied such as its status.
 			if err := RenderToCompositePatches(dxr.Resource, ocd.Resource, t.Patches); err != nil {
-				Warning(rsp, errors.Wrapf(err, "cannot render ToComposite patches for composed resource %q", t.Name))
+				response.Warning(rsp, errors.Wrapf(err, "cannot render ToComposite patches for composed resource %q", t.Name))
 			}
 		}
 
@@ -145,21 +149,21 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 		// create a composed resource in the wrong state. To that end, we don't
 		// want to add this resource to our accumulated desired state.
 		if err := RenderFromCompositePatches(dcd.Resource, oxr.Resource, t.Patches); err != nil {
-			Warning(rsp, errors.Wrapf(err, "cannot render FromComposite patches for composed resource %q", t.Name))
+			response.Warning(rsp, errors.Wrapf(err, "cannot render FromComposite patches for composed resource %q", t.Name))
 			continue
 		}
 
 		// Add or replace our desired resource.
-		desired[ComposedResourceName(t.Name)] = dcd
+		desired[resource.Name(t.Name)] = dcd
 	}
 
-	if err := SetDesiredCompositeResource(rsp, dxr); err != nil {
-		Fatal(rsp, errors.Wrapf(err, "cannot set desired composite resource in %T", rsp))
+	if err := response.SetDesiredCompositeResource(rsp, dxr); err != nil {
+		response.Fatal(rsp, errors.Wrapf(err, "cannot set desired composite resource in %T", rsp))
 		return rsp, nil
 	}
 
-	if err := SetDesiredComposedResources(rsp, desired); err != nil {
-		Fatal(rsp, errors.Wrapf(err, "cannot set desired composed resources in %T", rsp))
+	if err := response.SetDesiredComposedResources(rsp, desired); err != nil {
+		response.Fatal(rsp, errors.Wrapf(err, "cannot set desired composed resources in %T", rsp))
 		return rsp, nil
 	}
 
