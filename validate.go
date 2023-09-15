@@ -6,7 +6,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	"github.com/negz/function-patch-and-transform/input/v1beta1"
+	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
 )
 
 // WrapFieldError wraps the given field.Error adding the given field.Path as root of the Field.
