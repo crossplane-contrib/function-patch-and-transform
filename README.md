@@ -33,6 +33,7 @@ spec:
   compositeTypeRef:
     apiVersion: database.example.com/v1alpha1
     kind: NoSQL
+  mode: Pipeline
   pipeline:
   - step: patch-and-transform
     functionRef:
