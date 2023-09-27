@@ -62,7 +62,7 @@ func filterPatch(p v1beta1.Patch, only ...v1beta1.PatchType) bool {
 	}
 
 	for _, patchType := range only {
-		if patchType == p.Type {
+		if patchType == p.GetType() {
 			return false
 		}
 	}
