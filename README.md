@@ -2,6 +2,15 @@
 
 A [Crossplane] Composition Function that implements P&T-style Composition.
 
+```yaml
+apiVersion: pkg.crossplane.io/v1beta1
+kind: Function
+metadata:
+  name: function-patch-and-transform
+spec:
+  package: xpkg.upbound.io/crossplane-contrib/function-patch-and-transform:v0.1.1
+```
+
 ## What is this?
 
 This [Composition Function][function-design] does everything Crossplane's built-in Patch &
@@ -196,23 +205,20 @@ a lot more explicit and less ambiguous.
 * `resources[i].name` is now a required field.
 * `resources[i].connectionDetails[i].name` is now a required field
 * `resources[i].connectionDetails[i].type` is now a required field
-* `resources[i].patches[i].policy.mergeOptions` will have its fields renamed
-  (once reimplemented) to address [#2581].
+* `resources[i].patches[i].policy.mergeOptions` is no longer supported
+
+Functions use Kubernetes server-side apply, not `mergeOptions`, to intelligently
+merge arrays and objects. This requires merge configuration to be specified at
+the composed resource schema level (i.e. in CRDs) per [#4617].
 
 ## Known issues
 
 The initial implementation has the following limitations:
 
-* It's not actually packaged as an installable Function yet. :)
-* It can't report that composed resources are ready, because this isn't yet
-  supported by `RunFunctionRequest`.
 * `EnvironmentConfig` and its associated patches aren't supported yet. This is
   just because Crossplane doesn't yet send the `EnvironmentConfig` along with
   the `RunFunctionRequest`. Once we do, these should be easy to (re)implement.
-* `patches[i].policy.mergeOptions` is not supported yet. Part of the
-  implementation relied on `ApplyOptions`, which don't exist in Functions. I
-  need to follow-up to see how to re-add support.
-* All of the code in `sdk.go` needs to move to crossplane/function-sdk-go.
+  Adding support at the Functions level is tracked in [#4632].
 
 ## Developing
 
@@ -240,4 +246,5 @@ $ docker build .
 [function-design]: https://github.com/crossplane/crossplane/blob/3996f20/design/design-doc-composition-functions.md
 [function-pr]: https://github.com/crossplane/crossplane/pull/4500
 [docs-composition]: https://docs.crossplane.io/v1.13/getting-started/provider-aws-part-2/#create-a-deployment-template
-[#2581]: https://github.com/crossplane/crossplane/issues/2581
+[#4617]: https://github.com/crossplane/crossplane/issues/4617
+[#4632]: https://github.com/crossplane/crossplane/pull/4632
