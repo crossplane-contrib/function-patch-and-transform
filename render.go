@@ -61,7 +61,7 @@ func RenderFromJSON(o resource.Object, data []byte) error {
 func RenderFromCompositePatches(cd resource.Composed, xr resource.Composite, p []v1beta1.Patch) error {
 	for i := range p {
 		if err := Apply(p[i], xr, cd, v1beta1.PatchTypeFromCompositeFieldPath, v1beta1.PatchTypeCombineFromComposite); err != nil {
-			return errors.Wrapf(err, errFmtPatch, p[i].Type, i)
+			return errors.Wrapf(err, errFmtPatch, p[i].GetType(), i)
 		}
 	}
 	return nil
@@ -72,7 +72,7 @@ func RenderFromCompositePatches(cd resource.Composed, xr resource.Composite, p [
 func RenderToCompositePatches(xr resource.Composite, cd resource.Composed, p []v1beta1.Patch) error {
 	for i := range p {
 		if err := Apply(p[i], xr, cd, v1beta1.PatchTypeToCompositeFieldPath, v1beta1.PatchTypeCombineToComposite); err != nil {
-			return errors.Wrapf(err, errFmtPatch, p[i].Type, i)
+			return errors.Wrapf(err, errFmtPatch, p[i].GetType(), i)
 		}
 	}
 	return nil
