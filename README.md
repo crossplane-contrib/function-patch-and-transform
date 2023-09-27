@@ -2,6 +2,15 @@
 
 A [Crossplane] Composition Function that implements P&T-style Composition.
 
+```yaml
+apiVersion: pkg.crossplane.io/v1beta1
+kind: Function
+metadata:
+  name: function-patch-and-transform
+spec:
+  package: xpkg.upbound.io/crossplane-contrib/function-patch-and-transform:v0.1.1
+```
+
 ## What is this?
 
 This [Composition Function][function-design] does everything Crossplane's built-in Patch &
