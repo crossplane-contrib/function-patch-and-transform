@@ -120,8 +120,6 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 				dxr.ConnectionDetails[k] = v
 			}
 
-			// TODO(negz): Extend RunFunctionResponse so we can report that this
-			// composed resource is now ready.
 			ready, err := IsReady(ctx, ocd.Resource, t.ReadinessChecks...)
 			if err != nil {
 				response.Warning(rsp, errors.Wrapf(err, "cannot check readiness of composed resource %q", t.Name))

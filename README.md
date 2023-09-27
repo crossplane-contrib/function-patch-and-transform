@@ -204,8 +204,6 @@ a lot more explicit and less ambiguous.
 The initial implementation has the following limitations:
 
 * It's not actually packaged as an installable Function yet. :)
-* It can't report that composed resources are ready, because this isn't yet
-  supported by `RunFunctionRequest`.
 * `EnvironmentConfig` and its associated patches aren't supported yet. This is
   just because Crossplane doesn't yet send the `EnvironmentConfig` along with
   the `RunFunctionRequest`. Once we do, these should be easy to (re)implement.
