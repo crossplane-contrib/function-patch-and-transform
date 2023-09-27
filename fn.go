@@ -51,6 +51,12 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 		return rsp, nil
 	}
 
+	log := f.log.WithValues(
+		"xr-version", oxr.Resource.GetAPIVersion(),
+		"xr-kind", oxr.Resource.GetKind(),
+		"xr-name", oxr.Resource.GetName(),
+	)
+
 	// The composite resource desired by previous functions in the pipeline.
 	dxr, err := request.GetDesiredCompositeResource(req)
 	if err != nil {
@@ -78,7 +84,17 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 		return rsp, nil
 	}
 
+	// Increment this if you emit a warning result.
+	warnings := 0
+
+	// Increment this for each resource template with an existing, observed
+	// composed resource.
+	existing := 0
+
 	for _, t := range cts {
+		log := log.WithValues("resource-template-name", t.Name)
+		log.Debug("Processing resource template")
+
 		dcd := resource.NewDesiredComposedResource()
 
 		// If we have a base template, render it into our desired resource. If a
@@ -105,6 +121,8 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 
 		ocd, ok := observed[resource.Name(t.Name)]
 		if ok {
+			existing++
+
 			// If this template corresponds to an existing observed resource we
 			// want to keep them associated. We copy only the namespace and
 			// name, not the entire observed state, because we're trying to
@@ -115,6 +133,8 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 			conn, err := ExtractConnectionDetails(ocd.Resource, managed.ConnectionDetails(ocd.ConnectionDetails), t.ConnectionDetails...)
 			if err != nil {
 				response.Warning(rsp, errors.Wrapf(err, "cannot extract composite resource connection details from composed resource %q", t.Name))
+				log.Info("Cannot extract composite resource connection details from composed resource", "warning", err)
+				warnings++
 			}
 			for k, v := range conn {
 				dxr.ConnectionDetails[k] = v
@@ -123,10 +143,16 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 			ready, err := IsReady(ctx, ocd.Resource, t.ReadinessChecks...)
 			if err != nil {
 				response.Warning(rsp, errors.Wrapf(err, "cannot check readiness of composed resource %q", t.Name))
+				log.Info("Cannot check readiness of composed resource", "warning", err)
+				warnings++
 			}
 			if ready {
 				dcd.Ready = resource.ReadyTrue
 			}
+
+			log.Debug("Found corresponding observed resource",
+				"ready", ready,
+				"name", ocd.Resource.GetName())
 
 			// TODO(negz): Should failures to patch the XR be terminal? It could
 			// indicate a required patch failed. A required patch means roughly
@@ -141,6 +167,8 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 			// applied such as its status.
 			if err := RenderToCompositePatches(dxr.Resource, ocd.Resource, t.Patches); err != nil {
 				response.Warning(rsp, errors.Wrapf(err, "cannot render ToComposite patches for composed resource %q", t.Name))
+				log.Info("Cannot render ToComposite patches for composed resource", "warning", err)
+				warnings++
 			}
 		}
 
@@ -151,6 +179,8 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 		// want to add this resource to our accumulated desired state.
 		if err := RenderFromCompositePatches(dcd.Resource, oxr.Resource, t.Patches); err != nil {
 			response.Warning(rsp, errors.Wrapf(err, "cannot render FromComposite patches for composed resource %q", t.Name))
+			log.Info("Cannot render FromComposite patches for composed resource", "warning", err)
+			warnings++
 			continue
 		}
 
@@ -167,6 +197,11 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 		response.Fatal(rsp, errors.Wrapf(err, "cannot set desired composed resources in %T", rsp))
 		return rsp, nil
 	}
+
+	log.Info("Successfully processed patch-and-transform resources",
+		"resource-templates", len(input.Resources),
+		"existing-resources", existing,
+		"warnings", warnings)
 
 	return rsp, nil
 }
