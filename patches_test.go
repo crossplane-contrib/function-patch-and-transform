@@ -3,28 +3,23 @@ package main
 import (
 	"encoding/json"
 	"testing"
-	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/utils/pointer"
 
 	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
 	"github.com/crossplane/crossplane-runtime/pkg/resource"
-	"github.com/crossplane/crossplane-runtime/pkg/resource/fake"
+	"github.com/crossplane/crossplane-runtime/pkg/resource/unstructured/composed"
 	"github.com/crossplane/crossplane-runtime/pkg/test"
+	"github.com/crossplane/function-sdk-go/resource/composite"
 
 	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
 )
 
 func TestPatchApply(t *testing.T) {
-	now := metav1.NewTime(time.Unix(0, 0))
-	lpt := fake.ConnectionDetailsLastPublishedTimer{
-		Time: &now,
-	}
-
 	errNotFound := func(path string) error {
 		p := &fieldpath.Paved{}
 		_, err := p.GetValue(path)
@@ -33,13 +28,13 @@ func TestPatchApply(t *testing.T) {
 
 	type args struct {
 		patch v1beta1.Patch
-		cp    *fake.Composite
-		cd    *fake.Composed
+		xr    *composite.Unstructured
+		cd    *composed.Unstructured
 		only  []v1beta1.PatchType
 	}
 	type want struct {
-		cp  *fake.Composite
-		cd  *fake.Composed
+		xr  *composite.Unstructured
+		cd  *composed.Unstructured
 		err error
 	}
 
@@ -53,11 +48,10 @@ func TestPatchApply(t *testing.T) {
 			args: args{
 				patch: v1beta1.Patch{
 					Type: v1beta1.PatchTypeFromCompositeFieldPath,
+					// This is missing fields.
 				},
-				cp: &fake.Composite{
-					ConnectionDetailsLastPublishedTimer: lpt,
-				},
-				cd: &fake.Composed{ObjectMeta: metav1.ObjectMeta{Name: "cd"}},
+				xr: &composite.Unstructured{},
+				cd: &composed.Unstructured{},
 			},
 			want: want{
 				err: errors.Errorf(errFmtRequiredField, "FromFieldPath", v1beta1.PatchTypeFromCompositeFieldPath),
@@ -69,10 +63,8 @@ func TestPatchApply(t *testing.T) {
 				patch: v1beta1.Patch{
 					Type: "invalid-patchtype",
 				},
-				cp: &fake.Composite{
-					ConnectionDetailsLastPublishedTimer: lpt,
-				},
-				cd: &fake.Composed{ObjectMeta: metav1.ObjectMeta{Name: "cd"}},
+				xr: &composite.Unstructured{},
+				cd: &composed.Unstructured{},
 			},
 			want: want{
 				err: errors.Errorf(errFmtInvalidPatchType, "invalid-patchtype"),
@@ -83,62 +75,42 @@ func TestPatchApply(t *testing.T) {
 			args: args{
 				patch: v1beta1.Patch{
 					Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-					FromFieldPath: pointer.String("objectMeta.labels"),
-					ToFieldPath:   pointer.String("objectMeta.labels"),
+					FromFieldPath: pointer.String("metadata.labels"),
+					ToFieldPath:   pointer.String("metadata.labels"),
 				},
-				cp: &fake.Composite{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cp",
-						Labels: map[string]string{
-							"Test": "blah",
-						},
-					},
-					ConnectionDetailsLastPublishedTimer: lpt,
+				xr: &composite.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+						"apiVersion": "test.crossplane.io/v1",
+						"kind": "XR",
+						"metadata": {
+							"labels": {
+								"test": "blah"
+							}
+						}
+					}`)},
 				},
-				cd: &fake.Composed{
-					ObjectMeta: metav1.ObjectMeta{Name: "cd"},
-				},
-			},
-			want: want{
-				cd: &fake.Composed{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cd",
-						Labels: map[string]string{
-							"Test": "blah",
-						},
-					},
-				},
-				err: nil,
-			},
-		},
-		"ValidCompositeFieldPathPatchWithNilLastPublishTime": {
-			reason: "Should correctly apply a CompositeFieldPathPatch with valid settings",
-			args: args{
-				patch: v1beta1.Patch{
-					Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-					FromFieldPath: pointer.String("objectMeta.labels"),
-					ToFieldPath:   pointer.String("objectMeta.labels"),
-				},
-				cp: &fake.Composite{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cp",
-						Labels: map[string]string{
-							"Test": "blah",
-						},
-					},
-				},
-				cd: &fake.Composed{
-					ObjectMeta: metav1.ObjectMeta{Name: "cd"},
+				cd: &composed.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+						"apiVersion": "test.crossplane.io/v1",
+						"kind": "Composed",
+						"metadata": {
+							"name": "cd"
+						}
+					}`)},
 				},
 			},
 			want: want{
-				cd: &fake.Composed{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cd",
-						Labels: map[string]string{
-							"Test": "blah",
-						},
-					},
+				cd: &composed.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+						"apiVersion": "test.crossplane.io/v1",
+						"kind": "Composed",
+						"metadata": {
+							"name": "cd",
+							"labels": {
+								"test": "blah"
+							}
+						}
+					}`)},
 				},
 				err: nil,
 			},
@@ -148,44 +120,51 @@ func TestPatchApply(t *testing.T) {
 			args: args{
 				patch: v1beta1.Patch{
 					Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-					FromFieldPath: pointer.String("objectMeta.name"),
-					ToFieldPath:   pointer.String("objectMeta.ownerReferences[*].name"),
+					FromFieldPath: pointer.String("metadata.name"),
+					ToFieldPath:   pointer.String("metadata.ownerReferences[*].name"),
 				},
-				cp: &fake.Composite{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "test",
-					},
-					ConnectionDetailsLastPublishedTimer: lpt,
+				xr: &composite.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+						"apiVersion": "test.crossplane.io/v1",
+						"kind": "XR",
+						"metadata": {
+							"name": "test"
+						}
+					}`)},
 				},
-				cd: &fake.Composed{
-					ObjectMeta: metav1.ObjectMeta{
-						OwnerReferences: []metav1.OwnerReference{
-							{
-								Name:       "",
-								APIVersion: "v1",
-							},
-							{
-								Name:       "",
-								APIVersion: "v1alpha1",
-							},
-						},
-					},
+				cd: &composed.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+						"apiVersion": "test.crossplane.io/v1",
+						"kind": "Composed",
+						"metadata": {
+							"ownerReferences": [
+								{
+									"name": ""
+								},
+								{
+									"name": ""
+								}
+							]
+						}
+					}`)},
 				},
 			},
 			want: want{
-				cd: &fake.Composed{
-					ObjectMeta: metav1.ObjectMeta{
-						OwnerReferences: []metav1.OwnerReference{
-							{
-								Name:       "test",
-								APIVersion: "v1",
-							},
-							{
-								Name:       "test",
-								APIVersion: "v1alpha1",
-							},
-						},
-					},
+				cd: &composed.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+						"apiVersion": "test.crossplane.io/v1",
+						"kind": "Composed",
+						"metadata": {
+							"ownerReferences": [
+								{
+									"name": "test"
+								},
+								{
+									"name": "test"
+								}
+							]
+						}
+					}`)},
 				},
 			},
 		},
@@ -194,28 +173,37 @@ func TestPatchApply(t *testing.T) {
 			args: args{
 				patch: v1beta1.Patch{
 					Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-					FromFieldPath: pointer.String("objectMeta.name"),
-					ToFieldPath:   pointer.String("objectMeta.ownerReferences[*].badField"),
+					FromFieldPath: pointer.String("metadata.name"),
+					ToFieldPath:   pointer.String("metadata.ownerReferences[*].badField"),
 				},
-				cp: &fake.Composite{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "test",
-					},
-					ConnectionDetailsLastPublishedTimer: lpt,
+				xr: &composite.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+						"apiVersion": "test.crossplane.io/v1",
+						"kind": "XR",
+						"metadata": {
+							"name": "test"
+						}
+					}`)},
 				},
-				cd: &fake.Composed{
-					ObjectMeta: metav1.ObjectMeta{
-						OwnerReferences: []metav1.OwnerReference{
-							{
-								Name:       "test",
-								APIVersion: "v1",
-							},
-						},
-					},
+				cd: &composed.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+						"apiVersion": "test.crossplane.io/v1",
+						"kind": "Composed",
+						"metadata": {
+							"ownerReferences": [
+								{
+									"name": "test"
+								},
+								{
+									"name": "test"
+								}
+							]
+						}
+					}`)},
 				},
 			},
 			want: want{
-				err: errors.Errorf(errFmtExpandingArrayFieldPaths, "objectMeta.ownerReferences[*].badField"),
+				err: errors.Errorf(errFmtExpandingArrayFieldPaths, "metadata.ownerReferences[*].badField"),
 			},
 		},
 		"MissingOptionalFieldPath": {
@@ -223,24 +211,37 @@ func TestPatchApply(t *testing.T) {
 			args: args{
 				patch: v1beta1.Patch{
 					Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-					FromFieldPath: pointer.String("objectMeta.labels"),
-					ToFieldPath:   pointer.String("objectMeta.labels"),
+					FromFieldPath: pointer.String("metadata.labels"),
+					ToFieldPath:   pointer.String("metadata.labels"),
 				},
-				cp: &fake.Composite{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cp",
-					},
-					ConnectionDetailsLastPublishedTimer: lpt,
+				xr: &composite.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+						"apiVersion": "test.crossplane.io/v1",
+						"kind": "XR",
+						"metadata": {
+							"name": "test"
+						}
+					}`)},
 				},
-				cd: &fake.Composed{
-					ObjectMeta: metav1.ObjectMeta{Name: "cd"},
+				cd: &composed.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+						"apiVersion": "test.crossplane.io/v1",
+						"kind": "Composed",
+						"metadata": {
+							"name": "test"
+						}
+					}`)},
 				},
 			},
 			want: want{
-				cd: &fake.Composed{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cd",
-					},
+				cd: &composed.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+						"apiVersion": "test.crossplane.io/v1",
+						"kind": "Composed",
+						"metadata": {
+							"name": "test"
+						}
+					}`)},
 				},
 				err: nil,
 			},
@@ -259,18 +260,34 @@ func TestPatchApply(t *testing.T) {
 					},
 					ToFieldPath: pointer.String("wat"),
 				},
-				cp: &fake.Composite{
-					ConnectionDetailsLastPublishedTimer: lpt,
+				xr: &composite.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+						"apiVersion": "test.crossplane.io/v1",
+						"kind": "XR",
+						"metadata": {
+							"name": "test"
+						}
+					}`)},
 				},
-				cd: &fake.Composed{
-					ObjectMeta: metav1.ObjectMeta{Name: "cd"},
+				cd: &composed.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+						"apiVersion": "test.crossplane.io/v1",
+						"kind": "Composed",
+						"metadata": {
+							"name": "test"
+						}
+					}`)},
 				},
 			},
 			want: want{
-				cd: &fake.Composed{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cd",
-					},
+				cd: &composed.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+						"apiVersion": "test.crossplane.io/v1",
+						"kind": "Composed",
+						"metadata": {
+							"name": "test"
+						}
+					}`)},
 				},
 				err: errNotFound("wat"),
 			},
@@ -280,29 +297,25 @@ func TestPatchApply(t *testing.T) {
 			args: args{
 				patch: v1beta1.Patch{
 					Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-					FromFieldPath: pointer.String("objectMeta.labels"),
-					ToFieldPath:   pointer.String("objectMeta.labels"),
+					FromFieldPath: pointer.String("metadata.labels"),
+					ToFieldPath:   pointer.String("metadata.labels"),
 				},
-				cp: &fake.Composite{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cp",
-						Labels: map[string]string{
-							"Test": "blah",
-						},
-					},
-					ConnectionDetailsLastPublishedTimer: lpt,
+				xr: &composite.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+						"apiVersion": "test.crossplane.io/v1",
+						"kind": "XR",
+						"metadata": {
+							"labels": {
+								"test": "blah"
+							}
+						}
+					}`)},
 				},
-				cd: &fake.Composed{
-					ObjectMeta: metav1.ObjectMeta{Name: "cd"},
-				},
+				cd:   &composed.Unstructured{},
 				only: []v1beta1.PatchType{v1beta1.PatchTypePatchSet},
 			},
 			want: want{
-				cd: &fake.Composed{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cd",
-					},
-				},
+				cd:  &composed.Unstructured{},
 				err: nil,
 			},
 		},
@@ -311,30 +324,39 @@ func TestPatchApply(t *testing.T) {
 			args: args{
 				patch: v1beta1.Patch{
 					Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-					FromFieldPath: pointer.String("objectMeta.labels"),
-					ToFieldPath:   pointer.String("objectMeta.labels"),
+					FromFieldPath: pointer.String("metadata.labels"),
+					ToFieldPath:   pointer.String("metadata.labels"),
 				},
-				cp: &fake.Composite{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cp",
-						Labels: map[string]string{
-							"Test": "blah",
-						},
-					},
-					ConnectionDetailsLastPublishedTimer: lpt,
+				xr: &composite.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+						"apiVersion": "test.crossplane.io/v1",
+						"kind": "XR",
+						"metadata": {
+							"labels": {
+								"test": "blah"
+							}
+						}
+					}`)},
 				},
-				cd: &fake.Composed{
-					ObjectMeta: metav1.ObjectMeta{Name: "cd"},
+				cd: &composed.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+						"apiVersion": "test.crossplane.io/v1",
+						"kind": "Composed"
+					}`)},
 				},
 				only: []v1beta1.PatchType{v1beta1.PatchTypeFromCompositeFieldPath},
 			},
 			want: want{
-				cd: &fake.Composed{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cd",
-						Labels: map[string]string{
-							"Test": "blah",
-						}},
+				cd: &composed.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+						"apiVersion": "test.crossplane.io/v1",
+						"kind": "Composed",
+						"metadata": {
+							"labels": {
+								"test": "blah"
+							}
+						}
+					}`)},
 				},
 				err: nil,
 			},
@@ -344,39 +366,37 @@ func TestPatchApply(t *testing.T) {
 			args: args{
 				patch: v1beta1.Patch{
 					Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-					FromFieldPath: pointer.String("objectMeta.labels"),
+					FromFieldPath: pointer.String("metadata.labels"),
 				},
-				cp: &fake.Composite{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cp",
-						Labels: map[string]string{
-							"Test": "blah",
-						},
-					},
-					ConnectionDetailsLastPublishedTimer: lpt,
+				xr: &composite.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+						"apiVersion": "test.crossplane.io/v1",
+						"kind": "XR",
+						"metadata": {
+							"labels": {
+								"test": "blah"
+							}
+						}
+					}`)},
 				},
-				cd: &fake.Composed{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cd",
-					},
+				cd: &composed.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+						"apiVersion": "test.crossplane.io/v1",
+						"kind": "Composed"
+					}`)},
 				},
 			},
 			want: want{
-				cp: &fake.Composite{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cp",
-						Labels: map[string]string{
-							"Test": "blah",
-						},
-					},
-					ConnectionDetailsLastPublishedTimer: lpt,
-				},
-				cd: &fake.Composed{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cd",
-						Labels: map[string]string{
-							"Test": "blah",
-						}},
+				cd: &composed.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+						"apiVersion": "test.crossplane.io/v1",
+						"kind": "Composed",
+						"metadata": {
+							"labels": {
+								"test": "blah"
+							}
+						}
+					}`)},
 				},
 				err: nil,
 			},
@@ -386,40 +406,38 @@ func TestPatchApply(t *testing.T) {
 			args: args{
 				patch: v1beta1.Patch{
 					Type:          v1beta1.PatchTypeToCompositeFieldPath,
-					FromFieldPath: pointer.String("objectMeta.labels"),
-					ToFieldPath:   pointer.String("objectMeta.labels"),
+					FromFieldPath: pointer.String("metadata.labels"),
+					ToFieldPath:   pointer.String("metadata.labels"),
 				},
-				cp: &fake.Composite{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cp",
-					},
-					ConnectionDetailsLastPublishedTimer: lpt,
+				xr: &composite.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+						"apiVersion": "test.crossplane.io/v1",
+						"kind": "XR"
+					}`)},
 				},
-				cd: &fake.Composed{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cd",
-						Labels: map[string]string{
-							"Test": "blah",
-						},
-					},
+				cd: &composed.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+						"apiVersion": "test.crossplane.io/v1",
+						"kind": "Composed",
+						"metadata": {
+							"labels": {
+								"test": "blah"
+							}
+						}
+					}`)},
 				},
 			},
 			want: want{
-				cp: &fake.Composite{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cp",
-						Labels: map[string]string{
-							"Test": "blah",
-						},
-					},
-					ConnectionDetailsLastPublishedTimer: lpt,
-				},
-				cd: &fake.Composed{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cd",
-						Labels: map[string]string{
-							"Test": "blah",
-						}},
+				xr: &composite.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+						"apiVersion": "test.crossplane.io/v1",
+						"kind": "XR",
+						"metadata": {
+							"labels": {
+								"test": "blah"
+							}
+						}
+					}`)},
 				},
 				err: nil,
 			},
@@ -429,45 +447,51 @@ func TestPatchApply(t *testing.T) {
 			args: args{
 				patch: v1beta1.Patch{
 					Type:          v1beta1.PatchTypeToCompositeFieldPath,
-					FromFieldPath: pointer.String("objectMeta.name"),
-					ToFieldPath:   pointer.String("objectMeta.ownerReferences[*].name"),
+					FromFieldPath: pointer.String("metadata.name"),
+					ToFieldPath:   pointer.String("metadata.ownerReferences[*].name"),
 				},
-				cp: &fake.Composite{
-					ObjectMeta: metav1.ObjectMeta{
-						OwnerReferences: []metav1.OwnerReference{
-							{
-								Name:       "",
-								APIVersion: "v1",
-							},
-							{
-								Name:       "",
-								APIVersion: "v1alpha1",
-							},
-						},
-					},
-					ConnectionDetailsLastPublishedTimer: lpt,
+				xr: &composite.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+						"apiVersion": "test.crossplane.io/v1",
+						"kind": "XR",
+						"metadata": {
+							"ownerReferences": [
+								{
+									"name": ""
+								},
+								{
+									"name": ""
+								}
+							]
+						}
+					}`)},
 				},
-				cd: &fake.Composed{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "test",
-					},
+				cd: &composed.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+						"apiVersion": "test.crossplane.io/v1",
+						"kind": "Composed",
+						"metadata": {
+							"name": "test"
+						}
+					}`)},
 				},
 			},
 			want: want{
-				cp: &fake.Composite{
-					ObjectMeta: metav1.ObjectMeta{
-						OwnerReferences: []metav1.OwnerReference{
-							{
-								Name:       "test",
-								APIVersion: "v1",
-							},
-							{
-								Name:       "test",
-								APIVersion: "v1alpha1",
-							},
-						},
-					},
-					ConnectionDetailsLastPublishedTimer: lpt,
+				xr: &composite.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+						"apiVersion": "test.crossplane.io/v1",
+						"kind": "XR",
+						"metadata": {
+							"ownerReferences": [
+								{
+									"name": "test"
+								},
+								{
+									"name": "test"
+								}
+							]
+						}
+					}`)},
 				},
 			},
 		},
@@ -476,45 +500,15 @@ func TestPatchApply(t *testing.T) {
 			args: args{
 				patch: v1beta1.Patch{
 					Type:        v1beta1.PatchTypeCombineFromComposite,
-					ToFieldPath: pointer.String("objectMeta.labels.destination"),
+					ToFieldPath: pointer.String("metadata.labels.destination"),
+					// Missing a Combine field
 				},
-				cp: &fake.Composite{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cp",
-						Labels: map[string]string{
-							"source1": "foo",
-							"source2": "bar",
-						},
-					},
-					ConnectionDetailsLastPublishedTimer: lpt,
-				},
-				cd: &fake.Composed{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cd",
-						Labels: map[string]string{
-							"Test": "blah",
-						},
-					},
-				},
+				xr: &composite.Unstructured{},
+				cd: &composed.Unstructured{},
 			},
 			want: want{
-				cp: &fake.Composite{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cp",
-						Labels: map[string]string{
-							"source1": "foo",
-							"source2": "bar",
-						},
-					},
-					ConnectionDetailsLastPublishedTimer: lpt,
-				},
-				cd: &fake.Composed{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cd",
-						Labels: map[string]string{
-							"Test": "blah",
-						}},
-				},
+				xr:  &composite.Unstructured{},
+				cd:  &composed.Unstructured{},
 				err: errors.Errorf(errFmtRequiredField, "Combine", v1beta1.PatchTypeCombineFromComposite),
 			},
 		},
@@ -525,50 +519,28 @@ func TestPatchApply(t *testing.T) {
 					Type: v1beta1.PatchTypeCombineFromComposite,
 					Combine: &v1beta1.Combine{
 						Variables: []v1beta1.CombineVariable{
-							{FromFieldPath: "objectMeta.labels.source1"},
-							{FromFieldPath: "objectMeta.labels.source2"},
+							{FromFieldPath: "metadata.labels.source1"},
+							{FromFieldPath: "metadata.labels.source2"},
 						},
 						Strategy: v1beta1.CombineStrategyString,
+						// Missing a String combine config.
 					},
-					ToFieldPath: pointer.String("objectMeta.labels.destination"),
+					ToFieldPath: pointer.String("metadata.labels.destination"),
 				},
-				cp: &fake.Composite{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cp",
-						Labels: map[string]string{
-							"source1": "foo",
-							"source2": "bar",
-						},
-					},
-					ConnectionDetailsLastPublishedTimer: lpt,
-				},
-				cd: &fake.Composed{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cd",
-						Labels: map[string]string{
-							"Test": "blah",
-						},
-					},
+				xr: &composite.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+						"apiVersion": "test.crossplane.io/v1",
+						"kind": "XR",
+						"metadata": {
+							"labels": {
+								"source1": "a",
+								"source2": "b"
+							}
+						}
+					}`)},
 				},
 			},
 			want: want{
-				cp: &fake.Composite{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cp",
-						Labels: map[string]string{
-							"source1": "foo",
-							"source2": "bar",
-						},
-					},
-					ConnectionDetailsLastPublishedTimer: lpt,
-				},
-				cd: &fake.Composed{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cd",
-						Labels: map[string]string{
-							"Test": "blah",
-						}},
-				},
 				err: errors.Errorf(errFmtCombineConfigMissing, v1beta1.CombineStrategyString),
 			},
 		},
@@ -578,49 +550,15 @@ func TestPatchApply(t *testing.T) {
 				patch: v1beta1.Patch{
 					Type: v1beta1.PatchTypeCombineFromComposite,
 					Combine: &v1beta1.Combine{
+						// This is empty.
 						Variables: []v1beta1.CombineVariable{},
 						Strategy:  v1beta1.CombineStrategyString,
 						String:    &v1beta1.StringCombine{Format: "%s-%s"},
 					},
 					ToFieldPath: pointer.String("objectMeta.labels.destination"),
 				},
-				cp: &fake.Composite{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cp",
-						Labels: map[string]string{
-							"source1": "foo",
-							"source2": "bar",
-						},
-					},
-					ConnectionDetailsLastPublishedTimer: lpt,
-				},
-				cd: &fake.Composed{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cd",
-						Labels: map[string]string{
-							"Test": "blah",
-						},
-					},
-				},
 			},
 			want: want{
-				cp: &fake.Composite{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cp",
-						Labels: map[string]string{
-							"source1": "foo",
-							"source2": "bar",
-						},
-					},
-					ConnectionDetailsLastPublishedTimer: lpt,
-				},
-				cd: &fake.Composed{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cd",
-						Labels: map[string]string{
-							"Test": "blah",
-						}},
-				},
 				err: errors.New(errCombineRequiresVariables),
 			},
 		},
@@ -634,52 +572,29 @@ func TestPatchApply(t *testing.T) {
 					Type: v1beta1.PatchTypeCombineFromComposite,
 					Combine: &v1beta1.Combine{
 						Variables: []v1beta1.CombineVariable{
-							{FromFieldPath: "objectMeta.labels.source1"},
-							{FromFieldPath: "objectMeta.labels.source2"},
-							{FromFieldPath: "objectMeta.labels.source3"},
+							{FromFieldPath: "metadata.labels.source1"},
+							{FromFieldPath: "metadata.labels.source2"},
+							{FromFieldPath: "metadata.labels.source3"},
 						},
 						Strategy: v1beta1.CombineStrategyString,
 						String:   &v1beta1.StringCombine{Format: "%s-%s"},
 					},
-					ToFieldPath: pointer.String("objectMeta.labels.destination"),
+					ToFieldPath: pointer.String("metadata.labels.destination"),
 				},
-				cp: &fake.Composite{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cp",
-						Labels: map[string]string{
-							"source1": "foo",
-							"source3": "baz",
-						},
-					},
-					ConnectionDetailsLastPublishedTimer: lpt,
-				},
-				cd: &fake.Composed{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cd",
-						Labels: map[string]string{
-							"Test": "blah",
-						},
-					},
+				xr: &composite.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+						"apiVersion": "test.crossplane.io/v1",
+						"kind": "XR",
+						"metadata": {
+							"labels": {
+								"source1": "foo",
+								"source3": "baz"
+							}
+						}
+					}`)},
 				},
 			},
 			want: want{
-				cp: &fake.Composite{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cp",
-						Labels: map[string]string{
-							"source1": "foo",
-							"source3": "baz",
-						},
-					},
-					ConnectionDetailsLastPublishedTimer: lpt,
-				},
-				cd: &fake.Composed{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cd",
-						Labels: map[string]string{
-							"Test": "blah",
-						}},
-				},
 				err: nil,
 			},
 		},
@@ -690,51 +605,50 @@ func TestPatchApply(t *testing.T) {
 					Type: v1beta1.PatchTypeCombineFromComposite,
 					Combine: &v1beta1.Combine{
 						Variables: []v1beta1.CombineVariable{
-							{FromFieldPath: "objectMeta.labels.source1"},
-							{FromFieldPath: "objectMeta.labels.source2"},
+							{FromFieldPath: "metadata.labels.source1"},
+							{FromFieldPath: "metadata.labels.source2"},
 						},
 						Strategy: v1beta1.CombineStrategyString,
 						String:   &v1beta1.StringCombine{Format: "%s-%s"},
 					},
-					ToFieldPath: pointer.String("objectMeta.labels.destination"),
+					ToFieldPath: pointer.String("metadata.labels.destination"),
 				},
-				cp: &fake.Composite{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cp",
-						Labels: map[string]string{
-							"source1": "foo",
-							"source2": "bar",
-						},
-					},
-					ConnectionDetailsLastPublishedTimer: lpt,
+				xr: &composite.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+						"apiVersion": "test.crossplane.io/v1",
+						"kind": "XR",
+						"metadata": {
+							"labels": {
+								"source1": "foo",
+								"source2": "bar"
+							}
+						}
+					}`)},
 				},
-				cd: &fake.Composed{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cd",
-						Labels: map[string]string{
-							"Test": "blah",
-						},
-					},
+				cd: &composed.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+						"apiVersion": "test.crossplane.io/v1",
+						"kind": "Composed",
+						"metadata": {
+							"labels": {
+								"test": "blah"
+							}
+						}
+					}`)},
 				},
 			},
 			want: want{
-				cp: &fake.Composite{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cp",
-						Labels: map[string]string{
-							"source1": "foo",
-							"source2": "bar",
-						},
-					},
-					ConnectionDetailsLastPublishedTimer: lpt,
-				},
-				cd: &fake.Composed{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cd",
-						Labels: map[string]string{
-							"Test":        "blah",
-							"destination": "foo-bar",
-						}},
+				cd: &composed.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+						"apiVersion": "test.crossplane.io/v1",
+						"kind": "Composed",
+						"metadata": {
+							"labels": {
+								"destination": "foo-bar",
+								"test": "blah"
+							}
+						}
+					}`)},
 				},
 				err: nil,
 			},
@@ -746,51 +660,50 @@ func TestPatchApply(t *testing.T) {
 					Type: v1beta1.PatchTypeCombineToComposite,
 					Combine: &v1beta1.Combine{
 						Variables: []v1beta1.CombineVariable{
-							{FromFieldPath: "objectMeta.labels.source1"},
-							{FromFieldPath: "objectMeta.labels.source2"},
+							{FromFieldPath: "metadata.labels.source1"},
+							{FromFieldPath: "metadata.labels.source2"},
 						},
 						Strategy: v1beta1.CombineStrategyString,
 						String:   &v1beta1.StringCombine{Format: "%s-%s"},
 					},
-					ToFieldPath: pointer.String("objectMeta.labels.destination"),
+					ToFieldPath: pointer.String("metadata.labels.destination"),
 				},
-				cp: &fake.Composite{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cp",
-						Labels: map[string]string{
-							"Test": "blah",
-						},
-					},
-					ConnectionDetailsLastPublishedTimer: lpt,
+				xr: &composite.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+							"apiVersion": "test.crossplane.io/v1",
+							"kind": "XR",
+							"metadata": {
+								"labels": {
+									"test": "blah"
+								}
+							}
+						}`)},
 				},
-				cd: &fake.Composed{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cd",
-						Labels: map[string]string{
-							"source1": "foo",
-							"source2": "bar",
-						},
-					},
+				cd: &composed.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+							"apiVersion": "test.crossplane.io/v1",
+							"kind": "Composed",
+							"metadata": {
+								"labels": {
+									"source1": "foo",
+									"source2": "bar"
+								}
+							}
+						}`)},
 				},
 			},
 			want: want{
-				cp: &fake.Composite{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cp",
-						Labels: map[string]string{
-							"Test":        "blah",
-							"destination": "foo-bar",
-						},
-					},
-					ConnectionDetailsLastPublishedTimer: lpt,
-				},
-				cd: &fake.Composed{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cd",
-						Labels: map[string]string{
-							"source1": "foo",
-							"source2": "bar",
-						}},
+				xr: &composite.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+							"apiVersion": "test.crossplane.io/v1",
+							"kind": "XR",
+							"metadata": {
+								"labels": {
+									"destination": "foo-bar",
+									"test": "blah"
+								}
+							}
+						}`)},
 				},
 				err: nil,
 			},
@@ -798,11 +711,11 @@ func TestPatchApply(t *testing.T) {
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			ncp := tc.args.cp.DeepCopyObject().(resource.Composite)
+			ncp := tc.args.xr.DeepCopyObject().(resource.Composite)
 			err := Apply(tc.args.patch, ncp, tc.args.cd, tc.args.only...)
 
-			if tc.want.cp != nil {
-				if diff := cmp.Diff(tc.want.cp, ncp); diff != "" {
+			if tc.want.xr != nil {
+				if diff := cmp.Diff(tc.want.xr, ncp); diff != "" {
 					t.Errorf("\n%s\nApply(cp): -want, +got:\n%s", tc.reason, diff)
 				}
 			}
@@ -816,6 +729,14 @@ func TestPatchApply(t *testing.T) {
 			}
 		})
 	}
+}
+
+func MustObject(j string) map[string]any {
+	out := map[string]any{}
+	if err := json.Unmarshal([]byte(j), &out); err != nil {
+		panic(err)
+	}
+	return out
 }
 
 func TestOptionalFieldPathNotFound(t *testing.T) {
