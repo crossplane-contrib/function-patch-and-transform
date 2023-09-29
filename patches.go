@@ -34,20 +34,20 @@ func Apply(p v1beta1.Patch, cp resource.Composite, cd resource.Composed, only ..
 // ApplyToObjects works like c.Apply but accepts any kind of runtime.Object
 // It might be vulnerable to conversion panics
 // (see https://github.com/crossplane/crossplane/pull/3394 for details).
-func ApplyToObjects(p v1beta1.Patch, cp, cd runtime.Object, only ...v1beta1.PatchType) error {
+func ApplyToObjects(p v1beta1.Patch, xr, cd runtime.Object, only ...v1beta1.PatchType) error {
 	if filterPatch(p, only...) {
 		return nil
 	}
 
 	switch p.GetType() {
 	case v1beta1.PatchTypeFromCompositeFieldPath:
-		return ApplyFromFieldPathPatch(p, cp, cd)
+		return ApplyFromFieldPathPatch(p, xr, cd)
 	case v1beta1.PatchTypeToCompositeFieldPath:
-		return ApplyFromFieldPathPatch(p, cd, cp)
+		return ApplyFromFieldPathPatch(p, cd, xr)
 	case v1beta1.PatchTypeCombineFromComposite:
-		return ApplyCombineFromVariablesPatch(p, cp, cd)
+		return ApplyCombineFromVariablesPatch(p, xr, cd)
 	case v1beta1.PatchTypeCombineToComposite:
-		return ApplyCombineFromVariablesPatch(p, cd, cp)
+		return ApplyCombineFromVariablesPatch(p, cd, xr)
 	case v1beta1.PatchTypePatchSet:
 		// Already resolved - nothing to do.
 	}
@@ -118,7 +118,7 @@ func ApplyFromFieldPathPatch(p v1beta1.Patch, from, to runtime.Object) error {
 		return patchFieldValueToMultiple(*p.ToFieldPath, out, to)
 	}
 
-	return patchFieldValueToObject(*p.ToFieldPath, out, to)
+	return errors.Wrap(patchFieldValueToObject(*p.ToFieldPath, out, to), "cannot patch to object")
 }
 
 // ApplyCombineFromVariablesPatch patches the "to" resource, taking a list of
@@ -183,7 +183,7 @@ func ApplyCombineFromVariablesPatch(p v1beta1.Patch, from, to runtime.Object) er
 		return err
 	}
 
-	return patchFieldValueToObject(*p.ToFieldPath, out, to)
+	return errors.Wrap(patchFieldValueToObject(*p.ToFieldPath, out, to), "cannot patch to object")
 }
 
 // IsOptionalFieldPathNotFound returns true if the supplied error indicates a
@@ -264,18 +264,15 @@ func ComposedTemplates(pss []v1beta1.PatchSet, cts []v1beta1.ComposedTemplate) (
 	return ct, nil
 }
 
-// TODO(negz): Can we still support MergeOptions? If so we should update our API
-// to use YAML/JSON terms (e.g. object, array) instead of Go (e.g. map, slice).
-
 // patchFieldValueToObject applies the value to the "to" object at the given
-// path with the given merge options, returning any errors as they occur.
+// path, returning any errors as they occur.
 func patchFieldValueToObject(fieldPath string, value any, to runtime.Object) error {
 	paved, err := fieldpath.PaveObject(to)
 	if err != nil {
 		return err
 	}
 
-	if err := paved.MergeValue(fieldPath, value, nil); err != nil {
+	if err := paved.SetValue(fieldPath, value); err != nil {
 		return err
 	}
 
@@ -301,7 +298,7 @@ func patchFieldValueToMultiple(fieldPath string, value any, to runtime.Object) e
 	}
 
 	for _, field := range arrayFieldPaths {
-		if err := paved.MergeValue(field, value, nil); err != nil {
+		if err := paved.SetValue(field, value); err != nil {
 			return err
 		}
 	}
