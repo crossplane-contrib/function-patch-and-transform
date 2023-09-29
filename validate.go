@@ -43,9 +43,9 @@ func ValidateResources(r *v1beta1.Resources) *field.Error {
 		return field.Required(field.NewPath("resources"), "resources is required")
 	}
 
-	for _, r := range r.Resources {
+	for i, r := range r.Resources {
 		if err := ValidateComposedTemplate(r); err != nil {
-			return field.Invalid(field.NewPath("resources"), r, "invalid resource")
+			return WrapFieldError(err, field.NewPath("resources").Index(i))
 		}
 	}
 	return nil
@@ -56,19 +56,19 @@ func ValidateComposedTemplate(t v1beta1.ComposedTemplate) *field.Error {
 	if t.Name == "" {
 		return field.Required(field.NewPath("name"), "name is required")
 	}
-	for _, p := range t.Patches {
+	for i, p := range t.Patches {
 		if err := ValidatePatch(p); err != nil {
-			return field.Invalid(field.NewPath("patches"), t.Patches, "invalid patches")
+			return WrapFieldError(err, field.NewPath("patches").Index(i))
 		}
 	}
-	for _, cd := range t.ConnectionDetails {
+	for i, cd := range t.ConnectionDetails {
 		if err := ValidateConnectionDetail(cd); err != nil {
-			return field.Invalid(field.NewPath("connectionDetails"), t.Patches, "invalid connection details")
+			return WrapFieldError(err, field.NewPath("connectionDetails").Index(i))
 		}
 	}
-	for _, rc := range t.ReadinessChecks {
+	for i, rc := range t.ReadinessChecks {
 		if err := ValidateReadinessCheck(rc); err != nil {
-			return field.Invalid(field.NewPath("readinessChecks"), t.Patches, "invalid readiness checks")
+			return WrapFieldError(err, field.NewPath("readinessChecks").Index(i))
 		}
 	}
 	return nil
@@ -79,9 +79,9 @@ func ValidatePatchSet(ps v1beta1.PatchSet) *field.Error {
 	if ps.Name == "" {
 		return field.Required(field.NewPath("name"), "name is required")
 	}
-	for _, p := range ps.Patches {
+	for i, p := range ps.Patches {
 		if err := ValidatePatch(p); err != nil {
-			return err
+			return WrapFieldError(err, field.NewPath("patches").Index(i))
 		}
 	}
 	return nil
@@ -308,6 +308,9 @@ func ValidateConvertTransform(t *v1beta1.ConvertTransform) *field.Error {
 
 // ValidateConnectionDetail checks if the connection detail is logically valid.
 func ValidateConnectionDetail(cd v1beta1.ConnectionDetail) *field.Error {
+	if cd.Type == "" {
+		return field.Required(field.NewPath("type"), "type is required")
+	}
 	if !cd.Type.IsValid() {
 		return field.Invalid(field.NewPath("type"), string(cd.Type), "unknown connection detail type")
 	}
