@@ -10,6 +10,7 @@ import (
 	fnv1beta1 "github.com/crossplane/function-sdk-go/proto/v1beta1"
 	"github.com/crossplane/function-sdk-go/request"
 	"github.com/crossplane/function-sdk-go/resource"
+	"github.com/crossplane/function-sdk-go/resource/composed"
 	"github.com/crossplane/function-sdk-go/response"
 
 	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
@@ -26,7 +27,8 @@ type Function struct {
 func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRequest) (*fnv1beta1.RunFunctionResponse, error) { //nolint:gocyclo // See below.
 	// This loop is fairly complex, but more readable with less abstraction.
 
-	f.log.Info("Running Function", "tag", req.GetMeta().GetTag())
+	log := f.log.WithValues("tag", req.GetMeta().GetTag())
+	log.Info("Running Function")
 
 	// TODO(negz): We can probably use a longer TTL if all resources are ready.
 	rsp := response.To(req, response.DefaultTTL)
@@ -51,7 +53,7 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 		return rsp, nil
 	}
 
-	log := f.log.WithValues(
+	log = log.WithValues(
 		"xr-version", oxr.Resource.GetAPIVersion(),
 		"xr-kind", oxr.Resource.GetKind(),
 		"xr-name", oxr.Resource.GetName(),
@@ -63,6 +65,18 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 		response.Fatal(rsp, errors.Wrap(err, "cannot get desired composite resource"))
 		return rsp, nil
 	}
+
+	// This is a bit of a hack. The Functions spec tells us we should only
+	// return the desired status of the XR. Crossplane doesn't need anything
+	// else. It already knows the XR's GVK and name, and thus "re-injects" them
+	// into the desired state before applying it. However we need a GVK to be
+	// able to use runtime.DefaultUnstructuredConverter internally, which fails
+	// if you ask it to unmarshal JSON/YAML without a kind. Technically the
+	// Function spec doesn't say anything about APIVersion and Kind, so we can
+	// return these without being in violation. ;)
+	// https://github.com/crossplane/crossplane/blob/53f71/contributing/specifications/functions.md
+	dxr.Resource.SetAPIVersion(oxr.Resource.GetAPIVersion())
+	dxr.Resource.SetKind(oxr.Resource.GetKind())
 
 	// The composed resources that actually exist.
 	observed, err := request.GetObservedComposedResources(req)
@@ -95,7 +109,7 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 		log := log.WithValues("resource-template-name", t.Name)
 		log.Debug("Processing resource template")
 
-		dcd := resource.NewDesiredComposedResource()
+		dcd := &resource.DesiredComposed{Resource: composed.New()}
 
 		// If we have a base template, render it into our desired resource. If a
 		// previous Function produced a desired resource with this name we'll
@@ -110,8 +124,7 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 				return rsp, nil
 			}
 			// We want to return this resource unmutated if rendering fails.
-			// TODO(negz): Unstructured should have its own DeepCopy methods.
-			dcd.Resource.Unstructured = *cd.Resource.GetUnstructured().DeepCopy()
+			dcd.Resource = cd.Resource.DeepCopy()
 		default:
 			if err := RenderFromJSON(dcd.Resource, t.Base.Raw); err != nil {
 				response.Fatal(rsp, errors.Wrapf(err, "cannot parse base template of composed resource %q", t.Name))
@@ -122,6 +135,7 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 		ocd, ok := observed[resource.Name(t.Name)]
 		if ok {
 			existing++
+			log.Debug("Resource template corresponds to existing composed resource", "metadata-name", ocd.Resource.GetName())
 
 			// If this template corresponds to an existing observed resource we
 			// want to keep them associated. We copy only the namespace and

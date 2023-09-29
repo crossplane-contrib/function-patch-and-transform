@@ -28,12 +28,12 @@ func TestPatchApply(t *testing.T) {
 
 	type args struct {
 		patch v1beta1.Patch
-		cp    *composite.Unstructured
+		xr    *composite.Unstructured
 		cd    *composed.Unstructured
 		only  []v1beta1.PatchType
 	}
 	type want struct {
-		cp  *composite.Unstructured
+		xr  *composite.Unstructured
 		cd  *composed.Unstructured
 		err error
 	}
@@ -50,7 +50,7 @@ func TestPatchApply(t *testing.T) {
 					Type: v1beta1.PatchTypeFromCompositeFieldPath,
 					// This is missing fields.
 				},
-				cp: &composite.Unstructured{},
+				xr: &composite.Unstructured{},
 				cd: &composed.Unstructured{},
 			},
 			want: want{
@@ -63,7 +63,7 @@ func TestPatchApply(t *testing.T) {
 				patch: v1beta1.Patch{
 					Type: "invalid-patchtype",
 				},
-				cp: &composite.Unstructured{},
+				xr: &composite.Unstructured{},
 				cd: &composed.Unstructured{},
 			},
 			want: want{
@@ -78,7 +78,7 @@ func TestPatchApply(t *testing.T) {
 					FromFieldPath: pointer.String("metadata.labels"),
 					ToFieldPath:   pointer.String("metadata.labels"),
 				},
-				cp: &composite.Unstructured{
+				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
 						"apiVersion": "test.crossplane.io/v1",
 						"kind": "XR",
@@ -123,7 +123,7 @@ func TestPatchApply(t *testing.T) {
 					FromFieldPath: pointer.String("metadata.name"),
 					ToFieldPath:   pointer.String("metadata.ownerReferences[*].name"),
 				},
-				cp: &composite.Unstructured{
+				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
 						"apiVersion": "test.crossplane.io/v1",
 						"kind": "XR",
@@ -176,7 +176,7 @@ func TestPatchApply(t *testing.T) {
 					FromFieldPath: pointer.String("metadata.name"),
 					ToFieldPath:   pointer.String("metadata.ownerReferences[*].badField"),
 				},
-				cp: &composite.Unstructured{
+				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
 						"apiVersion": "test.crossplane.io/v1",
 						"kind": "XR",
@@ -214,7 +214,7 @@ func TestPatchApply(t *testing.T) {
 					FromFieldPath: pointer.String("metadata.labels"),
 					ToFieldPath:   pointer.String("metadata.labels"),
 				},
-				cp: &composite.Unstructured{
+				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
 						"apiVersion": "test.crossplane.io/v1",
 						"kind": "XR",
@@ -260,7 +260,7 @@ func TestPatchApply(t *testing.T) {
 					},
 					ToFieldPath: pointer.String("wat"),
 				},
-				cp: &composite.Unstructured{
+				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
 						"apiVersion": "test.crossplane.io/v1",
 						"kind": "XR",
@@ -300,7 +300,7 @@ func TestPatchApply(t *testing.T) {
 					FromFieldPath: pointer.String("metadata.labels"),
 					ToFieldPath:   pointer.String("metadata.labels"),
 				},
-				cp: &composite.Unstructured{
+				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
 						"apiVersion": "test.crossplane.io/v1",
 						"kind": "XR",
@@ -327,7 +327,7 @@ func TestPatchApply(t *testing.T) {
 					FromFieldPath: pointer.String("metadata.labels"),
 					ToFieldPath:   pointer.String("metadata.labels"),
 				},
-				cp: &composite.Unstructured{
+				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
 						"apiVersion": "test.crossplane.io/v1",
 						"kind": "XR",
@@ -368,7 +368,7 @@ func TestPatchApply(t *testing.T) {
 					Type:          v1beta1.PatchTypeFromCompositeFieldPath,
 					FromFieldPath: pointer.String("metadata.labels"),
 				},
-				cp: &composite.Unstructured{
+				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
 						"apiVersion": "test.crossplane.io/v1",
 						"kind": "XR",
@@ -409,7 +409,7 @@ func TestPatchApply(t *testing.T) {
 					FromFieldPath: pointer.String("metadata.labels"),
 					ToFieldPath:   pointer.String("metadata.labels"),
 				},
-				cp: &composite.Unstructured{
+				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
 						"apiVersion": "test.crossplane.io/v1",
 						"kind": "XR"
@@ -428,7 +428,7 @@ func TestPatchApply(t *testing.T) {
 				},
 			},
 			want: want{
-				cp: &composite.Unstructured{
+				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
 						"apiVersion": "test.crossplane.io/v1",
 						"kind": "XR",
@@ -450,7 +450,7 @@ func TestPatchApply(t *testing.T) {
 					FromFieldPath: pointer.String("metadata.name"),
 					ToFieldPath:   pointer.String("metadata.ownerReferences[*].name"),
 				},
-				cp: &composite.Unstructured{
+				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
 						"apiVersion": "test.crossplane.io/v1",
 						"kind": "XR",
@@ -477,7 +477,7 @@ func TestPatchApply(t *testing.T) {
 				},
 			},
 			want: want{
-				cp: &composite.Unstructured{
+				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
 						"apiVersion": "test.crossplane.io/v1",
 						"kind": "XR",
@@ -503,11 +503,11 @@ func TestPatchApply(t *testing.T) {
 					ToFieldPath: pointer.String("metadata.labels.destination"),
 					// Missing a Combine field
 				},
-				cp: &composite.Unstructured{},
+				xr: &composite.Unstructured{},
 				cd: &composed.Unstructured{},
 			},
 			want: want{
-				cp:  &composite.Unstructured{},
+				xr:  &composite.Unstructured{},
 				cd:  &composed.Unstructured{},
 				err: errors.Errorf(errFmtRequiredField, "Combine", v1beta1.PatchTypeCombineFromComposite),
 			},
@@ -527,7 +527,7 @@ func TestPatchApply(t *testing.T) {
 					},
 					ToFieldPath: pointer.String("metadata.labels.destination"),
 				},
-				cp: &composite.Unstructured{
+				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
 						"apiVersion": "test.crossplane.io/v1",
 						"kind": "XR",
@@ -581,7 +581,7 @@ func TestPatchApply(t *testing.T) {
 					},
 					ToFieldPath: pointer.String("metadata.labels.destination"),
 				},
-				cp: &composite.Unstructured{
+				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
 						"apiVersion": "test.crossplane.io/v1",
 						"kind": "XR",
@@ -613,7 +613,7 @@ func TestPatchApply(t *testing.T) {
 					},
 					ToFieldPath: pointer.String("metadata.labels.destination"),
 				},
-				cp: &composite.Unstructured{
+				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
 						"apiVersion": "test.crossplane.io/v1",
 						"kind": "XR",
@@ -668,7 +668,7 @@ func TestPatchApply(t *testing.T) {
 					},
 					ToFieldPath: pointer.String("metadata.labels.destination"),
 				},
-				cp: &composite.Unstructured{
+				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
 							"apiVersion": "test.crossplane.io/v1",
 							"kind": "XR",
@@ -693,7 +693,7 @@ func TestPatchApply(t *testing.T) {
 				},
 			},
 			want: want{
-				cp: &composite.Unstructured{
+				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
 							"apiVersion": "test.crossplane.io/v1",
 							"kind": "XR",
@@ -711,11 +711,11 @@ func TestPatchApply(t *testing.T) {
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			ncp := tc.args.cp.DeepCopyObject().(resource.Composite)
+			ncp := tc.args.xr.DeepCopyObject().(resource.Composite)
 			err := Apply(tc.args.patch, ncp, tc.args.cd, tc.args.only...)
 
-			if tc.want.cp != nil {
-				if diff := cmp.Diff(tc.want.cp, ncp); diff != "" {
+			if tc.want.xr != nil {
+				if diff := cmp.Diff(tc.want.xr, ncp); diff != "" {
 					t.Errorf("\n%s\nApply(cp): -want, +got:\n%s", tc.reason, diff)
 				}
 			}
