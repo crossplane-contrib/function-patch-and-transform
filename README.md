@@ -8,7 +8,7 @@ kind: Function
 metadata:
   name: function-patch-and-transform
 spec:
-  package: xpkg.upbound.io/crossplane-contrib/function-patch-and-transform:v0.1.3
+  package: xpkg.upbound.io/crossplane-contrib/function-patch-and-transform:v0.1.4
 ```
 
 ## What is this?
