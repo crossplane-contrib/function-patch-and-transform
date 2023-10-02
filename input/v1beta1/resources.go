@@ -30,4 +30,9 @@ type Resources struct {
 	// Resources is a list of resource templates that will be used when a
 	// composite resource is created.
 	Resources []ComposedTemplate `json:"resources"`
+
+	// Condition is an expr expression that determines whether this
+	// function will run
+	// see https://expr.medv.io
+	Condition ConditionSpec `json:"condition"`
 }

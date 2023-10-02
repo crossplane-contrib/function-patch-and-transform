@@ -2,6 +2,9 @@ package main
 
 import (
 	"context"
+	"fmt"
+
+	"github.com/antonmedv/expr"
 
 	"github.com/crossplane/crossplane-runtime/pkg/errors"
 	"github.com/crossplane/crossplane-runtime/pkg/logging"
@@ -58,6 +61,14 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 		"xr-kind", oxr.Resource.GetKind(),
 		"xr-name", oxr.Resource.GetName(),
 	)
+	// Evaluate the condition to see if we should run
+	run, err := EvaluateCondition(input.Condition, oxr)
+	if err != nil {
+		return rsp, err
+	}
+	if !run {
+		return rsp, nil
+	}
 
 	// The composite resource desired by previous functions in the pipeline.
 	dxr, err := request.GetDesiredCompositeResource(req)
@@ -218,4 +229,21 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 		"warnings", warnings)
 
 	return rsp, nil
+}
+
+// EvaluateCondition will evaluate an expr condition
+func EvaluateCondition(cs v1beta1.ConditionSpec, xr *resource.Composite) (bool, error) {
+	condition, err := expr.Compile(cs.Expr, expr.Env(xr.Resource.Object), expr.AsBool())
+	if err != nil {
+		return false, errors.Wrap(err, "condition has bad expression")
+	}
+	result, err := expr.Run(condition, xr.Resource.Object)
+	if err != nil {
+		return false, errors.Wrap(err, "expression error")
+	}
+	r, ok := result.(bool)
+	if !ok {
+		return false, fmt.Errorf("%#v is not a Boolean", result)
+	}
+	return r, nil
 }
