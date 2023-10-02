@@ -61,13 +61,15 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 		"xr-kind", oxr.Resource.GetKind(),
 		"xr-name", oxr.Resource.GetName(),
 	)
-	// Evaluate the condition to see if we should run
-	run, err := EvaluateCondition(input.Condition, oxr)
-	if err != nil {
-		return rsp, err
-	}
-	if !run {
-		return rsp, nil
+	if input.Condition != nil {
+		// Evaluate the condition to see if we should run
+		run, err := EvaluateCondition(*input.Condition, oxr)
+		if err != nil {
+			return rsp, err
+		}
+		if !run {
+			return rsp, nil
+		}
 	}
 
 	// The composite resource desired by previous functions in the pipeline.
@@ -233,6 +235,9 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 
 // EvaluateCondition will evaluate an expr condition
 func EvaluateCondition(cs v1beta1.ConditionSpec, xr *resource.Composite) (bool, error) {
+	if cs.Expr == "" {
+		return true, nil
+	}
 	condition, err := expr.Compile(cs.Expr, expr.Env(xr.Resource.Object), expr.AsBool())
 	if err != nil {
 		return false, errors.Wrap(err, "condition has bad expression")

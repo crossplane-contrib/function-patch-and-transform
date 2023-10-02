@@ -32,7 +32,6 @@ type Resources struct {
 	Resources []ComposedTemplate `json:"resources"`
 
 	// Condition is an expr expression that determines whether this
-	// function will run
-	// see https://expr.medv.io
-	Condition ConditionSpec `json:"condition"`
+	// function will run. See https://expr.medv.io
+	Condition *ConditionSpec `json:"condition"`
 }
