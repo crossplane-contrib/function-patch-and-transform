@@ -1079,6 +1079,7 @@ func TestResolveTransforms(t *testing.T) {
 				}, {
 					Type: v1beta1.TransformTypeMath,
 					Math: &v1beta1.MathTransform{
+						Type:     v1beta1.MathTransformTypeMultiply,
 						Multiply: pointer.Int64(2),
 					},
 				}},
@@ -1099,6 +1100,7 @@ func TestResolveTransforms(t *testing.T) {
 				}, {
 					Type: v1beta1.TransformTypeMath,
 					Math: &v1beta1.MathTransform{
+						Type:     v1beta1.MathTransformTypeMultiply,
 						Multiply: pointer.Int64(2),
 					},
 				}},

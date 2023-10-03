@@ -206,6 +206,8 @@ a lot more explicit and less ambiguous.
 * `resources[i].name` is now a required field.
 * `resources[i].connectionDetails[i].name` is now a required field
 * `resources[i].connectionDetails[i].type` is now a required field
+* `resources[i].patches[i].transforms[i].string.type` is now a required field
+* `resources[i].patches[i].transforms[i].math.type` is now a required field
 * `resources[i].patches[i].policy.mergeOptions` is no longer supported
 
 Functions use Kubernetes server-side apply, not `mergeOptions`, to intelligently

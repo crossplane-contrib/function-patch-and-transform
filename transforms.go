@@ -108,7 +108,7 @@ func ResolveMath(t *v1beta1.MathTransform, input any) (any, error) {
 	default:
 		return nil, errors.Errorf(errFmtMathInputNonNumber, input)
 	}
-	switch t.GetType() {
+	switch t.Type {
 	case v1beta1.MathTransformTypeMultiply:
 		return resolveMathMultiply(t, input)
 	case v1beta1.MathTransformTypeClampMin, v1beta1.MathTransformTypeClampMax:
@@ -150,7 +150,7 @@ func resolveMathClamp(t *v1beta1.MathTransform, input any) (any, error) {
 		// should never happen as we validate the input type in ResolveMath
 		return nil, errors.Errorf(errFmtMathInputNonNumber, input)
 	}
-	switch t.GetType() { //nolint:exhaustive // We validate the type in ResolveMath
+	switch t.Type { //nolint:exhaustive // We validate the type in ResolveMath
 	case v1beta1.MathTransformTypeClampMin:
 		if in < *t.ClampMin {
 			return *t.ClampMin, nil
