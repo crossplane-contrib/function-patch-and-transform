@@ -9,11 +9,13 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/structpb"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/pointer"
 
 	"github.com/crossplane/crossplane-runtime/pkg/logging"
 
+	fncontext "github.com/crossplane/function-sdk-go/context"
 	fnv1beta1 "github.com/crossplane/function-sdk-go/proto/v1beta1"
 	"github.com/crossplane/function-sdk-go/resource"
 	"github.com/crossplane/function-sdk-go/response"
@@ -91,6 +93,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
+					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
 				},
 			},
 		},
@@ -121,6 +124,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
+					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
 				},
 			},
 			want: want{
@@ -139,6 +143,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
+					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
 				},
 			},
 		},
@@ -201,6 +206,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
+					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
 				},
 			},
 		},
@@ -270,6 +276,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
+					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
 				},
 			},
 		},
@@ -365,6 +372,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
+					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
 				},
 			},
 		},
@@ -442,6 +450,7 @@ func TestRunFunction(t *testing.T) {
 							Message:  fmt.Sprintf("cannot render FromComposite patches for composed resource %q: cannot apply the %q patch at index 1: spec.doesNotExist: no such field", "cool-resource", "FromCompositeFieldPath"),
 						},
 					},
+					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
 				},
 			},
 		},
@@ -487,6 +496,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
+					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
 				},
 			},
 		},
@@ -549,6 +559,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
+					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
 				},
 			},
 		},
@@ -616,6 +627,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
+					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
 				},
 			},
 		},

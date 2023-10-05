@@ -1,6 +1,8 @@
 package main
 
 import (
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/json"
 
@@ -73,6 +75,29 @@ func RenderToCompositePatches(xr resource.Composite, cd resource.Composed, p []v
 	for i := range p {
 		if err := Apply(p[i], xr, cd, v1beta1.PatchTypeToCompositeFieldPath, v1beta1.PatchTypeCombineToComposite); err != nil {
 			return errors.Wrapf(err, errFmtPatch, p[i].GetType(), i)
+		}
+	}
+	return nil
+}
+
+// RenderFromEnvironmentPatches renders the supplied object (an XR or composed
+// resource) by applying all patches that are from the supplied environment.
+func RenderFromEnvironmentPatches(o runtime.Object, env *unstructured.Unstructured, p []v1beta1.Patch) error {
+	for i := range p {
+		if err := ApplyToObjects(p[i], env, o, v1beta1.PatchTypeFromEnvironmentFieldPath, v1beta1.PatchTypeCombineFromEnvironment); err != nil {
+			return errors.Wrapf(err, errFmtPatch, p[i].Type, i)
+		}
+	}
+	return nil
+}
+
+// RenderToEnvironmentPatches renders the supplied environment by applying all
+// patches that are to the environment, from the supplied object (an XR or
+// composed resource).
+func RenderToEnvironmentPatches(env *unstructured.Unstructured, o runtime.Object, p []v1beta1.Patch) error {
+	for i := range p {
+		if err := ApplyToObjects(p[i], env, o, v1beta1.PatchTypeToEnvironmentFieldPath, v1beta1.PatchTypeCombineToEnvironment); err != nil {
+			return errors.Wrapf(err, errFmtPatch, p[i].Type, i)
 		}
 	}
 	return nil

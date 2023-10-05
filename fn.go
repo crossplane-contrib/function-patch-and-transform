@@ -6,7 +6,10 @@ import (
 	"github.com/crossplane/crossplane-runtime/pkg/errors"
 	"github.com/crossplane/crossplane-runtime/pkg/logging"
 	"github.com/crossplane/crossplane-runtime/pkg/reconciler/managed"
+	"google.golang.org/protobuf/types/known/structpb"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
+	fncontext "github.com/crossplane/function-sdk-go/context"
 	fnv1beta1 "github.com/crossplane/function-sdk-go/proto/v1beta1"
 	"github.com/crossplane/function-sdk-go/request"
 	"github.com/crossplane/function-sdk-go/resource"
@@ -98,6 +101,30 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 		return rsp, nil
 	}
 
+	// The Composition environment. This could be set by Crossplane, and/or by a
+	// previous Function in the pipeline.
+	env := &unstructured.Unstructured{}
+	if v, ok := request.GetContextKey(req, fncontext.KeyEnvironment); ok {
+		if err := resource.AsObject(v.GetStructValue(), env); err != nil {
+			response.Fatal(rsp, errors.Wrapf(err, "cannot get Composition environment from %T context key %q", req, fncontext.KeyEnvironment))
+			return rsp, nil
+		}
+	}
+
+	if input.Environment != nil {
+		// Run all patches that are from the (observed) XR to the environment.
+		if err := RenderToEnvironmentPatches(env, oxr.Resource, input.Environment.Patches); err != nil {
+			response.Fatal(rsp, errors.Wrapf(err, "cannot render ToEnvironment patches from the composite resource"))
+			return rsp, nil
+		}
+
+		// Run all patches that are from the environment to the (desired) XR.
+		if err := RenderFromEnvironmentPatches(dxr.Resource, env, input.Environment.Patches); err != nil {
+			response.Fatal(rsp, errors.Wrapf(err, "cannot render FromEnvironment patches to the composite resource"))
+			return rsp, nil
+		}
+	}
+
 	// Increment this if you emit a warning result.
 	warnings := 0
 
@@ -184,16 +211,35 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 				log.Info("Cannot render ToComposite patches for composed resource", "warning", err)
 				warnings++
 			}
+
+			// TODO(negz): Same as above, but for the Environment. What does it
+			// mean for a required patch to the environment to fail? Should it
+			// be terminal?
+
+			// Run all patches that are from the (observed) composed resource to
+			// the environment.
+			if err := RenderToEnvironmentPatches(env, ocd.Resource, t.Patches); err != nil {
+				response.Warning(rsp, errors.Wrapf(err, "cannot render ToEnvironment patches for composed resource %q", t.Name))
+				log.Info("Cannot render ToEnvironment patches for composed resource", "warning", err)
+				warnings++
+			}
 		}
 
-		// If this returns an error, most likely a required FromComposite patch
-		// failed. A required patch means roughly "this patch has to succeed
-		// before you mutate the resource." This is useful to make sure we never
-		// create a composed resource in the wrong state. To that end, we don't
-		// want to add this resource to our accumulated desired state.
+		// If either of the below renderings return an error, most likely a
+		// required FromComposite or FromEnvironment patch failed. A required
+		// patch means roughly "this patch has to succeed before you mutate the
+		// resource." This is useful to make sure we never create a composed
+		// resource in the wrong state. To that end, we don't want to add this
+		// resource to our accumulated desired state.
 		if err := RenderFromCompositePatches(dcd.Resource, oxr.Resource, t.Patches); err != nil {
 			response.Warning(rsp, errors.Wrapf(err, "cannot render FromComposite patches for composed resource %q", t.Name))
 			log.Info("Cannot render FromComposite patches for composed resource", "warning", err)
+			warnings++
+			continue
+		}
+		if err := RenderFromEnvironmentPatches(dcd.Resource, env, t.Patches); err != nil {
+			response.Warning(rsp, errors.Wrapf(err, "cannot render FromEnvironment patches for composed resource %q", t.Name))
+			log.Info("Cannot render FromEnvironment patches for composed resource", "warning", err)
 			warnings++
 			continue
 		}
@@ -211,6 +257,13 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 		response.Fatal(rsp, errors.Wrapf(err, "cannot set desired composed resources in %T", rsp))
 		return rsp, nil
 	}
+
+	v, err := resource.AsStruct(env)
+	if err != nil {
+		response.Fatal(rsp, errors.Wrap(err, "cannot convert Composition environment to protobuf Struct well-known type"))
+		return rsp, nil
+	}
+	response.SetContextKey(rsp, fncontext.KeyEnvironment, structpb.NewStructValue(v))
 
 	log.Info("Successfully processed patch-and-transform resources",
 		"resource-templates", len(input.Resources),

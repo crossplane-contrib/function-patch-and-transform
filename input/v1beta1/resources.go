@@ -20,12 +20,14 @@ type Resources struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// TODO(negz): Support EnvironmentConfigs once RunFunctionRequest does.
-
 	// PatchSets define a named set of patches that may be included by any
 	// resource. PatchSets cannot themselves refer to other PatchSets.
 	// +optional
 	PatchSets []PatchSet `json:"patchSets,omitempty"`
+
+	// Environment represents the Composition environment.
+	// +optional
+	Environment *Environment `json:"environment,omitempty"`
 
 	// Resources is a list of resource templates that will be used when a
 	// composite resource is created.

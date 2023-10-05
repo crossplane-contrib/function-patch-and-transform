@@ -27,27 +27,27 @@ const (
 
 // Apply executes a patching operation between the from and to resources.
 // Applies all patch types unless an 'only' filter is supplied.
-func Apply(p v1beta1.Patch, cp resource.Composite, cd resource.Composed, only ...v1beta1.PatchType) error {
-	return ApplyToObjects(p, cp, cd, only...)
+func Apply(p v1beta1.Patch, xr resource.Composite, cd resource.Composed, only ...v1beta1.PatchType) error {
+	return ApplyToObjects(p, xr, cd, only...)
 }
 
-// ApplyToObjects works like c.Apply but accepts any kind of runtime.Object
-// It might be vulnerable to conversion panics
-// (see https://github.com/crossplane/crossplane/pull/3394 for details).
-func ApplyToObjects(p v1beta1.Patch, xr, cd runtime.Object, only ...v1beta1.PatchType) error {
+// ApplyToObjects works like Apply but accepts any kind of runtime.Object. It
+// might be vulnerable to conversion panics (see
+// https://github.com/crossplane/crossplane/pull/3394 for details).
+func ApplyToObjects(p v1beta1.Patch, a, b runtime.Object, only ...v1beta1.PatchType) error {
 	if filterPatch(p, only...) {
 		return nil
 	}
 
 	switch p.GetType() {
-	case v1beta1.PatchTypeFromCompositeFieldPath:
-		return ApplyFromFieldPathPatch(p, xr, cd)
-	case v1beta1.PatchTypeToCompositeFieldPath:
-		return ApplyFromFieldPathPatch(p, cd, xr)
-	case v1beta1.PatchTypeCombineFromComposite:
-		return ApplyCombineFromVariablesPatch(p, xr, cd)
-	case v1beta1.PatchTypeCombineToComposite:
-		return ApplyCombineFromVariablesPatch(p, cd, xr)
+	case v1beta1.PatchTypeFromCompositeFieldPath, v1beta1.PatchTypeFromEnvironmentFieldPath:
+		return ApplyFromFieldPathPatch(p, a, b)
+	case v1beta1.PatchTypeToCompositeFieldPath, v1beta1.PatchTypeToEnvironmentFieldPath:
+		return ApplyFromFieldPathPatch(p, b, a)
+	case v1beta1.PatchTypeCombineFromComposite, v1beta1.PatchTypeCombineFromEnvironment:
+		return ApplyCombineFromVariablesPatch(p, a, b)
+	case v1beta1.PatchTypeCombineToComposite, v1beta1.PatchTypeCombineToEnvironment:
+		return ApplyCombineFromVariablesPatch(p, b, a)
 	case v1beta1.PatchTypePatchSet:
 		// Already resolved - nothing to do.
 	}
