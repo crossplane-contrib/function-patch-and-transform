@@ -19,3 +19,7 @@
 
 # Go workspace file
 go.work
+
+# Crossplane packaging things
+package/*.xpkg
+package/*.tar

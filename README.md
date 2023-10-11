@@ -239,8 +239,14 @@ ok      github.com/crossplane-contrib/function-patch-and-transform    0.021s  co
 # Lint the code
 $ docker run --rm -v $(pwd):/app -v ~/.cache/golangci-lint/v1.54.2:/root/.cache -w /app golangci/golangci-lint:v1.54.2 golangci-lint run
 
-# Build a Docker image - see Dockerfile
-$ docker build .
+# Build the Function runtime image
+$ docker image save $(docker build -q .) > package/runtime.tar
+
+# Build the Function package
+$ crossplane xpkg build -f package --controller-tar=package/runtime.tar
+
+# Push the Function package
+$ crossplane xpkg push -f package/*.xpkg xpkg.upbound.io/crossplane-contrib/function-patch-and-transform:v0.1.4
 ```
 
 [Crossplane]: https://crossplane.io
