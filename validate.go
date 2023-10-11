@@ -204,7 +204,10 @@ func ValidateTransform(t v1beta1.Transform) *field.Error { //nolint:gocyclo // T
 
 // ValidateMathTransform validates a MathTransform.
 func ValidateMathTransform(m *v1beta1.MathTransform) *field.Error {
-	switch m.GetType() {
+	if m.Type == "" {
+		return field.Required(field.NewPath("type"), "math transform type is required")
+	}
+	switch m.Type {
 	case v1beta1.MathTransformTypeMultiply:
 		if m.Multiply == nil {
 			return field.Required(field.NewPath("multiply"), "must specify a value if a multiply math transform is specified")
@@ -266,8 +269,11 @@ func ValidateMatchTransformPattern(p v1beta1.MatchTransformPattern) *field.Error
 
 // ValidateStringTransform validates a StringTransform.
 func ValidateStringTransform(s *v1beta1.StringTransform) *field.Error { //nolint:gocyclo // just a switch
+	if s.Type == "" {
+		return field.Required(field.NewPath("type"), "string transform type is required")
+	}
 	switch s.Type {
-	case v1beta1.StringTransformTypeFormat, "":
+	case v1beta1.StringTransformTypeFormat:
 		if s.Format == nil {
 			return field.Required(field.NewPath("fmt"), "format transform requires a format")
 		}
@@ -309,7 +315,7 @@ func ValidateConvertTransform(t *v1beta1.ConvertTransform) *field.Error {
 // ValidateConnectionDetail checks if the connection detail is logically valid.
 func ValidateConnectionDetail(cd v1beta1.ConnectionDetail) *field.Error {
 	if cd.Type == "" {
-		return field.Required(field.NewPath("type"), "type is required")
+		return field.Required(field.NewPath("type"), "connection detail type is required")
 	}
 	if !cd.Type.IsValid() {
 		return field.Invalid(field.NewPath("type"), string(cd.Type), "unknown connection detail type")

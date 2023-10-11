@@ -395,17 +395,6 @@ func TestValidateTransform(t *testing.T) {
 				},
 			},
 		},
-		"ValidMathDefaultType": {
-			reason: "Math transform with MathTransform Default set should be valid",
-			args: args{
-				transform: v1beta1.Transform{
-					Type: v1beta1.TransformTypeMath,
-					Math: &v1beta1.MathTransform{
-						Multiply: pointer.Int64(2),
-					},
-				},
-			},
-		},
 		"ValidMathClampMin": {
 			reason: "Math transform with valid MathTransform ClampMin set should be valid",
 			args: args{
@@ -602,6 +591,7 @@ func TestValidateTransform(t *testing.T) {
 				transform: v1beta1.Transform{
 					Type: v1beta1.TransformTypeString,
 					String: &v1beta1.StringTransform{
+						Type:   v1beta1.StringTransformTypeFormat,
 						Format: pointer.String("foo"),
 					},
 				},

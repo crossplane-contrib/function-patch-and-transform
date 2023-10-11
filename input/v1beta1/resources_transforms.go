@@ -110,14 +110,6 @@ type MathTransform struct {
 	ClampMax *int64 `json:"clampMax,omitempty"`
 }
 
-// GetType returns the type of the math transform, returning the default if not specified.
-func (m *MathTransform) GetType() MathTransformType {
-	if m.Type == "" {
-		return MathTransformTypeMultiply
-	}
-	return m.Type
-}
-
 // MapTransform returns a value for the input from the given map.
 type MapTransform struct {
 	// Pairs is the map that will be used for transform.
