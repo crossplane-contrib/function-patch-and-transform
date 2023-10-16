@@ -26,6 +26,9 @@ type Resources struct {
 	PatchSets []PatchSet `json:"patchSets,omitempty"`
 
 	// Environment represents the Composition environment.
+	//
+	// THIS IS AN ALPHA FIELD.
+	// Do not use it in production. It may be changed or removed without notice.
 	// +optional
 	Environment *Environment `json:"environment,omitempty"`
 

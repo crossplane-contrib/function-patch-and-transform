@@ -5,14 +5,21 @@ type PatchType string
 
 // Patch types.
 const (
-	PatchTypeFromCompositeFieldPath   PatchType = "FromCompositeFieldPath" // Default
+	PatchTypeFromCompositeFieldPath PatchType = "FromCompositeFieldPath" // Default
+	PatchTypePatchSet               PatchType = "PatchSet"
+	PatchTypeToCompositeFieldPath   PatchType = "ToCompositeFieldPath"
+	PatchTypeCombineFromComposite   PatchType = "CombineFromComposite"
+	PatchTypeCombineToComposite     PatchType = "CombineToComposite"
+)
+
+// Environment patch types.
+//
+// COMPOSITION ENVIRONMENT IS AN ALPHA FEATURE.
+// These patch types may be changed or removed without notice.
+const (
 	PatchTypeFromEnvironmentFieldPath PatchType = "FromEnvironmentFieldPath"
-	PatchTypePatchSet                 PatchType = "PatchSet"
-	PatchTypeToCompositeFieldPath     PatchType = "ToCompositeFieldPath"
 	PatchTypeToEnvironmentFieldPath   PatchType = "ToEnvironmentFieldPath"
 	PatchTypeCombineFromEnvironment   PatchType = "CombineFromEnvironment"
-	PatchTypeCombineFromComposite     PatchType = "CombineFromComposite"
-	PatchTypeCombineToComposite       PatchType = "CombineToComposite"
 	PatchTypeCombineToEnvironment     PatchType = "CombineToEnvironment"
 )
 
