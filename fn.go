@@ -109,6 +109,7 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 			response.Fatal(rsp, errors.Wrapf(err, "cannot get Composition environment from %T context key %q", req, fncontext.KeyEnvironment))
 			return rsp, nil
 		}
+		log.Debug("Loaded Composition environment from Function context", "context-key", fncontext.KeyEnvironment)
 	}
 
 	if input.Environment != nil {
