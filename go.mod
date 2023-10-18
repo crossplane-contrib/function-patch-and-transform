@@ -5,8 +5,8 @@ go 1.20
 require (
 	github.com/alecthomas/kong v0.8.0
 	github.com/crossplane/crossplane-runtime v1.13.0
-	github.com/crossplane/function-sdk-go v0.0.0-20230930011419-ec31b88ab696
-	github.com/google/go-cmp v0.5.9
+	github.com/crossplane/function-sdk-go v0.0.0-20231016233407-0a4b30c5dacc
+	github.com/google/go-cmp v0.6.0
 	github.com/pkg/errors v0.9.1
 	google.golang.org/protobuf v1.31.0
 	k8s.io/api v0.28.2
@@ -58,17 +58,17 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/mod v0.12.0 // indirect
-	golang.org/x/net v0.14.0 // indirect
+	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/oauth2 v0.10.0 // indirect
-	golang.org/x/sys v0.11.0 // indirect
-	golang.org/x/term v0.11.0 // indirect
-	golang.org/x/text v0.12.0 // indirect
+	golang.org/x/sys v0.13.0 // indirect
+	golang.org/x/term v0.13.0 // indirect
+	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
-	golang.org/x/tools v0.11.0 // indirect
+	golang.org/x/tools v0.13.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.3.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230711160842-782d3b101e98 // indirect
-	google.golang.org/grpc v1.58.2 // indirect
+	google.golang.org/grpc v1.58.3 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

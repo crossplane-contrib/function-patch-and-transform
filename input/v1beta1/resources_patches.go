@@ -12,6 +12,17 @@ const (
 	PatchTypeCombineToComposite     PatchType = "CombineToComposite"
 )
 
+// Environment patch types.
+//
+// COMPOSITION ENVIRONMENT IS AN ALPHA FEATURE.
+// These patch types may be changed or removed without notice.
+const (
+	PatchTypeFromEnvironmentFieldPath PatchType = "FromEnvironmentFieldPath"
+	PatchTypeToEnvironmentFieldPath   PatchType = "ToEnvironmentFieldPath"
+	PatchTypeCombineFromEnvironment   PatchType = "CombineFromEnvironment"
+	PatchTypeCombineToEnvironment     PatchType = "CombineToEnvironment"
+)
+
 // A FromFieldPathPolicy determines how to patch from a field path.
 type FromFieldPathPolicy string
 
@@ -38,6 +49,15 @@ func (pp *PatchPolicy) GetFromFieldPathPolicy() FromFieldPathPolicy {
 		return FromFieldPathPolicyOptional
 	}
 	return *pp.FromFieldPath
+}
+
+// Environment represents the Composition environment.
+type Environment struct {
+	// Patches is a list of environment patches that are executed before a
+	// composition's resources are composed. These patches are between the XR
+	// and the Environment. Either from the Environment to the XR, or vice
+	// versa.
+	Patches []Patch `json:"patches,omitempty"`
 }
 
 // Patch objects are applied between composite and composed resources. Their
