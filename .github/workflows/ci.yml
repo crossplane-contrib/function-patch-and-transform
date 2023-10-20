@@ -1,0 +1,122 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - release-*
+  pull_request: {}
+  workflow_dispatch: {}
+
+env:
+  # Common versions
+  GO_VERSION: '1.21.3'
+  GOLANGCI_VERSION: 'v1.54.2'
+  DOCKER_BUILDX_VERSION: 'v0.10.0'
+
+  # Common users. We can't run a step 'if secrets.AWS_USR != ""' but we can run
+  # a step 'if env.AWS_USR' != ""', so we copy these to succinctly test whether
+  # credentials have been provided before trying to run steps that need them.
+  XPKG_PUSH_ROBOT_USR: ${{ secrets.XPKG_PUSH_ROBOT_USR }}
+
+jobs:
+
+  lint:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: ${{ env.GOLANGCI_VERSION }}
+
+  codeql:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: go
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+
+  unit-tests:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Run Unit Tests
+        run: go test -v -cover ./...
+
+  push-package:
+    runs-on: ubuntu-22.04
+
+    strategy:
+      fail-fast: true
+      matrix:
+        platform:
+          - linux/amd64
+          - linux/arm64
+          - linux/ppc641e
+
+    steps:
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: all
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          version: ${{ env.DOCKER_BUILDX_VERSION }}
+          install: true
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Build Function Runtime
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+
+      
+      # TODO(negz): Build Function package using Crossplane CLI.
+
+      - name: Login to Upbound
+        uses: docker/login-action@v3
+        if: env.XPKG_PUSH_ROBOT_USR != ''
+        with:
+          registry: xpkg.upbound.io
+          username: ${{ secrets.XPKG_PUSH_ROBOT_USR }}
+          password: ${{ secrets.XPKG_PUSH_ROBOT_PSW }}
