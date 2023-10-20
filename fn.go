@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 
+	"google.golang.org/protobuf/types/known/structpb"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
 	"github.com/crossplane/crossplane-runtime/pkg/errors"
 	"github.com/crossplane/crossplane-runtime/pkg/logging"
 	"github.com/crossplane/crossplane-runtime/pkg/reconciler/managed"
-	"google.golang.org/protobuf/types/known/structpb"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	fncontext "github.com/crossplane/function-sdk-go/context"
 	fnv1beta1 "github.com/crossplane/function-sdk-go/proto/v1beta1"
