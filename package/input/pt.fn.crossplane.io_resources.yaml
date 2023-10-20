@@ -27,7 +27,9 @@ spec:
               internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
             type: string
           environment:
-            description: Environment represents the Composition environment.
+            description: "Environment represents the Composition environment. \n THIS
+              IS AN ALPHA FIELD. Do not use it in production. It may be changed or
+              removed without notice."
             properties:
               patches:
                 description: Patches is a list of environment patches that are executed
@@ -147,7 +149,7 @@ spec:
                                 - bool
                                 - float64
                                 - object
-                                - list
+                                - array
                                 type: string
                             required:
                             - toType
@@ -462,7 +464,7 @@ spec:
                                   - bool
                                   - float64
                                   - object
-                                  - list
+                                  - array
                                   type: string
                               required:
                               - toType
@@ -832,7 +834,7 @@ spec:
                                   - bool
                                   - float64
                                   - object
-                                  - list
+                                  - array
                                   type: string
                               required:
                               - toType
