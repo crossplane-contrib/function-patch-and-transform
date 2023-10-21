@@ -80,11 +80,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: ${{ env.GO_VERSION }}
-
       - name: Build Function Runtime
         uses: docker/build-push-action@v5
         with:
