@@ -109,7 +109,7 @@ jobs:
     needs:
       - build
     steps:
-      - name: Download Packages
+      - name: Download Single-Architecture Packages
         uses: actions/download-artifact@v3
         with:
           name: packages
@@ -122,3 +122,9 @@ jobs:
           registry: xpkg.upbound.io
           username: ${{ secrets.XPKG_PUSH_ROBOT_USR }}
           password: ${{ secrets.XPKG_PUSH_ROBOT_PSW }}
+
+      - name: Push Multi-Architecture Package to Upbound
+        if: env.XPKG_PUSH_ROBOT_USR != ''
+        # TODO(negz): We need to support pushing multiple packages to create a
+        # multi-arch package.
+        run: ./crossplane xpkg push ...
