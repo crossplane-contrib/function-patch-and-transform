@@ -116,6 +116,9 @@ jobs:
     needs:
       - build
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Download Single-Platform Packages
         uses: actions/download-artifact@v3
         with:
