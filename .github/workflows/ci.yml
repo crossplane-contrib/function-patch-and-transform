@@ -89,8 +89,7 @@ jobs:
           target: image
           build-args:
             GO_VERSION=${{ env.GO_VERSION }}
-          load: true
-          tags: function/runtime:${{ github.sha }}
+          outputs: type=docker,dest=runtime.tar
       
       # TODO(negz): Use the crossplane-contrib/xpkg-action for this? It doesn't
       # currently do anything other than download the CLI and run a command.
@@ -100,10 +99,8 @@ jobs:
           XP_CHANNEL: master
           XP_VERSION: current
 
-      # TODO(negz): We must pass index.docker.io explicitly until 
-      # https://github.com/crossplane/crossplane/pull/4867 is fixed.
       - name: Build Package
-        run: ./crossplane xpkg build --package-root=package/ --embed-runtime-image=index.docker.io/function/runtime:${{ github.sha }}
+        run: ./crossplane xpkg build --package-root=package/ --embed-runtime-image-tarball=runtime.tar
       
       - name: Login to Upbound
         uses: docker/login-action@v3
