@@ -26,7 +26,7 @@ env:
   XPKG_ACCESS_ID: ${{ secrets.XPKG_ACCESS_ID }}
 
   # The package to push, without a version tag.
-  XPKG: xpkg.upbound.io/${{ github.repository_owner}}/${{ github.repository}}
+  XPKG: xpkg.upbound.io/${{ github.repository}}
   XPKG_VERSION: ${{ inputs.version }}
 
 jobs:
