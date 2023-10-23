@@ -95,13 +95,13 @@ jobs:
           target: image
           build-args:
             GO_VERSION=${{ env.GO_VERSION }}
-          outputs: type=docker,dest=runtime.tar
+          outputs: type=docker,dest=runtime-${{ matrix.arch }}.tar
       
       - name: Setup the Crossplane CLI
         run: "curl -sL https://raw.githubusercontent.com/crossplane/crossplane/master/install.sh | sh"
 
       - name: Build Package
-        run: ./crossplane xpkg build --package-file=${{ matrix.arch }}.xpkg --package-root=package/ --embed-runtime-image-tarball=runtime.tar
+        run: ./crossplane xpkg build --package-file=${{ matrix.arch }}.xpkg --package-root=package/ --embed-runtime-image-tarball=runtime-${{ matrix.arch }}.tar
       
       - name: Upload Single-Platform Package
         uses: actions/upload-artifact@v3
