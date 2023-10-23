@@ -2,8 +2,6 @@
 
 # We use the latest Go 1.x version unless asked to use something else.
 ARG GO_VERSION=1
-ARG TARGETOS
-ARG TARGETARCH
 
 # Setup the base environment.
 FROM --platform=${BUILDPLATFORM} golang:${GO_VERSION} AS base
@@ -16,6 +14,8 @@ RUN --mount=type=cache,target=/go/pkg/mod go mod download
 
 # Build the Function.
 FROM base AS build
+ARG TARGETOS
+ARG TARGETARCH
 RUN --mount=target=. \
     --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
