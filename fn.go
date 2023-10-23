@@ -13,11 +13,14 @@ import (
 	fnv1beta1 "github.com/crossplane/function-sdk-go/proto/v1beta1"
 	"github.com/crossplane/function-sdk-go/request"
 	"github.com/crossplane/function-sdk-go/resource"
+
 	"github.com/crossplane/function-sdk-go/resource/composed"
 	"github.com/crossplane/function-sdk-go/response"
 
 	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
 )
+
+const conditionError = "Condition error"
 
 // Function performs patch-and-transform style Composition.
 type Function struct {
@@ -40,6 +43,21 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 	if err := request.GetInput(req, input); err != nil {
 		response.Fatal(rsp, errors.Wrap(err, "cannot get Function input"))
 		return rsp, nil
+	}
+
+	// Evaluate any Conditions using the values from the Observed XR
+	if input.Condition != nil {
+		// Evaluate the condition to see if we should run
+		run, err := EvaluateCondition(*input.Condition, req)
+		if err != nil {
+			response.Fatal(rsp, errors.Wrap(err, conditionError))
+			return rsp, nil
+		}
+		if !run {
+			log.Debug("Condition evaluated to false. Skipping run.")
+			return rsp, nil
+		}
+		log.Debug("Condition evaluated to true.")
 	}
 
 	// Our input is an opaque object nested in a Composition, so unfortunately

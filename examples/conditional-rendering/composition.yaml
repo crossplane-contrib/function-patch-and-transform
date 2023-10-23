@@ -1,0 +1,32 @@
+---
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xnopresources.nop.example.org
+spec:
+  compositeTypeRef:
+    apiVersion: nop.example.org/v1alpha1
+    kind: XNopResource
+  mode: Pipeline
+  pipeline:
+  - step: if
+    functionRef:
+      name: function-patch-and-transform
+    input:
+      condition:
+         expression: observed.composite.resource.spec.env == "prod" && observed.composite.resource.spec.render == true
+      resources:
+        - name: bucket
+          base:
+            apiVersion: s3.aws.upbound.io/v1beta1
+            kind: Bucket
+            spec:
+              forProvider:
+                region: us-east-2
+        - name: vpc
+          base:
+            apiVersion: s3.aws.upbound.io/v1beta1
+            kind: VPC
+            spec:
+              forProvider:
+                region: eu-central-1
