@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"regexp"
 
-	"k8s.io/apimachinery/pkg/util/validation/field"
-
 	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 )
 
 // WrapFieldError wraps the given field.Error adding the given field.Path as root of the Field.

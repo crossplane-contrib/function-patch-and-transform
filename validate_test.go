@@ -3,13 +3,12 @@ package main
 import (
 	"testing"
 
+	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/pointer"
-
-	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
 )
 
 func TestValidateReadinessCheck(t *testing.T) {
