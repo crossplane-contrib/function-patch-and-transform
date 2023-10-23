@@ -6,20 +6,11 @@ import (
 	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
 	"github.com/crossplane/crossplane-runtime/pkg/errors"
 	fnv1beta1 "github.com/crossplane/function-sdk-go/proto/v1beta1"
-	"github.com/crossplane/function-sdk-go/resource"
 	"github.com/google/cel-go/cel"
 )
 
-type ConditionalComposite struct {
-	*resource.Composite
-}
-
-type ConditionalRunFunctionRequest struct {
-	*fnv1beta1.RunFunctionRequest
-}
-
 // NewCELEnvironment sets up the CEL Environment
-func NewCELEnvironment(req *fnv1beta1.RunFunctionRequest) (*cel.Env, error) {
+func NewCELEnvironment() (*cel.Env, error) {
 	return cel.NewEnv(
 		cel.Types(&fnv1beta1.State{}),
 		cel.Variable("observed", cel.ObjectType("apiextensions.fn.proto.v1beta1.State")),
@@ -27,7 +18,7 @@ func NewCELEnvironment(req *fnv1beta1.RunFunctionRequest) (*cel.Env, error) {
 	)
 }
 
-// NewCelData formats data in a suitable format for CEL Evaluation
+// NewCELData formats data in a suitable format for CEL Evaluation
 func NewCELData(req *fnv1beta1.RunFunctionRequest) map[string]any {
 	xra := make(map[string]any)
 	xra["desired"] = req.GetDesired()
@@ -41,7 +32,7 @@ func EvaluateCondition(cs v1beta1.ConditionSpec, req *fnv1beta1.RunFunctionReque
 		return false, nil
 	}
 
-	env, err := NewCELEnvironment(req)
+	env, err := NewCELEnvironment()
 	if err != nil {
 		return false, errors.Wrap(err, "CEL Env error")
 	}
@@ -85,5 +76,5 @@ func EvaluateCondition(cs v1beta1.ConditionSpec, req *fnv1beta1.RunFunctionReque
 		return false, errors.Wrap(err, "CEL program did not return a bool")
 	}
 
-	return bool(ret), nil
+	return ret, nil
 }
