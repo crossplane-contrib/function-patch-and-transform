@@ -52,7 +52,8 @@ func EvaluateCondition(cs v1beta1.ConditionSpec, req *fnv1beta1.RunFunctionReque
 	// Ensure the output type is a bool.
 	if !reflect.DeepEqual(checked.OutputType(), cel.BoolType) {
 		return false, errors.Errorf(
-			"CEL Type error: expression must return a boolean, got %v instead",
+			"CEL Type error: expression '%s' must return a boolean, got %v instead",
+			cs.Expression,
 			checked.OutputType())
 	}
 

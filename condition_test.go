@@ -85,7 +85,7 @@ func TestEvaluateCondition(t *testing.T) {
 			},
 			want: want{
 				ret: false,
-				err: errors.New("CEL Type error: expression must return a boolean, got int instead"),
+				err: errors.New("CEL Type error: expression 'size(desired.resources)' must return a boolean, got int instead"),
 			},
 		},
 		"KeyError": {
