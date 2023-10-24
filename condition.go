@@ -18,12 +18,12 @@ func NewCELEnvironment() (*cel.Env, error) {
 	)
 }
 
-// NewCELData formats data in a suitable format for CEL Evaluation
-func NewCELData(req *fnv1beta1.RunFunctionRequest) map[string]any {
-	xra := make(map[string]any)
-	xra["desired"] = req.GetDesired()
-	xra["observed"] = req.GetObserved()
-	return xra
+// ToCELVars formats a RunFunctionRequest for CEL evaluation
+func ToCELVars(req *fnv1beta1.RunFunctionRequest) map[string]any {
+	vars := make(map[string]any)
+	vars["desired"] = req.GetDesired()
+	vars["observed"] = req.GetObserved()
+	return vars
 }
 
 // EvaluateCondition will evaluate a CEL expression
@@ -52,7 +52,7 @@ func EvaluateCondition(cs v1beta1.ConditionSpec, req *fnv1beta1.RunFunctionReque
 	// Ensure the output type is a bool.
 	if !reflect.DeepEqual(checked.OutputType(), cel.BoolType) {
 		return false, errors.Errorf(
-			"expression must return a boolean, got %v instead",
+			"CEL Type error: expression must return a boolean, got %v instead",
 			checked.OutputType())
 	}
 
@@ -63,10 +63,10 @@ func EvaluateCondition(cs v1beta1.ConditionSpec, req *fnv1beta1.RunFunctionReque
 	}
 
 	// Convert our Function Request into map[string]any for CEL evaluation
-	val := NewCELData(req)
+	vars := ToCELVars(req)
 
 	// Evaluate the program without any additional arguments.
-	result, _, err := program.Eval(val)
+	result, _, err := program.Eval(vars)
 	if err != nil {
 		return false, errors.Wrap(err, "CEL program Evaluation")
 	}
@@ -76,5 +76,5 @@ func EvaluateCondition(cs v1beta1.ConditionSpec, req *fnv1beta1.RunFunctionReque
 		return false, errors.Wrap(err, "CEL program did not return a bool")
 	}
 
-	return ret, nil
+	return bool(ret), nil
 }
