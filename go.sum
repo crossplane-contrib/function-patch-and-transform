@@ -65,6 +65,8 @@ github.com/crossplane/crossplane-runtime v1.14.0-rc.0.0.20231019152856-a5df125af
 github.com/crossplane/crossplane-runtime v1.14.0-rc.0.0.20231019152856-a5df125af6f8/go.mod h1:aOP+5W2wKpvthVs3pFNbVOe1jwrKYbJho0ThGNCVz9o=
 github.com/crossplane/function-sdk-go v0.0.0-20231023102131-36bee0c36ab8 h1:J2lgTltb8pbXZ98UWpKC7rIskgcV1KwJtsdWJcPCpA0=
 github.com/crossplane/function-sdk-go v0.0.0-20231023102131-36bee0c36ab8/go.mod h1:cSxw1giVLi8BaeF84u6YrDYqIXZJSl017rpun+f+L9A=
+github.com/crossplane/function-sdk-go v0.0.0-20231024211620-66fe852bf9fc h1:6Pso3+n8eTpP2U9e1sf0+4+pP4HfEXIGWwOvM5zX6C0=
+github.com/crossplane/function-sdk-go v0.0.0-20231024211620-66fe852bf9fc/go.mod h1:XyD0EfaqIENlXQ9HonceOoKl+3rdQj1QtRAf9A2hziY=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -247,8 +249,6 @@ github.com/spf13/cobra v1.7.0 h1:hyqWnYt1ZQShIddO5kBpj3vu05/++x6tJ6dg8EC572I=
 github.com/spf13/cobra v1.7.0/go.mod h1:uLxZILRyS/50WlhOIKD7W6V5bgeIt+4sICxh6uRMrb0=
 github.com/spf13/pflag v1.0.5 h1:iy+VFUOCP1a+8yFto/drg2CJ5u0yRoB7fZw3DKv/JXA=
 github.com/spf13/pflag v1.0.5/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An2Bg=
-github.com/stevendborrelli/function-sdk-go v0.0.0-20231023072953-314d80dae620 h1:E5QSFgOlH1bV7yDLCKPh3PtEhl0aHm31qIfYFXE6fME=
-github.com/stevendborrelli/function-sdk-go v0.0.0-20231023072953-314d80dae620/go.mod h1:XyD0EfaqIENlXQ9HonceOoKl+3rdQj1QtRAf9A2hziY=
 github.com/stoewer/go-strcase v1.2.0 h1:Z2iHWqGXH00XYgqDmNgQbIBxf3wrNq0F3feEy0ainaU=
 github.com/stoewer/go-strcase v1.2.0/go.mod h1:IBiWB2sKIp3wVVQ3Y035++gc+knqhUQag1KpM8ahLw8=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=

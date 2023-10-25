@@ -2,11 +2,10 @@ module github.com/crossplane-contrib/function-patch-and-transform
 
 go 1.20
 
-replace github.com/crossplane/function-sdk-go => github.com/stevendborrelli/function-sdk-go v0.0.0-20231023072953-314d80dae620
-
 require (
 	github.com/alecthomas/kong v0.8.0
 	github.com/crossplane/crossplane-runtime v1.14.0-rc.0.0.20231019152856-a5df125af6f8
+	github.com/crossplane/function-sdk-go v0.0.0-20231024211620-66fe852bf9fc
 	github.com/google/cel-go v0.16.1
 	github.com/google/go-cmp v0.6.0
 	github.com/pkg/errors v0.9.1
@@ -23,7 +22,6 @@ require (
 	github.com/antlr/antlr4/runtime/Go/antlr/v4 v4.0.0-20230305170008-8188dc5388df // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
-	github.com/crossplane/function-sdk-go v0.0.0-20231023102131-36bee0c36ab8 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
