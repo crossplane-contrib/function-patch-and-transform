@@ -9,24 +9,36 @@ spec:
     kind: XNopResource
   mode: Pipeline
   pipeline:
-  - step: if
+  - step: conditional-patch-and-transform
     functionRef:
       name: function-patch-and-transform
     input:
+      apiVersion: pt.fn.crossplane.io/v1beta1
+      kind: Resources
       condition:
-         expression: observed.composite.resource.spec.env == "prod" && observed.composite.resource.spec.render == true
+         expression: observed.composite.resource.spec.env == "dev" && observed.composite.resource.spec.render == true 
       resources:
-        - name: bucket
-          base:
-            apiVersion: s3.aws.upbound.io/v1beta1
-            kind: Bucket
+         - name: test-resource
+           base:
+            apiVersion: nop.crossplane.io/v1alpha1
+            kind: NopResource
             spec:
               forProvider:
-                region: us-east-2
-        - name: vpc
-          base:
-            apiVersion: s3.aws.upbound.io/v1beta1
-            kind: VPC
-            spec:
-              forProvider:
-                region: eu-central-1
+                fields:
+                  integerField: 42
+                  stringField: "string"
+                  objectField:
+                    stringField: "object"
+                  arrayField:
+                  - stringField: "array"
+                conditionAfter:
+                - time: 5s
+                  conditionType: Ready
+                  conditionStatus: "True"
+                connectionDetails:
+                - name: username
+                  value: fakeuser
+                - name: password
+                  value: verysecurepassword
+                - name: endpoint
+                  value: 127.0.0.1

@@ -5,4 +5,5 @@ metadata:
   annotations:
     xrender.crossplane.io/runtime: Development
 spec:
-  package: xpkg.upbound.io/crossplane-contrib/function-patch-and-transform:v0.1.4
+  package: index.docker.io/steve/function-patch-and-transform:v0.2.0
+  packagePullPolicy: Always
