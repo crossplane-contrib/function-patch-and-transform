@@ -17,16 +17,22 @@ env:
   GO_VERSION: '1.21.3'
   GOLANGCI_VERSION: 'v1.54.2'
   DOCKER_BUILDX_VERSION: 'v0.11.2'
+
+  # These environment variables are important to the Crossplane CLI install.sh
+  # script. They determine what version it installs.
   XP_CHANNEL: master   # TODO(negz): Pin to stable once v1.14 is released.
   XP_VERSION: current  # TODO(negz): Pin to a version once v1.14 is released.
 
-  # Common users. We can't run a step 'if secrets.USR != ""' but we can run
-  # a step 'if env.USR' != ""', so we copy these to succinctly test whether
-  # credentials have been provided before trying to run steps that need them.
+  # This CI job will automatically push new builds to xpkg.upbound.io if the
+  # XPKG_ACCESS_ID and XPKG_TOKEN secrets are set in the GitHub respository (or
+  # organization) settings. Create a token at https://accounts.upbound.io.
   XPKG_ACCESS_ID: ${{ secrets.XPKG_ACCESS_ID }}
 
-  # The package to push, without a version tag.
+  # The package to push, without a version tag. The default matches GitHub. For
+  # example xpkg.upbound.io/crossplane/function-template-go.
   XPKG: xpkg.upbound.io/${{ github.repository}}
+
+  # The package version to push. The default is 0.0.0-gitsha.
   XPKG_VERSION: ${{ inputs.version }}
 
 jobs:
@@ -61,6 +67,10 @@ jobs:
       - name: Run Unit Tests
         run: go test -v -cover ./...
 
+  # We want to build most packages for the amd64 and arm64 architectures. To
+  # speed this up we build single-platform packages in parallel. We then upload
+  # those packages to GitHub as a build artifact. The push job downloads those
+  # artifacts and pushes them as a single multi-platform package. 
   build:
     runs-on: ubuntu-22.04
     strategy:
@@ -84,6 +94,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # We ask Docker to use GitHub Action's native caching support to speed up
+      # the build, per https://docs.docker.com/build/cache/backends/gha/.
       - name: Build Runtime
         id: image
         uses: docker/build-push-action@v5
@@ -111,6 +123,9 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+  # This job downloads the single-platform packages built by the build job, and
+  # pushes them as a multi-platform package. We only push the package it the
+  # XPKG_ACCESS_ID and XPKG_TOKEN secrets were provided.
   push:
     runs-on: ubuntu-22.04
     needs:
@@ -137,10 +152,12 @@ jobs:
           password: ${{ secrets.XPKG_TOKEN }}
 
       # If a version wasn't explicitly passed as a workflow_dispatch input we
-      # default to version v0.0.0-shortsha, for example v0.0.0-8ed5691.
+      # default to version v0.0.0-<git-commit-date>-<git-short-sha>, for example
+      # v0.0.0-20231101115142-1091066df799. This is a simple implementation of
+      # Go's pseudo-versions: https://go.dev/ref/mod#pseudo-versions.
       - name: Set Default Multi-Platform Package Version
         if: env.XPKG_VERSION == ''
-        run: echo "XPKG_VERSION=v0.0.0-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+        run: echo "XPKG_VERSION=v0.0.0-$(date -d@$(git show -s --format=%ct) +%Y%m%d%H%M%S)-$(git rev-parse --short=12 HEAD)" >> $GITHUB_ENV
 
       - name: Push Multi-Platform Package to Upbound
         if: env.XPKG_ACCESS_ID != ''
