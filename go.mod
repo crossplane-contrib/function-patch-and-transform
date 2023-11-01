@@ -3,7 +3,7 @@ module github.com/crossplane-contrib/function-patch-and-transform
 go 1.20
 
 require (
-	github.com/alecthomas/kong v0.8.0
+	github.com/alecthomas/kong v0.8.1
 	github.com/crossplane/crossplane-runtime v1.13.0
 	github.com/crossplane/function-sdk-go v0.0.0-20231016233407-0a4b30c5dacc
 	github.com/google/go-cmp v0.6.0
