@@ -7,7 +7,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
 )
@@ -38,8 +38,8 @@ func TestValidateReadinessCheck(t *testing.T) {
 			args: args{
 				r: v1beta1.ReadinessCheck{
 					Type:        v1beta1.ReadinessCheckTypeMatchString,
-					MatchString: pointer.String("foo"),
-					FieldPath:   pointer.String("spec.foo"),
+					MatchString: ptr.To[string]("foo"),
+					FieldPath:   ptr.To[string]("spec.foo"),
 				},
 			},
 		},
@@ -52,7 +52,7 @@ func TestValidateReadinessCheck(t *testing.T) {
 						Type:   "someType",
 						Status: "someStatus",
 					},
-					FieldPath: pointer.String("spec.foo"),
+					FieldPath: ptr.To[string]("spec.foo"),
 				},
 			},
 		},
@@ -61,7 +61,7 @@ func TestValidateReadinessCheck(t *testing.T) {
 			args: args{
 				r: v1beta1.ReadinessCheck{
 					Type:      v1beta1.ReadinessCheckTypeMatchTrue,
-					FieldPath: pointer.String("spec.foo"),
+					FieldPath: ptr.To[string]("spec.foo"),
 				},
 			},
 		},
@@ -70,7 +70,7 @@ func TestValidateReadinessCheck(t *testing.T) {
 			args: args{
 				r: v1beta1.ReadinessCheck{
 					Type:      v1beta1.ReadinessCheckTypeMatchFalse,
-					FieldPath: pointer.String("spec.foo"),
+					FieldPath: ptr.To[string]("spec.foo"),
 				},
 			},
 		},
@@ -191,7 +191,7 @@ func TestValidateConnectionDetail(t *testing.T) {
 				cd: v1beta1.ConnectionDetail{
 					Type:  v1beta1.ConnectionDetailTypeFromValue,
 					Name:  "cool",
-					Value: pointer.String("cooler"),
+					Value: ptr.To[string]("cooler"),
 				},
 			},
 			want: want{
@@ -204,7 +204,7 @@ func TestValidateConnectionDetail(t *testing.T) {
 				cd: v1beta1.ConnectionDetail{
 					Type:                    v1beta1.ConnectionDetailTypeFromConnectionSecretKey,
 					Name:                    "cool",
-					FromConnectionSecretKey: pointer.String("key"),
+					FromConnectionSecretKey: ptr.To[string]("key"),
 				},
 			},
 			want: want{
@@ -217,7 +217,7 @@ func TestValidateConnectionDetail(t *testing.T) {
 				cd: v1beta1.ConnectionDetail{
 					Type:          v1beta1.ConnectionDetailTypeFromFieldPath,
 					Name:          "cool",
-					FromFieldPath: pointer.String("status.coolness"),
+					FromFieldPath: ptr.To[string]("status.coolness"),
 				},
 			},
 			want: want{
@@ -254,7 +254,7 @@ func TestValidatePatch(t *testing.T) {
 			args: args{
 				patch: v1beta1.Patch{
 					Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-					FromFieldPath: pointer.String("spec.forProvider.foo"),
+					FromFieldPath: ptr.To[string]("spec.forProvider.foo"),
 				},
 			},
 		},
@@ -263,7 +263,7 @@ func TestValidatePatch(t *testing.T) {
 			args: args{
 				patch: v1beta1.Patch{
 					Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-					FromFieldPath: pointer.String("spec.forProvider.foo"),
+					FromFieldPath: ptr.To[string]("spec.forProvider.foo"),
 					Transforms: []v1beta1.Transform{
 						{
 							Type: v1beta1.TransformTypeMath,
@@ -390,7 +390,7 @@ func TestValidateTransform(t *testing.T) {
 					Type: v1beta1.TransformTypeMath,
 					Math: &v1beta1.MathTransform{
 						Type:     v1beta1.MathTransformTypeMultiply,
-						Multiply: pointer.Int64(2),
+						Multiply: ptr.To[int64](2),
 					},
 				},
 			},
@@ -402,7 +402,7 @@ func TestValidateTransform(t *testing.T) {
 					Type: v1beta1.TransformTypeMath,
 					Math: &v1beta1.MathTransform{
 						Type:     v1beta1.MathTransformTypeClampMin,
-						ClampMin: pointer.Int64(10),
+						ClampMin: ptr.To[int64](10),
 					},
 				},
 			},
@@ -414,7 +414,7 @@ func TestValidateTransform(t *testing.T) {
 					Type: v1beta1.TransformTypeMath,
 					Math: &v1beta1.MathTransform{
 						Type:     v1beta1.MathTransformTypeMultiply,
-						ClampMin: pointer.Int64(10),
+						ClampMin: ptr.To[int64](10),
 					},
 				},
 			},
@@ -522,7 +522,7 @@ func TestValidateTransform(t *testing.T) {
 						Patterns: []v1beta1.MatchTransformPattern{
 							{
 								Type:   v1beta1.MatchTransformPatternTypeRegexp,
-								Regexp: pointer.String(".*"),
+								Regexp: ptr.To[string](".*"),
 							},
 						},
 					},
@@ -538,7 +538,7 @@ func TestValidateTransform(t *testing.T) {
 						Patterns: []v1beta1.MatchTransformPattern{
 							{
 								Type:   v1beta1.MatchTransformPatternTypeRegexp,
-								Regexp: pointer.String("?"),
+								Regexp: ptr.To[string]("?"),
 							},
 						},
 					},
@@ -560,10 +560,10 @@ func TestValidateTransform(t *testing.T) {
 						Patterns: []v1beta1.MatchTransformPattern{
 							{
 								Type:    v1beta1.MatchTransformPatternTypeLiteral,
-								Literal: pointer.String("foo"),
+								Literal: ptr.To[string]("foo"),
 							},
 							{
-								Literal: pointer.String("bar"),
+								Literal: ptr.To[string]("bar"),
 							},
 						},
 					},
@@ -592,7 +592,7 @@ func TestValidateTransform(t *testing.T) {
 					Type: v1beta1.TransformTypeString,
 					String: &v1beta1.StringTransform{
 						Type:   v1beta1.StringTransformTypeFormat,
-						Format: pointer.String("foo"),
+						Format: ptr.To[string]("foo"),
 					},
 				},
 			},

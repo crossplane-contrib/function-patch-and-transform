@@ -15,7 +15,7 @@ import (
 
 	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/crossplane/crossplane-runtime/pkg/errors"
 
@@ -360,7 +360,7 @@ func stringRegexpTransform(input any, r v1beta1.StringTransformRegexp) (string, 
 	groups := re.FindStringSubmatch(fmt.Sprintf("%v", input))
 
 	// Return the entire match (group zero) by default.
-	g := pointer.IntDeref(r.Group, 0)
+	g := ptr.Deref[int](r.Group, 0)
 	if len(groups) == 0 || g >= len(groups) {
 		return "", errors.Errorf(errStringTransformTypeRegexpNoMatch, r.Match, g)
 	}
