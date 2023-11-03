@@ -3,4 +3,16 @@ apiVersion: meta.pkg.crossplane.io/v1beta1
 kind: Function
 metadata:
   name: function-patch-and-transform
+  annotations:
+    meta.crossplane.io/maintainer: Crossplane Maintainers <info@crossplane.io>
+    meta.crossplane.io/source: github.com/crossplane-contrib/function-patch-and-transform
+    meta.crossplane.io/license: Apache-2.0
+    meta.crossplane.io/description: A patch & transform composition function
+    meta.crossplane.io/readme: |
+      This composition function does everything Crossplane's built-in
+      [patch & transform][https://docs.crossplane.io/latest/concepts/patch-and-transform/]
+      composition does. Instead of specifying `spec.resources` in your
+      Composition, you can use this function. See the
+      [README](https://github.com/crossplane-contrib/function-patch-and-transform).
+      for examples and documentation.
 spec: {}
