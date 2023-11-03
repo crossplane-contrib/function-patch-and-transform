@@ -10,9 +10,9 @@ metadata:
     meta.crossplane.io/description: A patch & transform composition function
     meta.crossplane.io/readme: |
       This composition function does everything Crossplane's built-in
-      [patch & transform][https://docs.crossplane.io/latest/concepts/patch-and-transform/]
+      [patch & transform](https://docs.crossplane.io/latest/concepts/patch-and-transform/)
       composition does. Instead of specifying `spec.resources` in your
       Composition, you can use this function. See the
-      [README](https://github.com/crossplane-contrib/function-patch-and-transform).
+      [README](https://github.com/crossplane-contrib/function-patch-and-transform)
       for examples and documentation.
 spec: {}
