@@ -48,7 +48,7 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 	// Evaluate any Conditions using the values from the Observed XR
 	if input.Condition != nil {
 		// Evaluate the condition to see if we should run
-		run, err := EvaluateCondition(*input.Condition, req)
+		run, err := EvaluateCondition(input.Condition, req)
 		if err != nil {
 			response.Fatal(rsp, errors.Wrap(err, conditionError))
 			return rsp, nil
@@ -159,7 +159,7 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 
 		if t.Condition != nil {
 			// Evaluate the condition to see if we should skip this template.
-			run, err := EvaluateCondition(*t.Condition, req)
+			run, err := EvaluateCondition(t.Condition, req)
 			if err != nil {
 				log.Info(err.Error())
 				response.Fatal(rsp, errors.Wrap(err, conditionError))

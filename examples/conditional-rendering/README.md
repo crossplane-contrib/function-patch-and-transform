@@ -19,7 +19,7 @@ will not run.
 
 ## Running this example
 
-- Until 1.14 is released, install a development version of Crossplane. See [install Crossplane master](https://docs.crossplane.io/latest/software/install/#install-the-crossplane-master-helm-chart)
+- Install Crossplane version 1.14 or newer. See <https://docs.crossplane.io/v1.14/software/install/>
 - Install the nop provider in `kubectl apply -f provider.yaml`
 - Install the XRD & Composition in `kubectl apply -f definition.yaml -f composition.yaml`
 - Install the Function `kubectl apply -f function.yaml`

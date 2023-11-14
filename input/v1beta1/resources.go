@@ -1,6 +1,6 @@
 // Package v1beta1 contains the input type for the P&T Composition Function.
 // +kubebuilder:object:generate=true
-// +groupName=pt.fn.crossplane.io
+// +groupName=conditional-pt.fn.crossplane.io
 // +versionName=v1beta1
 package v1beta1
 
@@ -20,8 +20,8 @@ type Resources struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// Condition defines a CEL condition whether this function will render
-	Condition *ConditionSpec `json:"condition,omitempty"`
+	// If defines a CEL condition whether this function will render
+	Condition Condition `json:"condition,omitempty"`
 
 	// PatchSets define a named set of patches that may be included by any
 	// resource. PatchSets cannot themselves refer to other PatchSets.

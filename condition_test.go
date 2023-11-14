@@ -20,8 +20,8 @@ func TestEvaluateCondition(t *testing.T) {
 	oxr := `{"apiVersion":"nopexample.org/v1alpha1","kind":"XNopResource","metadata":{"name":"test-resource"},"spec":{"env":"dev","render":true},"status":{"id":"123","ready":false} }`
 
 	type args struct {
-		cs  v1beta1.ConditionSpec
-		req *fnv1beta1.RunFunctionRequest
+		condition v1beta1.Condition
+		req       *fnv1beta1.RunFunctionRequest
 	}
 	type want struct {
 		ret bool
@@ -35,7 +35,7 @@ func TestEvaluateCondition(t *testing.T) {
 	}{
 		"CELParseError": {
 			args: args{
-				cs: v1beta1.ConditionSpec{Expression: "field = value"},
+				condition: strPtr("field = value"),
 				req: &fnv1beta1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
@@ -64,7 +64,7 @@ func TestEvaluateCondition(t *testing.T) {
 		},
 		"CELTypeError": {
 			args: args{
-				cs: v1beta1.ConditionSpec{Expression: "size(desired.resources)"},
+				condition: strPtr("size(desired.resources)"),
 				req: &fnv1beta1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
@@ -93,7 +93,7 @@ func TestEvaluateCondition(t *testing.T) {
 		},
 		"KeyError": {
 			args: args{
-				cs: v1beta1.ConditionSpec{Expression: "badkey"},
+				condition: strPtr("badkey"),
 				req: &fnv1beta1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
@@ -122,7 +122,7 @@ func TestEvaluateCondition(t *testing.T) {
 		},
 		"TrueDesired": {
 			args: args{
-				cs: v1beta1.ConditionSpec{Expression: "desired.composite.resource.spec.env == \"dev\" "},
+				condition: strPtr("desired.composite.resource.spec.env == \"dev\" "),
 				req: &fnv1beta1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
@@ -151,7 +151,7 @@ func TestEvaluateCondition(t *testing.T) {
 		},
 		"TrueDesiredBool": {
 			args: args{
-				cs: v1beta1.ConditionSpec{Expression: "desired.composite.resource.spec.render == true"},
+				condition: strPtr("desired.composite.resource.spec.render == true"),
 				req: &fnv1beta1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
@@ -180,7 +180,7 @@ func TestEvaluateCondition(t *testing.T) {
 		},
 		"FalseDesiredBool": {
 			args: args{
-				cs: v1beta1.ConditionSpec{Expression: "desired.composite.resource.spec.render == false"},
+				condition: strPtr("desired.composite.resource.spec.render == false"),
 				req: &fnv1beta1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
@@ -209,7 +209,7 @@ func TestEvaluateCondition(t *testing.T) {
 		},
 		"FalseObservedBool": {
 			args: args{
-				cs: v1beta1.ConditionSpec{Expression: "observed.composite.resource.status.ready == true"},
+				condition: strPtr("observed.composite.resource.status.ready == true"),
 				req: &fnv1beta1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
@@ -238,7 +238,7 @@ func TestEvaluateCondition(t *testing.T) {
 		},
 		"FalseLengthResources": {
 			args: args{
-				cs: v1beta1.ConditionSpec{Expression: "size(desired.resources) == 0"},
+				condition: strPtr("size(desired.resources) == 0"),
 				req: &fnv1beta1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
@@ -272,7 +272,7 @@ func TestEvaluateCondition(t *testing.T) {
 		},
 		"TrueResourceMapKeyExists": {
 			args: args{
-				cs: v1beta1.ConditionSpec{Expression: "\"test-resource\" in desired.resources"},
+				condition: strPtr("\"test-resource\" in desired.resources"),
 				req: &fnv1beta1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
@@ -306,7 +306,7 @@ func TestEvaluateCondition(t *testing.T) {
 		},
 		"FalseResourceMapKeyExists": {
 			args: args{
-				cs: v1beta1.ConditionSpec{Expression: "\"bad-resource\" in desired.resources"},
+				condition: strPtr("\"bad-resource\" in desired.resources"),
 				req: &fnv1beta1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
@@ -342,7 +342,7 @@ func TestEvaluateCondition(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			ret, err := EvaluateCondition(tc.args.cs, tc.args.req)
+			ret, err := EvaluateCondition(tc.args.condition, tc.args.req)
 
 			if diff := cmp.Diff(tc.want.ret, ret); diff != "" {
 				t.Errorf("%s\nEvaluateCondition(...): -want ret, +got ret:\n%s", tc.reason, diff)
@@ -356,4 +356,8 @@ func TestEvaluateCondition(t *testing.T) {
 
 		})
 	}
+}
+
+func strPtr(str string) *string {
+	return &str
 }
