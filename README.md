@@ -8,6 +8,8 @@ of individual resources.
 
 ## Installing this Function
 
+The function can be installed as a Crossplane package, and runs in a [Composition Function](https://docs.crossplane.io/latest/concepts/composition-functions/). This feature requires a minium Crossplane version of 1.14.
+
 ```yaml
 apiVersion: pkg.crossplane.io/v1beta1
 kind: Function
@@ -21,7 +23,9 @@ spec:
 
 ## What this function does
 
-This function enables condition rendering of the entire function or select resources.
+This function enables conditional rendering of the entire function or select resources.
+
+The language used for Conditionals is the [Common Expression Language (CEL)](https://github.com/google/cel-spec), which is widely used in the Kubernetes ecosystem.
 
 ### Conditionally Running the Function
 
@@ -168,24 +172,46 @@ Produces the following output, showing what resources Crossplane would compose:
 
 ```yaml
 ---
-apiVersion: example.crossplane.io/v1
-kind: XR
+apiVersion: nop.example.org/v1alpha1
+kind: XNopResource
 metadata:
-  name: example-xr
+  name: test-resource
 ---
-apiVersion: s3.aws.upbound.io/v1beta1
-kind: Bucket
+apiVersion: nop.crossplane.io/v1alpha1
+kind: NopResource
 metadata:
   annotations:
-    crossplane.io/composition-resource-name: bucket
-  generateName: example-xr-
+    crossplane.io/composition-resource-name: test-resource
+  generateName: test-resource-
   labels:
-    crossplane.io/composite: example-xr
+    crossplane.io/composite: test-resource
   ownerReferences:
-    # Omitted for brevity
+  - apiVersion: nop.example.org/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: XNopResource
+    name: test-resource
+    uid: ""
 spec:
   forProvider:
-    region: us-east-2
+    conditionAfter:
+    - conditionStatus: "True"
+      conditionType: Ready
+      time: 5s
+    connectionDetails:
+    - name: username
+      value: fakeuser
+    - name: password
+      value: verysecurepassword
+    - name: endpoint
+      value: 127.0.0.1
+    fields:
+      arrayField:
+      - stringField: array
+      integerField: 42
+      objectField:
+        stringField: object
+      stringField: string
 ```
 
 See the [composition functions documentation][docs-functions] to learn how to
