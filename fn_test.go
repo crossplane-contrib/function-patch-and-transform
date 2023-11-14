@@ -5,19 +5,21 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
 	"github.com/crossplane/crossplane-runtime/pkg/logging"
 	fncontext "github.com/crossplane/function-sdk-go/context"
 	fnv1beta1 "github.com/crossplane/function-sdk-go/proto/v1beta1"
-	"github.com/crossplane/function-sdk-go/resource"
-	"github.com/crossplane/function-sdk-go/response"
+	"github.com/stevendborrelli/function-conditional-patch-and-transform/input/v1beta1"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
+
+	"github.com/crossplane/function-sdk-go/resource"
+	"github.com/crossplane/function-sdk-go/response"
 )
 
 func TestRunFunction(t *testing.T) {
@@ -156,8 +158,8 @@ func TestRunFunction(t *testing.T) {
 								Patches: []v1beta1.Patch{
 									{
 										Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-										FromFieldPath: pointer.String("spec.widgets"),
-										ToFieldPath:   pointer.String("spec.watchers"),
+										FromFieldPath: ptr.To[string]("spec.widgets"),
+										ToFieldPath:   ptr.To[string]("spec.watchers"),
 										Transforms: []v1beta1.Transform{
 											{
 												Type: v1beta1.TransformTypeConvert,
@@ -169,7 +171,7 @@ func TestRunFunction(t *testing.T) {
 												Type: v1beta1.TransformTypeMath,
 												Math: &v1beta1.MathTransform{
 													Type:     v1beta1.MathTransformTypeMultiply,
-													Multiply: pointer.Int64(3),
+													Multiply: ptr.To[int64](3),
 												},
 											},
 										},
@@ -221,8 +223,8 @@ func TestRunFunction(t *testing.T) {
 								Patches: []v1beta1.Patch{
 									{
 										Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-										FromFieldPath: pointer.String("spec.widgets"),
-										ToFieldPath:   pointer.String("spec.watchers"),
+										FromFieldPath: ptr.To[string]("spec.widgets"),
+										ToFieldPath:   ptr.To[string]("spec.watchers"),
 										Transforms: []v1beta1.Transform{
 											{
 												Type: v1beta1.TransformTypeConvert,
@@ -234,7 +236,7 @@ func TestRunFunction(t *testing.T) {
 												Type: v1beta1.TransformTypeMath,
 												Math: &v1beta1.MathTransform{
 													Type:     v1beta1.MathTransformTypeMultiply,
-													Multiply: pointer.Int64(3),
+													Multiply: ptr.To[int64](3),
 												},
 											},
 										},
@@ -291,8 +293,8 @@ func TestRunFunction(t *testing.T) {
 								Patches: []v1beta1.Patch{
 									{
 										Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-										FromFieldPath: pointer.String("spec.widgets"),
-										ToFieldPath:   pointer.String("spec.watchers"),
+										FromFieldPath: ptr.To[string]("spec.widgets"),
+										ToFieldPath:   ptr.To[string]("spec.watchers"),
 									},
 								},
 							},
@@ -388,16 +390,16 @@ func TestRunFunction(t *testing.T) {
 									{
 										// This patch should work.
 										Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-										FromFieldPath: pointer.String("spec.widgets"),
-										ToFieldPath:   pointer.String("spec.watchers"),
+										FromFieldPath: ptr.To[string]("spec.widgets"),
+										ToFieldPath:   ptr.To[string]("spec.watchers"),
 									},
 									{
 										// This patch should return an error,
 										// because the required path does not
 										// exist.
 										Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-										FromFieldPath: pointer.String("spec.doesNotExist"),
-										ToFieldPath:   pointer.String("spec.explode"),
+										FromFieldPath: ptr.To[string]("spec.doesNotExist"),
+										ToFieldPath:   ptr.To[string]("spec.explode"),
 										Policy: &v1beta1.PatchPolicy{
 											FromFieldPath: func() *v1beta1.FromFieldPathPolicy {
 												r := v1beta1.FromFieldPathPolicyRequired
@@ -510,7 +512,7 @@ func TestRunFunction(t *testing.T) {
 									{
 										Type:                    v1beta1.ConnectionDetailTypeFromConnectionSecretKey,
 										Name:                    "very",
-										FromConnectionSecretKey: pointer.String("very"),
+										FromConnectionSecretKey: ptr.To[string]("very"),
 									},
 								},
 							},
@@ -572,8 +574,8 @@ func TestRunFunction(t *testing.T) {
 								Patches: []v1beta1.Patch{
 									{
 										Type:          v1beta1.PatchTypeToCompositeFieldPath,
-										FromFieldPath: pointer.String("spec.widgets"),
-										ToFieldPath:   pointer.String("spec.watchers"),
+										FromFieldPath: ptr.To[string]("spec.widgets"),
+										ToFieldPath:   ptr.To[string]("spec.watchers"),
 										Transforms: []v1beta1.Transform{
 											{
 												Type: v1beta1.TransformTypeConvert,
@@ -585,7 +587,7 @@ func TestRunFunction(t *testing.T) {
 												Type: v1beta1.TransformTypeMath,
 												Math: &v1beta1.MathTransform{
 													Type:     v1beta1.MathTransformTypeMultiply,
-													Multiply: pointer.Int64(3),
+													Multiply: ptr.To[int64](3),
 												},
 											},
 										},

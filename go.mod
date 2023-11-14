@@ -1,11 +1,13 @@
-module github.com/crossplane-contrib/function-patch-and-transform
+module github.com/stevendborrelli/function-conditional-patch-and-transform
 
-go 1.20
+go 1.21
+
+toolchain go1.21.3
 
 require (
-	github.com/alecthomas/kong v0.8.0
-	github.com/crossplane/crossplane-runtime v1.14.0-rc.0.0.20231019152856-a5df125af6f8
-	github.com/crossplane/function-sdk-go v0.0.0-20231024211620-66fe852bf9fc
+	github.com/alecthomas/kong v0.8.1
+	github.com/crossplane/crossplane-runtime v1.14.1
+	github.com/crossplane/function-sdk-go v0.1.0
 	github.com/google/cel-go v0.16.1
 	github.com/google/go-cmp v0.6.0
 	github.com/pkg/errors v0.9.1
@@ -13,7 +15,7 @@ require (
 	k8s.io/api v0.28.3
 	k8s.io/apiextensions-apiserver v0.28.3
 	k8s.io/apimachinery v0.28.3
-	k8s.io/utils v0.0.0-20230505201702-9f6742963106
+	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 	sigs.k8s.io/controller-tools v0.13.0
 )
 
@@ -27,7 +29,8 @@ require (
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/fatih/color v1.15.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
-	github.com/go-logr/logr v1.2.4 // indirect
+	github.com/go-json-experiment/json v0.0.0-20231013223334-54c864be5b8d // indirect
+	github.com/go-logr/logr v1.3.0 // indirect
 	github.com/go-logr/zapr v1.2.4 // indirect
 	github.com/go-openapi/jsonpointer v0.19.6 // indirect
 	github.com/go-openapi/jsonreference v0.20.2 // indirect
@@ -57,7 +60,6 @@ require (
 	github.com/spf13/cobra v1.7.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stoewer/go-strcase v1.2.0 // indirect
-	github.com/stretchr/testify v1.8.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
@@ -84,5 +86,5 @@ require (
 	sigs.k8s.io/controller-runtime v0.16.3 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
-	sigs.k8s.io/yaml v1.3.0 // indirect
+	sigs.k8s.io/yaml v1.4.0 // indirect
 )
