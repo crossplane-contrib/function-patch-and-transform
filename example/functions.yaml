@@ -1,7 +1,0 @@
----
-apiVersion: pkg.crossplane.io/v1beta1
-kind: Function
-metadata:
-  name: function-conditional-patch-and-transform
-spec:
-  package: xpkg.upbound.io/crossplane-contrib/function-conditional-patch-and-transform:v0.1.4

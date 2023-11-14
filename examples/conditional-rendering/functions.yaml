@@ -5,5 +5,5 @@ metadata:
   annotations:
     render.crossplane.io/runtime: Development
 spec:
-  package: index.docker.io/steve/function-conditional-patch-and-transform:v0.2.0
+  package: xpkg.upbound.io/borrelli-org/function-conditional-patch-and-transform:v0.3.0
   packagePullPolicy: Always
