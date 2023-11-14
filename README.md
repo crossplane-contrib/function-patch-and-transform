@@ -118,6 +118,40 @@ Here are some example queries on the XR and RunFunctionRequest:
 - `"test" in desired.resources`evaluates to `true`
 - `"bad-resource" in desired.resources` evaluates to `false`
 
+### Conditionally Rendering Managed Resources
+
+In a similar manner, individual Managed Resources can also
+be rendered conditionally, see the example at [examples/conditional-resources](examples/conditional-resources/). 
+
+Each resource can have a `condition`.
+
+```yaml
+      resources:
+         - name: blue-resource
+           condition: observed.composite.resource.spec.deployment.blue == true
+           base:
+            apiVersion: nop.crossplane.io/v1alpha1
+            kind: NopResource
+            spec:
+              forProvider:
+```
+
+If this condition is set in the Claim/XR, the resource will be rendered:
+
+```yaml
+apiVersion: nop.example.org/v1alpha1
+kind: XNopConditional
+metadata:
+  name: test-resource
+spec:
+  env: dev
+  render: true
+  deployment:
+    blue: true
+    green: false
+
+```
+
 ### Test this function locally using the Crossplane CLI
 
 You can use the Crossplane CLI to run any function locally and see what composed
