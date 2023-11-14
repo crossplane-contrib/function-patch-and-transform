@@ -2,8 +2,6 @@ apiVersion: pkg.crossplane.io/v1beta1
 kind: Function
 metadata:
   name: function-conditional-patch-and-transform
-  annotations:
-    render.crossplane.io/runtime: Development
 spec:
   package: xpkg.upbound.io/borrelli-org/function-conditional-patch-and-transform:v0.3.0
   packagePullPolicy: Always
