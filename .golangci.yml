@@ -38,7 +38,7 @@ linters-settings:
       - default
       - prefix(github.com/crossplane/crossplane-runtime)
       - prefix(github.com/crossplane/function-sdk-go)
-      - prefix(github.com/crossplane-contrib/function-patch-and-transform)
+      - prefix(github.com/stevendborrelli/function-conditional-patch-and-transform)
       - blank
       - dot
 
