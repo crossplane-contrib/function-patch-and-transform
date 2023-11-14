@@ -4,6 +4,7 @@
 // NOTE(negz): See the below link for details on what is happening here.
 // https://github.com/golang/go/wiki/Modules#how-can-i-track-tool-dependencies-for-a-module
 
+//go:generate rm -rf package/input
 //go:generate go run -tags generate sigs.k8s.io/controller-tools/cmd/controller-gen paths=./v1beta1 object crd:crdVersions=v1 output:artifacts:config=../package/input
 
 package input

@@ -20,6 +20,9 @@ type Resources struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
+	// Condition defines a CEL condition whether this function will render
+	Condition *ConditionSpec `json:"condition,omitempty"`
+
 	// PatchSets define a named set of patches that may be included by any
 	// resource. PatchSets cannot themselves refer to other PatchSets.
 	// +optional

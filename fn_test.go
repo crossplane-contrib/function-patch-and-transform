@@ -20,7 +20,7 @@ import (
 	"github.com/crossplane/function-sdk-go/resource"
 	"github.com/crossplane/function-sdk-go/response"
 
-	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
+	"github.com/stevendborrelli/function-conditional-patch-and-transform/input/v1beta1"
 )
 
 func TestRunFunction(t *testing.T) {
