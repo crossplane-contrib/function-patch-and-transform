@@ -154,6 +154,21 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 
 		dcd := &resource.DesiredComposed{Resource: composed.New()}
 
+		if t.Condition != nil {
+			// Evaluate the condition to see if we should skip this template.
+			run, err := EvaluateCondition(*t.Condition, req)
+			if err != nil {
+				log.Info(err.Error())
+				response.Fatal(rsp, errors.Wrap(err, conditionError))
+				return rsp, nil
+			}
+			if !run {
+				log.Debug("Condition evaluated to false. Skipping template.")
+				continue
+			}
+			log.Debug("Condition evaluated to true.")
+		}
+
 		// If we have a base template, render it into our desired resource. If a
 		// previous Function produced a desired resource with this name we'll
 		// overwrite it. If we don't have a base template we'll try to patch to

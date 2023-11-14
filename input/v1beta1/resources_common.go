@@ -46,6 +46,9 @@ type ComposedTemplate struct {
 	// +optional
 	Base *runtime.RawExtension `json:"base,omitempty"`
 
+	// Condition defines a CEL condition whether this function will render
+	Condition *ConditionSpec `json:"condition,omitempty"`
+
 	// Patches to and from the composed resource.
 	// +optional
 	Patches []Patch `json:"patches,omitempty"`
