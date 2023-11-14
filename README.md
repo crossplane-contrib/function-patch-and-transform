@@ -1,91 +1,169 @@
 # function-conditional-patch-and-transform
+
 [![CI](https://github.com/stevendborrelli/function-conditional-patch-and-transform/actions/workflows/ci.yml/badge.svg)](https://github.com/stevendborrelli/function-conditional-patch-and-transform/actions/workflows/ci.yml) ![GitHub release (latest SemVer)](https://img.shields.io/github/release/crossplane-contrib/function-conditional-patch-and-transform)
 
 This composition function is a fork of the upstream [function-patch-and-transform](https://github.com/crossplane-contrib/function-patch-and-transform)
 that adds support for Conditional invocation of the function and the rendering
 of individual resources.
 
-This [composition function][docs-functions] does everything Crossplane's
-built-in [patch & transform][docs-pandt] (P&T) composition does. Instead of
-specifying `spec.resources` in your Composition, you can use this function.
-
-Using this function, P&T looks like this:
+## Installing this Function
 
 ```yaml
-apiVersion: apiextensions.crossplane.io/v1
-kind: Composition
+apiVersion: pkg.crossplane.io/v1beta1
+kind: Function
 metadata:
-  name: example
+  name: function-conditional-patch-and-transform
+  annotations:
+    render.crossplane.io/runtime: Development
 spec:
-  # Omitted for brevity.
-  mode: Pipeline
+  package: xpkg.upbound.io/borrelli-org/function-conditional-patch-and-transform:v0.3.0
+```
+
+## What this function does
+
+This function enables condition rendering of the entire function or select resources.
+
+### Conditionally Running the Function
+
+Composition authors express a CEL condition, and if it returns `true`, patch-and-transforms defined in the `input` will be processed.
+
+```yaml
+ mode: Pipeline
   pipeline:
   - step: patch-and-transform
     functionRef:
-      name: function-conditional-patch-and-transform
+      name: function-patch-and-transform
     input:
-      apiVersion: pt.fn.crossplane.io/v1beta1
+      apiVersion: conditional-pt.fn.crossplane.io/v1beta1
       kind: Resources
-      resources:
-      - name: bucket
-        base:
-          apiVersion: s3.aws.upbound.io/v1beta1
-          kind: Bucket
-          spec:
-            forProvider:
-              region: us-east-2
-        patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.location"
-          toFieldPath: "spec.forProvider.region"
-          transforms:
-          - type: map
-            map: 
-              EU: "eu-north-1"
-              US: "us-east-2"
+      condition: observed.composite.resource.spec.env == "prod" && observed.composite.resource.spec.render == true
+      resources: [...all your resources...]
 ```
 
-Notice that it looks very similar to native P&T. The difference is that
-everything is under `spec.pipeline[0].input.resources`, not `spec.resources`.
-This is the Function's input.
+Using the following XR and RunFunctionRequest inputs (click to expand):
+<details>
 
-## Okay, but why?
+```yaml
+apiVersion: nopexample.org/v1alpha1
+kind: XNopResource
+metadata:
+  name: test-resource
+spec:
+  env: dev
+  render: true
+```
 
-There are a lot of good reasons to use a function to use a function to do P&T
-composition. In fact, it's so compelling that the Crossplane maintainers are
-considering deprecating native P&T. See Crossplane issue [#4746] for details.
+```json
+{
+   "desired": {
+      "composite": {
+         "resource": {
+            "apiVersion": "nopexample.org/v1alpha1",
+            "kind": "XNopResource",
+            "metadata": {
+               "name": "test-resource"
+            },
+            "spec": {
+               "env": "dev",
+               "render": true
+            }
+         }
+      },
+      "resources": {
+         "test": {
+            "resource": {
+               "apiVersion": "example.org/v1",
+               "kind": "CD",
+               "metadata": {
+                  "name": "cool-42",
+                  "namespace": "default"
+               }
+            }
+         }
+      }
+   },
+   "observed": {
+      "composite": {
+         "resource": {
+            "apiVersion": "nopexample.org/v1alpha1",
+            "kind": "XNopResource",
+            "metadata": {
+               "name": "test-resource"
+            },
+            "spec": {
+               "env": "dev",
+               "render": true
+            },
+            "status": {
+               "id": "123",
+               "ready": false
+            }
+         }
+      }
+   }
+}
+```
 
-### Mix and match P&T with other functions
+</details>
 
-With this function you can use P&T with other functions. For example you can
-create a desired resource using the [Go Templating][fn-go-templating] function,
-then patch the result using this function.
+You can use the  [CEL Playground](https://playcel.undistro.io/?content=H4sIAAAAAAAAA%2B1UPW%2FDIBT8K4g5SeW0U9Z27tCh6sDyYl5aVAwIsNUq8n%2BvMY4dGxx16dYNuON93D04Uw4e6IGemSKEMMrRCYuc0QOJR%2F1pqSujnfA4O%2B8hi07XtkyQHgQjXtE6oVWAGVXa4BdURuJO2%2Fe7pgBpPqBgdLO8%2BSkUj3fenrV5GZMkxAo9hB4y%2BXtcQYUxkEfnt1O5c26bBHYGy7WgqJoYk2OT1DTIojjaQPK2xkWuq%2B24ngqYNHWp3KGJrNQ3fCA5K%2BY%2B5JuYTHh8yjNuq0%2FmBpRay%2B3DPhdpZDoDJV60PUEt%2FdKphYCrevaLQVVG9dGhbf4H%2B28HO83lwdfJGF9QMShR7O%2FXkgH%2FDpwTSPerVxRdZ6qlm27ETadKMKn74Fjn1BH4lU5EKDJ8d7vxxdH2B6myt7YTBQAA) to test various queries.
 
-It's not just patches either. You can use P&T to derive composite resource
-connection details from a resource produced by another function, or use it to
-determine whether a resource produced by another function is ready
+Here are some example queries on the XR and RunFunctionRequest:
 
-### Decouple P&T development from Crossplane core
+- `desired.composite.resource.spec.env == "dev"` evaluates to  `true`
+- `desired.composite.resource.spec.render == true,` evaluates to `true`
+- `desired.composite.resource.spec.render == false"` evaluates to `false`
+- `observed.composite.resource.status.ready == true"` evaluates to `false`
+- `size(desired.resources) == 0` evaluates to `false`
+- `"test" in desired.resources`evaluates to `true`
+- `"bad-resource" in desired.resources` evaluates to `false`
 
-When P&T development happens in a function, it's not coupled to the Crossplane
-release cycle. The maintainers of this function can cut releases more frequently
-to add new features to P&T.
+### Conditionally Rendering Managed Resources
 
-It also becomes easier to fork. You could fork this function, add a new kind of
-transform and try it out for a few weeks before sending a PR upstream. Or, if
-your new feature is controversial, it's now a lot less work to maintain your own
-fork long term.
+In a similar manner, individual Managed Resources can also
+be rendered conditionally, see the example at [examples/conditional-resources](examples/conditional-resources/). 
 
-### Test P&T locally using the Crossplane CLI
+Each resource can have a `condition`.
+
+```yaml
+      resources:
+         - name: blue-resource
+           condition: observed.composite.resource.spec.deployment.blue == true
+           base:
+            apiVersion: nop.crossplane.io/v1alpha1
+            kind: NopResource
+            spec:
+              forProvider:
+```
+
+If this condition is set in the Claim/XR, the resource will be rendered:
+
+```yaml
+apiVersion: nop.example.org/v1alpha1
+kind: XNopConditional
+metadata:
+  name: test-resource
+spec:
+  env: dev
+  render: true
+  deployment:
+    blue: true
+    green: false
+
+```
+
+### Test this function locally using the Crossplane CLI
 
 You can use the Crossplane CLI to run any function locally and see what composed
 resources it would create. This only works with functions - not native P&T.
 
-For example, using the files in the [example](example) directory:
+For example, using the files in the [examples](examples) directory:
 
 ```shell
-$ crossplane beta render xr.yaml composition.yaml functions.yaml
+cd examples/conditional-rendering
+crossplane beta render xr.yaml composition.yaml functions.yaml
 ```
+
 Produces the following output, showing what resources Crossplane would compose:
 
 ```yaml
@@ -112,26 +190,6 @@ spec:
 
 See the [composition functions documentation][docs-functions] to learn how to
 use `crossplane beta render`.
-
-## Differences from the native implementation
-
-This function has a few small, intentional breaking changes compared to the
-native implementation.
-
-These fields are now required. This makes P&T configuration less ambiguous:
-
-* `resources[i].name`
-* `resources[i].connectionDetails[i].name`
-* `resources[i].connectionDetails[i].type`
-* `resources[i].patches[i].transforms[i].string.type`
-* `resources[i].patches[i].transforms[i].math.type`
-
-Also, the `resources[i].patches[i].policy.mergeOptions` field is no longer
-supported.
-
-Composition functions use Kubernetes server-side apply to intelligently merge
-arrays and objects. This requires merge configuration to be specified at the
-composed resource schema level (i.e. in CRDs) per [#4617].
 
 ## Developing this function
 

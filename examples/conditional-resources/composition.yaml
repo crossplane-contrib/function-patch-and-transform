@@ -1,0 +1,69 @@
+---
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xnopconditionals.nop.example.org
+spec:
+  compositeTypeRef:
+    apiVersion: nop.example.org/v1alpha1
+    kind: XNopConditional
+  mode: Pipeline
+  pipeline:
+  - step: conditional-patch-and-transform
+    functionRef:
+      name: function-conditional-patch-and-transform
+    input:
+      apiVersion: conditional-pt.fn.crossplane.io/v1beta1
+      kind: Resources
+      resources:
+         - name: blue-resource
+           condition: observed.composite.resource.spec.deployment.blue == true
+           base:
+            apiVersion: nop.crossplane.io/v1alpha1
+            kind: NopResource
+            spec:
+              forProvider:
+                fields:
+                  integerField: 42
+                  stringField: "blue"
+                  objectField:
+                    stringField: "blueObject"
+                  arrayField:
+                  - stringField: "blueArray"
+                conditionAfter:
+                - time: 5s
+                  conditionType: Ready
+                  conditionStatus: "True"
+                connectionDetails:
+                - name: username
+                  value: fakeuser
+                - name: password
+                  value: verysecurepassword
+                - name: endpoint
+                  value: 127.0.0.1
+         - name: green-resource
+           condition: observed.composite.resource.spec.deployment.green == true
+           base:
+            apiVersion: nop.crossplane.io/v1alpha1
+            kind: NopResource
+            spec:
+              forProvider:
+                fields:
+                  integerField: 42
+                  stringField: "green"
+                  objectField:
+                    stringField: "greenObject"
+                  arrayField:
+                  - stringField: "greenArray"
+                conditionAfter:
+                - time: 5s
+                  conditionType: Ready
+                  conditionStatus: "True"
+                connectionDetails:
+                - name: username
+                  value: fakeuser
+                - name: password
+                  value: verysecurepassword
+                - name: endpoint
+                  value: 127.0.0.1
+
