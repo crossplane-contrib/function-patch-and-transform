@@ -6,7 +6,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/crossplane/crossplane-runtime/pkg/errors"
 	"github.com/crossplane/crossplane-runtime/pkg/reconciler/managed"
@@ -14,7 +14,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/pkg/resource/fake"
 	"github.com/crossplane/crossplane-runtime/pkg/test"
 
-	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
+	"github.com/stevendborrelli/function-conditional-patch-and-transform/input/v1beta1"
 )
 
 func TestExtractConnectionDetails(t *testing.T) {
@@ -64,32 +64,32 @@ func TestExtractConnectionDetails(t *testing.T) {
 					{
 						Type:                    v1beta1.ConnectionDetailTypeFromConnectionSecretKey,
 						Name:                    "bar",
-						FromConnectionSecretKey: pointer.String("bar"),
+						FromConnectionSecretKey: ptr.To[string]("bar"),
 					},
 					{
 						Type:                    v1beta1.ConnectionDetailTypeFromConnectionSecretKey,
 						Name:                    "none",
-						FromConnectionSecretKey: pointer.String("none"),
+						FromConnectionSecretKey: ptr.To[string]("none"),
 					},
 					{
 						Type:                    v1beta1.ConnectionDetailTypeFromConnectionSecretKey,
 						Name:                    "convfoo",
-						FromConnectionSecretKey: pointer.String("foo"),
+						FromConnectionSecretKey: ptr.To[string]("foo"),
 					},
 					{
 						Type:  v1beta1.ConnectionDetailTypeFromValue,
 						Name:  "fixed",
-						Value: pointer.String("value"),
+						Value: ptr.To[string]("value"),
 					},
 					{
 						Type:          v1beta1.ConnectionDetailTypeFromFieldPath,
 						Name:          "name",
-						FromFieldPath: pointer.String("objectMeta.name"),
+						FromFieldPath: ptr.To[string]("objectMeta.name"),
 					},
 					{
 						Type:          v1beta1.ConnectionDetailTypeFromFieldPath,
 						Name:          "generation",
-						FromFieldPath: pointer.String("objectMeta.generation"),
+						FromFieldPath: ptr.To[string]("objectMeta.generation"),
 					},
 				},
 			},

@@ -6,7 +6,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
+	"github.com/stevendborrelli/function-conditional-patch-and-transform/input/v1beta1"
 )
 
 // WrapFieldError wraps the given field.Error adding the given field.Path as root of the Field.
@@ -42,11 +42,13 @@ func ValidateResources(r *v1beta1.Resources) *field.Error {
 	if len(r.Resources) == 0 {
 		return field.Required(field.NewPath("resources"), "resources is required")
 	}
-
 	for i, r := range r.Resources {
 		if err := ValidateComposedTemplate(r); err != nil {
 			return WrapFieldError(err, field.NewPath("resources").Index(i))
 		}
+	}
+	if err := ValidateEnvironment(r.Environment); err != nil {
+		return WrapFieldError(err, field.NewPath("environment"))
 	}
 	return nil
 }
@@ -80,6 +82,28 @@ func ValidatePatchSet(ps v1beta1.PatchSet) *field.Error {
 		return field.Required(field.NewPath("name"), "name is required")
 	}
 	for i, p := range ps.Patches {
+		if err := ValidatePatch(p); err != nil {
+			return WrapFieldError(err, field.NewPath("patches").Index(i))
+		}
+	}
+	return nil
+}
+
+// ValidateEnvironment validates (patches to and from) the Environment.
+func ValidateEnvironment(e *v1beta1.Environment) *field.Error {
+	if e == nil {
+		return nil
+	}
+	for i, p := range e.Patches {
+		switch p.GetType() { //nolint:exhaustive // Intentionally targeting only environment patches.
+		case v1beta1.PatchTypeCombineToEnvironment,
+			v1beta1.PatchTypeCombineFromEnvironment,
+			v1beta1.PatchTypeFromEnvironmentFieldPath,
+			v1beta1.PatchTypeToEnvironmentFieldPath:
+		default:
+			return field.Invalid(field.NewPath("patches").Index(i).Key("type"), p.Type, "invalid environment patch type")
+		}
+
 		if err := ValidatePatch(p); err != nil {
 			return WrapFieldError(err, field.NewPath("patches").Index(i))
 		}
@@ -136,7 +160,10 @@ func ValidateMatchConditionReadinessCheck(m *v1beta1.MatchConditionReadinessChec
 // ValidatePatch validates a Patch.
 func ValidatePatch(p v1beta1.Patch) *field.Error {
 	switch p.GetType() {
-	case v1beta1.PatchTypeFromCompositeFieldPath, v1beta1.PatchTypeToCompositeFieldPath:
+	case v1beta1.PatchTypeFromCompositeFieldPath,
+		v1beta1.PatchTypeToCompositeFieldPath,
+		v1beta1.PatchTypeFromEnvironmentFieldPath,
+		v1beta1.PatchTypeToEnvironmentFieldPath:
 		if p.FromFieldPath == nil {
 			return field.Required(field.NewPath("fromFieldPath"), fmt.Sprintf("fromFieldPath must be set for patch type %s", p.Type))
 		}
@@ -144,7 +171,10 @@ func ValidatePatch(p v1beta1.Patch) *field.Error {
 		if p.PatchSetName == nil {
 			return field.Required(field.NewPath("patchSetName"), fmt.Sprintf("patchSetName must be set for patch type %s", p.Type))
 		}
-	case v1beta1.PatchTypeCombineFromComposite, v1beta1.PatchTypeCombineToComposite:
+	case v1beta1.PatchTypeCombineFromComposite,
+		v1beta1.PatchTypeCombineToComposite,
+		v1beta1.PatchTypeCombineFromEnvironment,
+		v1beta1.PatchTypeCombineToEnvironment:
 		if p.Combine == nil {
 			return field.Required(field.NewPath("combine"), fmt.Sprintf("combine must be set for patch type %s", p.Type))
 		}
@@ -204,7 +234,10 @@ func ValidateTransform(t v1beta1.Transform) *field.Error { //nolint:gocyclo // T
 
 // ValidateMathTransform validates a MathTransform.
 func ValidateMathTransform(m *v1beta1.MathTransform) *field.Error {
-	switch m.GetType() {
+	if m.Type == "" {
+		return field.Required(field.NewPath("type"), "math transform type is required")
+	}
+	switch m.Type {
 	case v1beta1.MathTransformTypeMultiply:
 		if m.Multiply == nil {
 			return field.Required(field.NewPath("multiply"), "must specify a value if a multiply math transform is specified")
@@ -266,8 +299,11 @@ func ValidateMatchTransformPattern(p v1beta1.MatchTransformPattern) *field.Error
 
 // ValidateStringTransform validates a StringTransform.
 func ValidateStringTransform(s *v1beta1.StringTransform) *field.Error { //nolint:gocyclo // just a switch
+	if s.Type == "" {
+		return field.Required(field.NewPath("type"), "string transform type is required")
+	}
 	switch s.Type {
-	case v1beta1.StringTransformTypeFormat, "":
+	case v1beta1.StringTransformTypeFormat:
 		if s.Format == nil {
 			return field.Required(field.NewPath("fmt"), "format transform requires a format")
 		}
@@ -309,7 +345,7 @@ func ValidateConvertTransform(t *v1beta1.ConvertTransform) *field.Error {
 // ValidateConnectionDetail checks if the connection detail is logically valid.
 func ValidateConnectionDetail(cd v1beta1.ConnectionDetail) *field.Error {
 	if cd.Type == "" {
-		return field.Required(field.NewPath("type"), "type is required")
+		return field.Required(field.NewPath("type"), "connection detail type is required")
 	}
 	if !cd.Type.IsValid() {
 		return field.Invalid(field.NewPath("type"), string(cd.Type), "unknown connection detail type")

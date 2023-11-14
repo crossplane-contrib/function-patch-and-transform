@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/pkg/errors"
@@ -14,7 +14,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/pkg/resource/unstructured/composed"
 	"github.com/crossplane/crossplane-runtime/pkg/test"
 
-	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
+	"github.com/stevendborrelli/function-conditional-patch-and-transform/input/v1beta1"
 )
 
 var _ ReadinessChecker = ReadinessCheckerFn(IsReady)
@@ -101,7 +101,7 @@ func TestIsReady(t *testing.T) {
 				o: composed.New(),
 				rc: []v1beta1.ReadinessCheck{{
 					Type:      v1beta1.ReadinessCheckTypeNonEmpty,
-					FieldPath: pointer.String("metadata..uid"),
+					FieldPath: ptr.To[string]("metadata..uid"),
 				}},
 			},
 			want: want{
@@ -114,7 +114,7 @@ func TestIsReady(t *testing.T) {
 				o: composed.New(),
 				rc: []v1beta1.ReadinessCheck{{
 					Type:      v1beta1.ReadinessCheckTypeNonEmpty,
-					FieldPath: pointer.String("metadata.uid"),
+					FieldPath: ptr.To[string]("metadata.uid"),
 				}},
 			},
 			want: want{
@@ -129,7 +129,7 @@ func TestIsReady(t *testing.T) {
 				}),
 				rc: []v1beta1.ReadinessCheck{{
 					Type:      v1beta1.ReadinessCheckTypeNonEmpty,
-					FieldPath: pointer.String("metadata.uid"),
+					FieldPath: ptr.To[string]("metadata.uid"),
 				}},
 			},
 			want: want{
@@ -142,8 +142,8 @@ func TestIsReady(t *testing.T) {
 				o: composed.New(),
 				rc: []v1beta1.ReadinessCheck{{
 					Type:        v1beta1.ReadinessCheckTypeMatchString,
-					FieldPath:   pointer.String("metadata..uid"),
-					MatchString: pointer.String("cool"),
+					FieldPath:   ptr.To[string]("metadata..uid"),
+					MatchString: ptr.To[string]("cool"),
 				}},
 			},
 			want: want{
@@ -156,8 +156,8 @@ func TestIsReady(t *testing.T) {
 				o: composed.New(),
 				rc: []v1beta1.ReadinessCheck{{
 					Type:        v1beta1.ReadinessCheckTypeMatchString,
-					FieldPath:   pointer.String("metadata.uid"),
-					MatchString: pointer.String("olala"),
+					FieldPath:   ptr.To[string]("metadata.uid"),
+					MatchString: ptr.To[string]("olala"),
 				}},
 			},
 			want: want{
@@ -172,8 +172,8 @@ func TestIsReady(t *testing.T) {
 				}),
 				rc: []v1beta1.ReadinessCheck{{
 					Type:        v1beta1.ReadinessCheckTypeMatchString,
-					FieldPath:   pointer.String("metadata.uid"),
-					MatchString: pointer.String("olala"),
+					FieldPath:   ptr.To[string]("metadata.uid"),
+					MatchString: ptr.To[string]("olala"),
 				}},
 			},
 			want: want{
@@ -186,8 +186,8 @@ func TestIsReady(t *testing.T) {
 				o: composed.New(),
 				rc: []v1beta1.ReadinessCheck{{
 					Type:         v1beta1.ReadinessCheckTypeMatchInteger,
-					FieldPath:    pointer.String("metadata..uid"),
-					MatchInteger: pointer.Int64(42),
+					FieldPath:    ptr.To[string]("metadata..uid"),
+					MatchInteger: ptr.To[int64](42),
 				}},
 			},
 			want: want{
@@ -206,8 +206,8 @@ func TestIsReady(t *testing.T) {
 				}),
 				rc: []v1beta1.ReadinessCheck{{
 					Type:         v1beta1.ReadinessCheckTypeMatchInteger,
-					FieldPath:    pointer.String("spec.someNum"),
-					MatchInteger: pointer.Int64(5),
+					FieldPath:    ptr.To[string]("spec.someNum"),
+					MatchInteger: ptr.To[int64](5),
 				}},
 			},
 			want: want{
@@ -226,8 +226,8 @@ func TestIsReady(t *testing.T) {
 				}),
 				rc: []v1beta1.ReadinessCheck{{
 					Type:         v1beta1.ReadinessCheckTypeMatchInteger,
-					FieldPath:    pointer.String("spec.someNum"),
-					MatchInteger: pointer.Int64(5),
+					FieldPath:    ptr.To[string]("spec.someNum"),
+					MatchInteger: ptr.To[int64](5),
 				}},
 			},
 			want: want{
@@ -244,7 +244,7 @@ func TestIsReady(t *testing.T) {
 				}),
 				rc: []v1beta1.ReadinessCheck{{
 					Type:      v1beta1.ReadinessCheckTypeMatchTrue,
-					FieldPath: pointer.String("spec.someBool"),
+					FieldPath: ptr.To[string]("spec.someBool"),
 				}},
 			},
 			want: want{
@@ -263,7 +263,7 @@ func TestIsReady(t *testing.T) {
 				}),
 				rc: []v1beta1.ReadinessCheck{{
 					Type:      v1beta1.ReadinessCheckTypeMatchTrue,
-					FieldPath: pointer.String("spec.someBool"),
+					FieldPath: ptr.To[string]("spec.someBool"),
 				}},
 			},
 			want: want{
@@ -282,7 +282,7 @@ func TestIsReady(t *testing.T) {
 				}),
 				rc: []v1beta1.ReadinessCheck{{
 					Type:      v1beta1.ReadinessCheckTypeMatchTrue,
-					FieldPath: pointer.String("spec.someBool"),
+					FieldPath: ptr.To[string]("spec.someBool"),
 				}},
 			},
 			want: want{
@@ -299,7 +299,7 @@ func TestIsReady(t *testing.T) {
 				}),
 				rc: []v1beta1.ReadinessCheck{{
 					Type:      v1beta1.ReadinessCheckTypeMatchFalse,
-					FieldPath: pointer.String("spec.someBool"),
+					FieldPath: ptr.To[string]("spec.someBool"),
 				}},
 			},
 			want: want{
@@ -318,7 +318,7 @@ func TestIsReady(t *testing.T) {
 				}),
 				rc: []v1beta1.ReadinessCheck{{
 					Type:      v1beta1.ReadinessCheckTypeMatchFalse,
-					FieldPath: pointer.String("spec.someBool"),
+					FieldPath: ptr.To[string]("spec.someBool"),
 				}},
 			},
 			want: want{
@@ -337,7 +337,7 @@ func TestIsReady(t *testing.T) {
 				}),
 				rc: []v1beta1.ReadinessCheck{{
 					Type:      v1beta1.ReadinessCheckTypeMatchFalse,
-					FieldPath: pointer.String("spec.someBool"),
+					FieldPath: ptr.To[string]("spec.someBool"),
 				}},
 			},
 			want: want{

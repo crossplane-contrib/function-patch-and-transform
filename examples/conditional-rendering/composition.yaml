@@ -1,0 +1,44 @@
+---
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xnopresources.nop.example.org
+spec:
+  compositeTypeRef:
+    apiVersion: nop.example.org/v1alpha1
+    kind: XNopResource
+  mode: Pipeline
+  pipeline:
+  - step: conditional-patch-and-transform
+    functionRef:
+      name: function-patch-and-transform
+    input:
+      apiVersion: pt.fn.crossplane.io/v1beta1
+      kind: Resources
+      condition:
+         expression: observed.composite.resource.spec.env == "dev" && observed.composite.resource.spec.render == true 
+      resources:
+         - name: test-resource
+           base:
+            apiVersion: nop.crossplane.io/v1alpha1
+            kind: NopResource
+            spec:
+              forProvider:
+                fields:
+                  integerField: 42
+                  stringField: "string"
+                  objectField:
+                    stringField: "object"
+                  arrayField:
+                  - stringField: "array"
+                conditionAfter:
+                - time: 5s
+                  conditionType: Ready
+                  conditionStatus: "True"
+                connectionDetails:
+                - name: username
+                  value: fakeuser
+                - name: password
+                  value: verysecurepassword
+                - name: endpoint
+                  value: 127.0.0.1

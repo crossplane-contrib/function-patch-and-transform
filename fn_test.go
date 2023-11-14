@@ -9,16 +9,18 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/structpb"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/crossplane/crossplane-runtime/pkg/logging"
 
+	fncontext "github.com/crossplane/function-sdk-go/context"
 	fnv1beta1 "github.com/crossplane/function-sdk-go/proto/v1beta1"
 	"github.com/crossplane/function-sdk-go/resource"
 	"github.com/crossplane/function-sdk-go/response"
 
-	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
+	"github.com/stevendborrelli/function-conditional-patch-and-transform/input/v1beta1"
 )
 
 func TestRunFunction(t *testing.T) {
@@ -91,6 +93,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
+					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
 				},
 			},
 		},
@@ -121,6 +124,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
+					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
 				},
 			},
 			want: want{
@@ -139,6 +143,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
+					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
 				},
 			},
 		},
@@ -154,8 +159,8 @@ func TestRunFunction(t *testing.T) {
 								Patches: []v1beta1.Patch{
 									{
 										Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-										FromFieldPath: pointer.String("spec.widgets"),
-										ToFieldPath:   pointer.String("spec.watchers"),
+										FromFieldPath: ptr.To[string]("spec.widgets"),
+										ToFieldPath:   ptr.To[string]("spec.watchers"),
 										Transforms: []v1beta1.Transform{
 											{
 												Type: v1beta1.TransformTypeConvert,
@@ -166,7 +171,8 @@ func TestRunFunction(t *testing.T) {
 											{
 												Type: v1beta1.TransformTypeMath,
 												Math: &v1beta1.MathTransform{
-													Multiply: pointer.Int64(3),
+													Type:     v1beta1.MathTransformTypeMultiply,
+													Multiply: ptr.To[int64](3),
 												},
 											},
 										},
@@ -200,6 +206,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
+					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
 				},
 			},
 		},
@@ -217,8 +224,8 @@ func TestRunFunction(t *testing.T) {
 								Patches: []v1beta1.Patch{
 									{
 										Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-										FromFieldPath: pointer.String("spec.widgets"),
-										ToFieldPath:   pointer.String("spec.watchers"),
+										FromFieldPath: ptr.To[string]("spec.widgets"),
+										ToFieldPath:   ptr.To[string]("spec.watchers"),
 										Transforms: []v1beta1.Transform{
 											{
 												Type: v1beta1.TransformTypeConvert,
@@ -229,7 +236,8 @@ func TestRunFunction(t *testing.T) {
 											{
 												Type: v1beta1.TransformTypeMath,
 												Math: &v1beta1.MathTransform{
-													Multiply: pointer.Int64(3),
+													Type:     v1beta1.MathTransformTypeMultiply,
+													Multiply: ptr.To[int64](3),
 												},
 											},
 										},
@@ -268,6 +276,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
+					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
 				},
 			},
 		},
@@ -285,8 +294,8 @@ func TestRunFunction(t *testing.T) {
 								Patches: []v1beta1.Patch{
 									{
 										Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-										FromFieldPath: pointer.String("spec.widgets"),
-										ToFieldPath:   pointer.String("spec.watchers"),
+										FromFieldPath: ptr.To[string]("spec.widgets"),
+										ToFieldPath:   ptr.To[string]("spec.watchers"),
 									},
 								},
 							},
@@ -363,6 +372,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
+					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
 				},
 			},
 		},
@@ -381,16 +391,16 @@ func TestRunFunction(t *testing.T) {
 									{
 										// This patch should work.
 										Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-										FromFieldPath: pointer.String("spec.widgets"),
-										ToFieldPath:   pointer.String("spec.watchers"),
+										FromFieldPath: ptr.To[string]("spec.widgets"),
+										ToFieldPath:   ptr.To[string]("spec.watchers"),
 									},
 									{
 										// This patch should return an error,
 										// because the required path does not
 										// exist.
 										Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-										FromFieldPath: pointer.String("spec.doesNotExist"),
-										ToFieldPath:   pointer.String("spec.explode"),
+										FromFieldPath: ptr.To[string]("spec.doesNotExist"),
+										ToFieldPath:   ptr.To[string]("spec.explode"),
 										Policy: &v1beta1.PatchPolicy{
 											FromFieldPath: func() *v1beta1.FromFieldPathPolicy {
 												r := v1beta1.FromFieldPathPolicyRequired
@@ -440,6 +450,7 @@ func TestRunFunction(t *testing.T) {
 							Message:  fmt.Sprintf("cannot render FromComposite patches for composed resource %q: cannot apply the %q patch at index 1: spec.doesNotExist: no such field", "cool-resource", "FromCompositeFieldPath"),
 						},
 					},
+					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
 				},
 			},
 		},
@@ -485,6 +496,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
+					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
 				},
 			},
 		},
@@ -501,7 +513,7 @@ func TestRunFunction(t *testing.T) {
 									{
 										Type:                    v1beta1.ConnectionDetailTypeFromConnectionSecretKey,
 										Name:                    "very",
-										FromConnectionSecretKey: pointer.String("very"),
+										FromConnectionSecretKey: ptr.To[string]("very"),
 									},
 								},
 							},
@@ -547,6 +559,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
+					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
 				},
 			},
 		},
@@ -562,8 +575,8 @@ func TestRunFunction(t *testing.T) {
 								Patches: []v1beta1.Patch{
 									{
 										Type:          v1beta1.PatchTypeToCompositeFieldPath,
-										FromFieldPath: pointer.String("spec.widgets"),
-										ToFieldPath:   pointer.String("spec.watchers"),
+										FromFieldPath: ptr.To[string]("spec.widgets"),
+										ToFieldPath:   ptr.To[string]("spec.watchers"),
 										Transforms: []v1beta1.Transform{
 											{
 												Type: v1beta1.TransformTypeConvert,
@@ -574,7 +587,8 @@ func TestRunFunction(t *testing.T) {
 											{
 												Type: v1beta1.TransformTypeMath,
 												Math: &v1beta1.MathTransform{
-													Multiply: pointer.Int64(3),
+													Type:     v1beta1.MathTransformTypeMultiply,
+													Multiply: ptr.To[int64](3),
 												},
 											},
 										},
@@ -613,6 +627,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
+					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
 				},
 			},
 		},
@@ -623,12 +638,12 @@ func TestRunFunction(t *testing.T) {
 			f := &Function{log: logging.NewNopLogger()}
 			rsp, err := f.RunFunction(tc.args.ctx, tc.args.req)
 
-			if diff := cmp.Diff(rsp, tc.want.rsp, protocmp.Transform()); diff != "" {
-				t.Errorf("%s\nf.RunFunction(...): -got rsp, +want rsp:\n%s", tc.reason, diff)
+			if diff := cmp.Diff(tc.want.rsp, rsp, protocmp.Transform()); diff != "" {
+				t.Errorf("%s\nf.RunFunction(...): -want rsp, +got rsp:\n%s", tc.reason, diff)
 			}
 
-			if diff := cmp.Diff(err, tc.want.err, cmpopts.EquateErrors()); diff != "" {
-				t.Errorf("%s\nf.RunFunction(...): -got err, +want err:\n%s", tc.reason, diff)
+			if diff := cmp.Diff(tc.want.err, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("%s\nf.RunFunction(...): -want err, +got err:\n%s", tc.reason, diff)
 			}
 		})
 	}

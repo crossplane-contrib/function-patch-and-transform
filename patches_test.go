@@ -8,15 +8,16 @@ import (
 	"github.com/pkg/errors"
 	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
 	"github.com/crossplane/crossplane-runtime/pkg/resource"
 	"github.com/crossplane/crossplane-runtime/pkg/resource/unstructured/composed"
 	"github.com/crossplane/crossplane-runtime/pkg/test"
+
 	"github.com/crossplane/function-sdk-go/resource/composite"
 
-	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
+	"github.com/stevendborrelli/function-conditional-patch-and-transform/input/v1beta1"
 )
 
 func TestPatchApply(t *testing.T) {
@@ -75,8 +76,8 @@ func TestPatchApply(t *testing.T) {
 			args: args{
 				patch: v1beta1.Patch{
 					Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-					FromFieldPath: pointer.String("metadata.labels"),
-					ToFieldPath:   pointer.String("metadata.labels"),
+					FromFieldPath: ptr.To[string]("metadata.labels"),
+					ToFieldPath:   ptr.To[string]("metadata.labels"),
 				},
 				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
@@ -120,8 +121,8 @@ func TestPatchApply(t *testing.T) {
 			args: args{
 				patch: v1beta1.Patch{
 					Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-					FromFieldPath: pointer.String("metadata.name"),
-					ToFieldPath:   pointer.String("metadata.ownerReferences[*].name"),
+					FromFieldPath: ptr.To[string]("metadata.name"),
+					ToFieldPath:   ptr.To[string]("metadata.ownerReferences[*].name"),
 				},
 				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
@@ -173,8 +174,8 @@ func TestPatchApply(t *testing.T) {
 			args: args{
 				patch: v1beta1.Patch{
 					Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-					FromFieldPath: pointer.String("metadata.name"),
-					ToFieldPath:   pointer.String("metadata.ownerReferences[*].badField"),
+					FromFieldPath: ptr.To[string]("metadata.name"),
+					ToFieldPath:   ptr.To[string]("metadata.ownerReferences[*].badField"),
 				},
 				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
@@ -211,8 +212,8 @@ func TestPatchApply(t *testing.T) {
 			args: args{
 				patch: v1beta1.Patch{
 					Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-					FromFieldPath: pointer.String("metadata.labels"),
-					ToFieldPath:   pointer.String("metadata.labels"),
+					FromFieldPath: ptr.To[string]("metadata.labels"),
+					ToFieldPath:   ptr.To[string]("metadata.labels"),
 				},
 				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
@@ -251,14 +252,14 @@ func TestPatchApply(t *testing.T) {
 			args: args{
 				patch: v1beta1.Patch{
 					Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-					FromFieldPath: pointer.String("wat"),
+					FromFieldPath: ptr.To[string]("wat"),
 					Policy: &v1beta1.PatchPolicy{
 						FromFieldPath: func() *v1beta1.FromFieldPathPolicy {
 							s := v1beta1.FromFieldPathPolicyRequired
 							return &s
 						}(),
 					},
-					ToFieldPath: pointer.String("wat"),
+					ToFieldPath: ptr.To[string]("wat"),
 				},
 				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
@@ -297,8 +298,8 @@ func TestPatchApply(t *testing.T) {
 			args: args{
 				patch: v1beta1.Patch{
 					Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-					FromFieldPath: pointer.String("metadata.labels"),
-					ToFieldPath:   pointer.String("metadata.labels"),
+					FromFieldPath: ptr.To[string]("metadata.labels"),
+					ToFieldPath:   ptr.To[string]("metadata.labels"),
 				},
 				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
@@ -324,8 +325,8 @@ func TestPatchApply(t *testing.T) {
 			args: args{
 				patch: v1beta1.Patch{
 					Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-					FromFieldPath: pointer.String("metadata.labels"),
-					ToFieldPath:   pointer.String("metadata.labels"),
+					FromFieldPath: ptr.To[string]("metadata.labels"),
+					ToFieldPath:   ptr.To[string]("metadata.labels"),
 				},
 				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
@@ -366,7 +367,7 @@ func TestPatchApply(t *testing.T) {
 			args: args{
 				patch: v1beta1.Patch{
 					Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-					FromFieldPath: pointer.String("metadata.labels"),
+					FromFieldPath: ptr.To[string]("metadata.labels"),
 				},
 				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
@@ -406,8 +407,8 @@ func TestPatchApply(t *testing.T) {
 			args: args{
 				patch: v1beta1.Patch{
 					Type:          v1beta1.PatchTypeToCompositeFieldPath,
-					FromFieldPath: pointer.String("metadata.labels"),
-					ToFieldPath:   pointer.String("metadata.labels"),
+					FromFieldPath: ptr.To[string]("metadata.labels"),
+					ToFieldPath:   ptr.To[string]("metadata.labels"),
 				},
 				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
@@ -447,8 +448,8 @@ func TestPatchApply(t *testing.T) {
 			args: args{
 				patch: v1beta1.Patch{
 					Type:          v1beta1.PatchTypeToCompositeFieldPath,
-					FromFieldPath: pointer.String("metadata.name"),
-					ToFieldPath:   pointer.String("metadata.ownerReferences[*].name"),
+					FromFieldPath: ptr.To[string]("metadata.name"),
+					ToFieldPath:   ptr.To[string]("metadata.ownerReferences[*].name"),
 				},
 				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
@@ -500,7 +501,7 @@ func TestPatchApply(t *testing.T) {
 			args: args{
 				patch: v1beta1.Patch{
 					Type:        v1beta1.PatchTypeCombineFromComposite,
-					ToFieldPath: pointer.String("metadata.labels.destination"),
+					ToFieldPath: ptr.To[string]("metadata.labels.destination"),
 					// Missing a Combine field
 				},
 				xr: &composite.Unstructured{},
@@ -525,7 +526,7 @@ func TestPatchApply(t *testing.T) {
 						Strategy: v1beta1.CombineStrategyString,
 						// Missing a String combine config.
 					},
-					ToFieldPath: pointer.String("metadata.labels.destination"),
+					ToFieldPath: ptr.To[string]("metadata.labels.destination"),
 				},
 				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
@@ -555,7 +556,7 @@ func TestPatchApply(t *testing.T) {
 						Strategy:  v1beta1.CombineStrategyString,
 						String:    &v1beta1.StringCombine{Format: "%s-%s"},
 					},
-					ToFieldPath: pointer.String("objectMeta.labels.destination"),
+					ToFieldPath: ptr.To[string]("objectMeta.labels.destination"),
 				},
 			},
 			want: want{
@@ -579,7 +580,7 @@ func TestPatchApply(t *testing.T) {
 						Strategy: v1beta1.CombineStrategyString,
 						String:   &v1beta1.StringCombine{Format: "%s-%s"},
 					},
-					ToFieldPath: pointer.String("metadata.labels.destination"),
+					ToFieldPath: ptr.To[string]("metadata.labels.destination"),
 				},
 				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
@@ -611,7 +612,7 @@ func TestPatchApply(t *testing.T) {
 						Strategy: v1beta1.CombineStrategyString,
 						String:   &v1beta1.StringCombine{Format: "%s-%s"},
 					},
-					ToFieldPath: pointer.String("metadata.labels.destination"),
+					ToFieldPath: ptr.To[string]("metadata.labels.destination"),
 				},
 				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
@@ -666,7 +667,7 @@ func TestPatchApply(t *testing.T) {
 						Strategy: v1beta1.CombineStrategyString,
 						String:   &v1beta1.StringCombine{Format: "%s-%s"},
 					},
-					ToFieldPath: pointer.String("metadata.labels.destination"),
+					ToFieldPath: ptr.To[string]("metadata.labels.destination"),
 				},
 				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
@@ -853,11 +854,11 @@ func TestComposedTemplates(t *testing.T) {
 						Patches: []v1beta1.Patch{
 							{
 								Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-								FromFieldPath: pointer.String("metadata.name"),
+								FromFieldPath: ptr.To[string]("metadata.name"),
 							},
 							{
 								Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-								FromFieldPath: pointer.String("metadata.namespace"),
+								FromFieldPath: ptr.To[string]("metadata.namespace"),
 							},
 						},
 					},
@@ -869,11 +870,11 @@ func TestComposedTemplates(t *testing.T) {
 						Patches: []v1beta1.Patch{
 							{
 								Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-								FromFieldPath: pointer.String("metadata.name"),
+								FromFieldPath: ptr.To[string]("metadata.name"),
 							},
 							{
 								Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-								FromFieldPath: pointer.String("metadata.namespace"),
+								FromFieldPath: ptr.To[string]("metadata.namespace"),
 							},
 						},
 					},
@@ -887,7 +888,7 @@ func TestComposedTemplates(t *testing.T) {
 					Patches: []v1beta1.Patch{
 						{
 							Type:         v1beta1.PatchTypePatchSet,
-							PatchSetName: pointer.String("patch-set-1"),
+							PatchSetName: ptr.To[string]("patch-set-1"),
 						},
 					},
 				}},
@@ -907,11 +908,11 @@ func TestComposedTemplates(t *testing.T) {
 						Patches: []v1beta1.Patch{
 							{
 								Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-								FromFieldPath: pointer.String("metadata.namespace"),
+								FromFieldPath: ptr.To[string]("metadata.namespace"),
 							},
 							{
 								Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-								FromFieldPath: pointer.String("spec.parameters.test"),
+								FromFieldPath: ptr.To[string]("spec.parameters.test"),
 							},
 						},
 					},
@@ -920,11 +921,11 @@ func TestComposedTemplates(t *testing.T) {
 						Patches: []v1beta1.Patch{
 							{
 								Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-								FromFieldPath: pointer.String("metadata.annotations.patch-test-1"),
+								FromFieldPath: ptr.To[string]("metadata.annotations.patch-test-1"),
 							},
 							{
 								Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-								FromFieldPath: pointer.String("metadata.annotations.patch-test-2"),
+								FromFieldPath: ptr.To[string]("metadata.annotations.patch-test-2"),
 								Transforms: []v1beta1.Transform{{
 									Type: v1beta1.TransformTypeMap,
 									Map: &v1beta1.MapTransform{
@@ -943,15 +944,15 @@ func TestComposedTemplates(t *testing.T) {
 						Patches: []v1beta1.Patch{
 							{
 								Type:         v1beta1.PatchTypePatchSet,
-								PatchSetName: pointer.String("patch-set-2"),
+								PatchSetName: ptr.To[string]("patch-set-2"),
 							},
 							{
 								Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-								FromFieldPath: pointer.String("metadata.name"),
+								FromFieldPath: ptr.To[string]("metadata.name"),
 							},
 							{
 								Type:         v1beta1.PatchTypePatchSet,
-								PatchSetName: pointer.String("patch-set-1"),
+								PatchSetName: ptr.To[string]("patch-set-1"),
 							},
 						},
 					},
@@ -959,7 +960,7 @@ func TestComposedTemplates(t *testing.T) {
 						Patches: []v1beta1.Patch{
 							{
 								Type:         v1beta1.PatchTypePatchSet,
-								PatchSetName: pointer.String("patch-set-1"),
+								PatchSetName: ptr.To[string]("patch-set-1"),
 							},
 						},
 					},
@@ -972,11 +973,11 @@ func TestComposedTemplates(t *testing.T) {
 						Patches: []v1beta1.Patch{
 							{
 								Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-								FromFieldPath: pointer.String("metadata.annotations.patch-test-1"),
+								FromFieldPath: ptr.To[string]("metadata.annotations.patch-test-1"),
 							},
 							{
 								Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-								FromFieldPath: pointer.String("metadata.annotations.patch-test-2"),
+								FromFieldPath: ptr.To[string]("metadata.annotations.patch-test-2"),
 								Transforms: []v1beta1.Transform{{
 									Type: v1beta1.TransformTypeMap,
 									Map: &v1beta1.MapTransform{
@@ -989,15 +990,15 @@ func TestComposedTemplates(t *testing.T) {
 							},
 							{
 								Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-								FromFieldPath: pointer.String("metadata.name"),
+								FromFieldPath: ptr.To[string]("metadata.name"),
 							},
 							{
 								Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-								FromFieldPath: pointer.String("metadata.namespace"),
+								FromFieldPath: ptr.To[string]("metadata.namespace"),
 							},
 							{
 								Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-								FromFieldPath: pointer.String("spec.parameters.test"),
+								FromFieldPath: ptr.To[string]("spec.parameters.test"),
 							},
 						},
 					},
@@ -1005,11 +1006,11 @@ func TestComposedTemplates(t *testing.T) {
 						Patches: []v1beta1.Patch{
 							{
 								Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-								FromFieldPath: pointer.String("metadata.namespace"),
+								FromFieldPath: ptr.To[string]("metadata.namespace"),
 							},
 							{
 								Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-								FromFieldPath: pointer.String("spec.parameters.test"),
+								FromFieldPath: ptr.To[string]("spec.parameters.test"),
 							},
 						},
 					},
@@ -1079,7 +1080,8 @@ func TestResolveTransforms(t *testing.T) {
 				}, {
 					Type: v1beta1.TransformTypeMath,
 					Math: &v1beta1.MathTransform{
-						Multiply: pointer.Int64(2),
+						Type:     v1beta1.MathTransformTypeMultiply,
+						Multiply: ptr.To[int64](2),
 					},
 				}},
 				input: int64(2),
@@ -1099,7 +1101,8 @@ func TestResolveTransforms(t *testing.T) {
 				}, {
 					Type: v1beta1.TransformTypeMath,
 					Math: &v1beta1.MathTransform{
-						Multiply: pointer.Int64(2),
+						Type:     v1beta1.MathTransformTypeMultiply,
+						Multiply: ptr.To[int64](2),
 					},
 				}},
 				input: int64(2),
