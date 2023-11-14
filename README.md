@@ -1,4 +1,5 @@
 # function-conditional-patch-and-transform
+
 [![CI](https://github.com/stevendborrelli/function-conditional-patch-and-transform/actions/workflows/ci.yml/badge.svg)](https://github.com/stevendborrelli/function-conditional-patch-and-transform/actions/workflows/ci.yml) ![GitHub release (latest SemVer)](https://img.shields.io/github/release/crossplane-contrib/function-conditional-patch-and-transform)
 
 This composition function is a fork of the upstream [function-patch-and-transform](https://github.com/crossplane-contrib/function-patch-and-transform)
@@ -105,9 +106,7 @@ spec:
 
 </details>
 
-
 You can use the  [CEL Playground](https://playcel.undistro.io/?content=H4sIAAAAAAAAA%2B1UPW%2FDIBT8K4g5SeW0U9Z27tCh6sDyYl5aVAwIsNUq8n%2BvMY4dGxx16dYNuON93D04Uw4e6IGemSKEMMrRCYuc0QOJR%2F1pqSujnfA4O%2B8hi07XtkyQHgQjXtE6oVWAGVXa4BdURuJO2%2Fe7pgBpPqBgdLO8%2BSkUj3fenrV5GZMkxAo9hB4y%2BXtcQYUxkEfnt1O5c26bBHYGy7WgqJoYk2OT1DTIojjaQPK2xkWuq%2B24ngqYNHWp3KGJrNQ3fCA5K%2BY%2B5JuYTHh8yjNuq0%2FmBpRay%2B3DPhdpZDoDJV60PUEt%2FdKphYCrevaLQVVG9dGhbf4H%2B28HO83lwdfJGF9QMShR7O%2FXkgH%2FDpwTSPerVxRdZ6qlm27ETadKMKn74Fjn1BH4lU5EKDJ8d7vxxdH2B6myt7YTBQAA) to test various queries.
-
 
 Here are some example queries on the XR and RunFunctionRequest:
 
