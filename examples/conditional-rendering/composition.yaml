@@ -11,12 +11,11 @@ spec:
   pipeline:
   - step: conditional-patch-and-transform
     functionRef:
-      name: function-patch-and-transform
+      name: function-conditional-patch-and-transform
     input:
-      apiVersion: pt.fn.crossplane.io/v1beta1
+      apiVersion: conditional-pt.fn.crossplane.io/v1beta1
       kind: Resources
-      condition:
-         expression: observed.composite.resource.spec.env == "dev" && observed.composite.resource.spec.render == true 
+      condition: observed.composite.resource.spec.env == "dev" && observed.composite.resource.spec.render == true 
       resources:
          - name: test-resource
            base:

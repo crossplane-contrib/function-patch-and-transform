@@ -8,8 +8,6 @@ import (
 	"github.com/crossplane/crossplane-runtime/pkg/errors"
 
 	fnv1beta1 "github.com/crossplane/function-sdk-go/proto/v1beta1"
-
-	"github.com/stevendborrelli/function-conditional-patch-and-transform/input/v1beta1"
 )
 
 // NewCELEnvironment sets up the CEL Environment
@@ -30,8 +28,8 @@ func ToCELVars(req *fnv1beta1.RunFunctionRequest) map[string]any {
 }
 
 // EvaluateCondition will evaluate a CEL expression
-func EvaluateCondition(cs v1beta1.ConditionSpec, req *fnv1beta1.RunFunctionRequest) (bool, error) {
-	if cs.Expression == "" {
+func EvaluateCondition(expression *string, req *fnv1beta1.RunFunctionRequest) (bool, error) {
+	if expression == nil {
 		return false, nil
 	}
 
@@ -40,7 +38,7 @@ func EvaluateCondition(cs v1beta1.ConditionSpec, req *fnv1beta1.RunFunctionReque
 		return false, errors.Wrap(err, "CEL Env error")
 	}
 
-	ast, iss := env.Parse(cs.Expression)
+	ast, iss := env.Parse(*expression)
 	if iss.Err() != nil {
 		return false, errors.Wrap(iss.Err(), "CEL Parse error")
 	}
@@ -56,7 +54,7 @@ func EvaluateCondition(cs v1beta1.ConditionSpec, req *fnv1beta1.RunFunctionReque
 	if !reflect.DeepEqual(checked.OutputType(), cel.BoolType) {
 		return false, errors.Errorf(
 			"CEL Type error: expression '%s' must return a boolean, got %v instead",
-			cs.Expression,
+			*expression,
 			checked.OutputType())
 	}
 

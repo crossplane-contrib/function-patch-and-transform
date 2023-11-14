@@ -1,9 +1,9 @@
 apiVersion: pkg.crossplane.io/v1beta1
 kind: Function
 metadata:
-  name: function-patch-and-transform
+  name: function-conditional-patch-and-transform
   annotations:
-    xrender.crossplane.io/runtime: Development
+    render.crossplane.io/runtime: Development
 spec:
-  package: index.docker.io/steve/function-patch-and-transform:v0.2.0
+  package: index.docker.io/steve/function-conditional-patch-and-transform:v0.2.0
   packagePullPolicy: Always

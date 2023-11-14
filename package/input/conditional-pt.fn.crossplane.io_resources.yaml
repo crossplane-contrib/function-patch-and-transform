@@ -4,9 +4,9 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.13.0
-  name: resources.pt.fn.crossplane.io
+  name: resources.conditional-pt.fn.crossplane.io
 spec:
-  group: pt.fn.crossplane.io
+  group: conditional-pt.fn.crossplane.io
   names:
     categories:
     - crossplane
@@ -27,17 +27,8 @@ spec:
               internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
             type: string
           condition:
-            description: Condition defines a CEL condition whether this function will
-              render
-            properties:
-              expression:
-                description: Expression is the CEL expression to be evaluated. If
-                  the Expression returns a true value, the function will render the
-                  resources
-                type: string
-            required:
-            - expression
-            type: object
+            description: If defines a CEL condition whether this function will render
+            type: string
           environment:
             description: "Environment represents the Composition environment. \n THIS
               IS AN ALPHA FIELD. Do not use it in production. It may be changed or
@@ -682,6 +673,10 @@ spec:
                   type: object
                   x-kubernetes-embedded-resource: true
                   x-kubernetes-preserve-unknown-fields: true
+                condition:
+                  description: Condition defines a CEL condition whether this managed
+                    resource will render
+                  type: string
                 connectionDetails:
                   description: ConnectionDetails lists the propagation secret keys
                     from this composed resource to the composition instance connection
