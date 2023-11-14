@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/runtime"
+
 	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
 	"github.com/crossplane/crossplane-runtime/pkg/resource"
-	"github.com/pkg/errors"
+
 	"github.com/stevendborrelli/function-conditional-patch-and-transform/input/v1beta1"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 const (

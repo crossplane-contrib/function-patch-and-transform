@@ -5,14 +5,16 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/crossplane/crossplane-runtime/pkg/errors"
-	"github.com/crossplane/crossplane-runtime/pkg/test"
 	"github.com/google/go-cmp/cmp"
-	"github.com/stevendborrelli/function-conditional-patch-and-transform/input/v1beta1"
 	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/ptr"
+
+	"github.com/crossplane/crossplane-runtime/pkg/errors"
+	"github.com/crossplane/crossplane-runtime/pkg/test"
+
+	"github.com/stevendborrelli/function-conditional-patch-and-transform/input/v1beta1"
 )
 
 func TestMapResolve(t *testing.T) {

@@ -5,11 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/crossplane/crossplane-runtime/pkg/logging"
-	fncontext "github.com/crossplane/function-sdk-go/context"
-	fnv1beta1 "github.com/crossplane/function-sdk-go/proto/v1beta1"
-	"github.com/stevendborrelli/function-conditional-patch-and-transform/input/v1beta1"
-
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -18,8 +13,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
 
+	"github.com/crossplane/crossplane-runtime/pkg/logging"
+
+	fncontext "github.com/crossplane/function-sdk-go/context"
+	fnv1beta1 "github.com/crossplane/function-sdk-go/proto/v1beta1"
 	"github.com/crossplane/function-sdk-go/resource"
 	"github.com/crossplane/function-sdk-go/response"
+
+	"github.com/stevendborrelli/function-conditional-patch-and-transform/input/v1beta1"
 )
 
 func TestRunFunction(t *testing.T) {

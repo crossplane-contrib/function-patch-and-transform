@@ -3,6 +3,7 @@ package main
 
 import (
 	"github.com/alecthomas/kong"
+
 	"github.com/crossplane/function-sdk-go"
 )
 

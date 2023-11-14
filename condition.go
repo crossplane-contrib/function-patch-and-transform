@@ -3,9 +3,12 @@ package main
 import (
 	"reflect"
 
-	"github.com/crossplane/crossplane-runtime/pkg/errors"
-	fnv1beta1 "github.com/crossplane/function-sdk-go/proto/v1beta1"
 	"github.com/google/cel-go/cel"
+
+	"github.com/crossplane/crossplane-runtime/pkg/errors"
+
+	fnv1beta1 "github.com/crossplane/function-sdk-go/proto/v1beta1"
+
 	"github.com/stevendborrelli/function-conditional-patch-and-transform/input/v1beta1"
 )
 
@@ -77,5 +80,5 @@ func EvaluateCondition(cs v1beta1.ConditionSpec, req *fnv1beta1.RunFunctionReque
 		return false, errors.Wrap(err, "CEL program did not return a bool")
 	}
 
-	return bool(ret), nil
+	return ret, nil
 }

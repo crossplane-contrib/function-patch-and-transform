@@ -1,13 +1,15 @@
 package main
 
 import (
-	"github.com/crossplane/crossplane-runtime/pkg/errors"
-	"github.com/crossplane/crossplane-runtime/pkg/resource"
-	"github.com/stevendborrelli/function-conditional-patch-and-transform/input/v1beta1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/json"
+
+	"github.com/crossplane/crossplane-runtime/pkg/errors"
+	"github.com/crossplane/crossplane-runtime/pkg/resource"
+
+	"github.com/stevendborrelli/function-conditional-patch-and-transform/input/v1beta1"
 )
 
 // Error strings

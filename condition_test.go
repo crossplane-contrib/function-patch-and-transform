@@ -4,12 +4,15 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"k8s.io/apimachinery/pkg/runtime"
+
 	"github.com/crossplane/crossplane-runtime/pkg/errors"
+
 	fnv1beta1 "github.com/crossplane/function-sdk-go/proto/v1beta1"
 	"github.com/crossplane/function-sdk-go/resource"
-	"github.com/google/go-cmp/cmp"
+
 	"github.com/stevendborrelli/function-conditional-patch-and-transform/input/v1beta1"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 func TestEvaluateCondition(t *testing.T) {

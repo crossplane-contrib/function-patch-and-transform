@@ -13,11 +13,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/crossplane/crossplane-runtime/pkg/errors"
-	"github.com/stevendborrelli/function-conditional-patch-and-transform/input/v1beta1"
 	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/utils/ptr"
+
+	"github.com/crossplane/crossplane-runtime/pkg/errors"
+
+	"github.com/stevendborrelli/function-conditional-patch-and-transform/input/v1beta1"
 )
 
 const (

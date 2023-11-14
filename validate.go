@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/stevendborrelli/function-conditional-patch-and-transform/input/v1beta1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+
+	"github.com/stevendborrelli/function-conditional-patch-and-transform/input/v1beta1"
 )
 
 // WrapFieldError wraps the given field.Error adding the given field.Path as root of the Field.
