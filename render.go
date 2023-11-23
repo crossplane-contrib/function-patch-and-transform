@@ -62,16 +62,16 @@ func RenderFromJSON(o resource.Object, data []byte) error {
 
 // RenderEnvironmentPatches renders the supplied environment by applying all
 // patches that are to the environment, from the supplied XR.
-func RenderEnvironmentPatches(env *unstructured.Unstructured, oxr, dxr *composite.Unstructured, ps []v1beta1.Patch) error {
+func RenderEnvironmentPatches(env *unstructured.Unstructured, oxr, dxr *composite.Unstructured, ps []v1beta1.EnvironmentPatch) error {
 	for i, p := range ps {
 		p := p
 		switch p.Type {
 		case v1beta1.PatchTypeToEnvironmentFieldPath, v1beta1.PatchTypeCombineToEnvironment:
-			if err := ApplyToObjects(p, env, oxr); err != nil {
+			if err := ApplyToObjects(&p, env, oxr); err != nil {
 				return errors.Wrapf(err, errFmtPatch, p.Type, i)
 			}
 		case v1beta1.PatchTypeFromEnvironmentFieldPath, v1beta1.PatchTypeCombineFromEnvironment:
-			if err := ApplyToObjects(p, env, dxr); err != nil {
+			if err := ApplyToObjects(&p, env, dxr); err != nil {
 				return errors.Wrapf(err, errFmtPatch, p.Type, i)
 			}
 		case v1beta1.PatchTypePatchSet, v1beta1.PatchTypeFromCompositeFieldPath, v1beta1.PatchTypeCombineFromComposite, v1beta1.PatchTypeToCompositeFieldPath, v1beta1.PatchTypeCombineToComposite:
@@ -91,9 +91,10 @@ func RenderComposedPatches( //nolint:gocyclo // just a switch
 	oxr *composite.Unstructured,
 	dxr *composite.Unstructured,
 	env *unstructured.Unstructured,
-	ps []v1beta1.Patch,
+	ps []v1beta1.ComposedPatch,
 ) (errs []error, store bool) {
 	for i, p := range ps {
+		p := p
 		switch t := p.Type; t {
 		case v1beta1.PatchTypeToCompositeFieldPath, v1beta1.PatchTypeCombineToComposite:
 			// TODO(negz): Should failures to patch the XR be terminal? It could
@@ -110,7 +111,7 @@ func RenderComposedPatches( //nolint:gocyclo // just a switch
 			if ocd == nil {
 				continue
 			}
-			if err := ApplyToObjects(p, dxr, ocd); err != nil {
+			if err := ApplyToObjects(&p, dxr, ocd); err != nil {
 				errs = append(errs, errors.Wrapf(err, errFmtPatch, t, i))
 			}
 		case v1beta1.PatchTypeToEnvironmentFieldPath, v1beta1.PatchTypeCombineToEnvironment:
@@ -123,7 +124,7 @@ func RenderComposedPatches( //nolint:gocyclo // just a switch
 			if ocd == nil {
 				continue
 			}
-			if err := ApplyToObjects(p, env, ocd); err != nil {
+			if err := ApplyToObjects(&p, env, ocd); err != nil {
 				errs = append(errs, errors.Wrapf(err, errFmtPatch, t, i))
 			}
 		// If either of the below renderings return an error, most likely a
@@ -133,12 +134,12 @@ func RenderComposedPatches( //nolint:gocyclo // just a switch
 		// resource in the wrong state. To that end, we don't want to add this
 		// resource to our accumulated desired state.
 		case v1beta1.PatchTypeFromCompositeFieldPath, v1beta1.PatchTypeCombineFromComposite:
-			if err := ApplyToObjects(p, oxr, dcd); err != nil {
+			if err := ApplyToObjects(&p, oxr, dcd); err != nil {
 				errs = append(errs, errors.Wrapf(err, errFmtPatch, t, i))
 				return errs, false
 			}
 		case v1beta1.PatchTypeFromEnvironmentFieldPath, v1beta1.PatchTypeCombineFromEnvironment:
-			if err := ApplyToObjects(p, env, dcd); err != nil {
+			if err := ApplyToObjects(&p, env, dcd); err != nil {
 				errs = append(errs, errors.Wrapf(err, errFmtPatch, t, i))
 				return errs, false
 			}

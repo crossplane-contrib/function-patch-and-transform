@@ -28,7 +28,7 @@ func TestPatchApply(t *testing.T) {
 	}
 
 	type args struct {
-		patch v1beta1.Patch
+		patch v1beta1.ComposedPatch
 		xr    *composite.Unstructured
 		cd    *composed.Unstructured
 		only  []v1beta1.PatchType
@@ -47,7 +47,7 @@ func TestPatchApply(t *testing.T) {
 		"InvalidCompositeFieldPathPatch": {
 			reason: "Should return error when required fields not passed to applyFromFieldPathPatch",
 			args: args{
-				patch: v1beta1.Patch{
+				patch: v1beta1.ComposedPatch{
 					Type: v1beta1.PatchTypeFromCompositeFieldPath,
 					// This is missing fields.
 				},
@@ -61,7 +61,7 @@ func TestPatchApply(t *testing.T) {
 		"Invalidv1.PatchType": {
 			reason: "Should return an error if an invalid patch type is specified",
 			args: args{
-				patch: v1beta1.Patch{
+				patch: v1beta1.ComposedPatch{
 					Type: "invalid-patchtype",
 				},
 				xr: &composite.Unstructured{},
@@ -74,10 +74,12 @@ func TestPatchApply(t *testing.T) {
 		"ValidCompositeFieldPathPatch": {
 			reason: "Should correctly apply a CompositeFieldPathPatch with valid settings",
 			args: args{
-				patch: v1beta1.Patch{
-					Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-					FromFieldPath: ptr.To[string]("metadata.labels"),
-					ToFieldPath:   ptr.To[string]("metadata.labels"),
+				patch: v1beta1.ComposedPatch{
+					Type: v1beta1.PatchTypeFromCompositeFieldPath,
+					Patch: v1beta1.Patch{
+						FromFieldPath: ptr.To[string]("metadata.labels"),
+						ToFieldPath:   ptr.To[string]("metadata.labels"),
+					},
 				},
 				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
@@ -119,10 +121,12 @@ func TestPatchApply(t *testing.T) {
 		"ValidCompositeFieldPathPatchWithWildcards": {
 			reason: "When passed a wildcarded path, adds a field to each element of an array",
 			args: args{
-				patch: v1beta1.Patch{
-					Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-					FromFieldPath: ptr.To[string]("metadata.name"),
-					ToFieldPath:   ptr.To[string]("metadata.ownerReferences[*].name"),
+				patch: v1beta1.ComposedPatch{
+					Type: v1beta1.PatchTypeFromCompositeFieldPath,
+					Patch: v1beta1.Patch{
+						FromFieldPath: ptr.To[string]("metadata.name"),
+						ToFieldPath:   ptr.To[string]("metadata.ownerReferences[*].name"),
+					},
 				},
 				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
@@ -172,10 +176,12 @@ func TestPatchApply(t *testing.T) {
 		"InvalidCompositeFieldPathPatchWithWildcards": {
 			reason: "When passed a wildcarded path, throws an error if ToFieldPath cannot be expanded",
 			args: args{
-				patch: v1beta1.Patch{
-					Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-					FromFieldPath: ptr.To[string]("metadata.name"),
-					ToFieldPath:   ptr.To[string]("metadata.ownerReferences[*].badField"),
+				patch: v1beta1.ComposedPatch{
+					Type: v1beta1.PatchTypeFromCompositeFieldPath,
+					Patch: v1beta1.Patch{
+						FromFieldPath: ptr.To[string]("metadata.name"),
+						ToFieldPath:   ptr.To[string]("metadata.ownerReferences[*].badField"),
+					},
 				},
 				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
@@ -210,10 +216,12 @@ func TestPatchApply(t *testing.T) {
 		"MissingOptionalFieldPath": {
 			reason: "A FromFieldPath patch should be a no-op when an optional fromFieldPath doesn't exist",
 			args: args{
-				patch: v1beta1.Patch{
-					Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-					FromFieldPath: ptr.To[string]("metadata.labels"),
-					ToFieldPath:   ptr.To[string]("metadata.labels"),
+				patch: v1beta1.ComposedPatch{
+					Type: v1beta1.PatchTypeFromCompositeFieldPath,
+					Patch: v1beta1.Patch{
+						FromFieldPath: ptr.To[string]("metadata.labels"),
+						ToFieldPath:   ptr.To[string]("metadata.labels"),
+					},
 				},
 				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
@@ -250,16 +258,18 @@ func TestPatchApply(t *testing.T) {
 		"MissingRequiredFieldPath": {
 			reason: "A FromFieldPath patch should return an error when a required fromFieldPath doesn't exist",
 			args: args{
-				patch: v1beta1.Patch{
-					Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-					FromFieldPath: ptr.To[string]("wat"),
-					Policy: &v1beta1.PatchPolicy{
-						FromFieldPath: func() *v1beta1.FromFieldPathPolicy {
-							s := v1beta1.FromFieldPathPolicyRequired
-							return &s
-						}(),
+				patch: v1beta1.ComposedPatch{
+					Type: v1beta1.PatchTypeFromCompositeFieldPath,
+					Patch: v1beta1.Patch{
+						FromFieldPath: ptr.To[string]("wat"),
+						Policy: &v1beta1.PatchPolicy{
+							FromFieldPath: func() *v1beta1.FromFieldPathPolicy {
+								s := v1beta1.FromFieldPathPolicyRequired
+								return &s
+							}(),
+						},
+						ToFieldPath: ptr.To[string]("wat"),
 					},
-					ToFieldPath: ptr.To[string]("wat"),
 				},
 				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
@@ -296,10 +306,12 @@ func TestPatchApply(t *testing.T) {
 		"FilterExcludeCompositeFieldPathPatch": {
 			reason: "Should not apply the patch as the v1.PatchType is not present in filter.",
 			args: args{
-				patch: v1beta1.Patch{
-					Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-					FromFieldPath: ptr.To[string]("metadata.labels"),
-					ToFieldPath:   ptr.To[string]("metadata.labels"),
+				patch: v1beta1.ComposedPatch{
+					Type: v1beta1.PatchTypeFromCompositeFieldPath,
+					Patch: v1beta1.Patch{
+						FromFieldPath: ptr.To[string]("metadata.labels"),
+						ToFieldPath:   ptr.To[string]("metadata.labels"),
+					},
 				},
 				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
@@ -323,10 +335,12 @@ func TestPatchApply(t *testing.T) {
 		"FilterIncludeCompositeFieldPathPatch": {
 			reason: "Should apply the patch as the v1.PatchType is present in filter.",
 			args: args{
-				patch: v1beta1.Patch{
-					Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-					FromFieldPath: ptr.To[string]("metadata.labels"),
-					ToFieldPath:   ptr.To[string]("metadata.labels"),
+				patch: v1beta1.ComposedPatch{
+					Type: v1beta1.PatchTypeFromCompositeFieldPath,
+					Patch: v1beta1.Patch{
+						FromFieldPath: ptr.To[string]("metadata.labels"),
+						ToFieldPath:   ptr.To[string]("metadata.labels"),
+					},
 				},
 				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
@@ -365,9 +379,11 @@ func TestPatchApply(t *testing.T) {
 		"DefaultToFieldCompositeFieldPathPatch": {
 			reason: "Should correctly default the ToFieldPath value if not specified.",
 			args: args{
-				patch: v1beta1.Patch{
-					Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-					FromFieldPath: ptr.To[string]("metadata.labels"),
+				patch: v1beta1.ComposedPatch{
+					Type: v1beta1.PatchTypeFromCompositeFieldPath,
+					Patch: v1beta1.Patch{
+						FromFieldPath: ptr.To[string]("metadata.labels"),
+					},
 				},
 				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
@@ -405,10 +421,12 @@ func TestPatchApply(t *testing.T) {
 		"ValidToCompositeFieldPathPatch": {
 			reason: "Should correctly apply a ToCompositeFieldPath patch with valid settings",
 			args: args{
-				patch: v1beta1.Patch{
-					Type:          v1beta1.PatchTypeToCompositeFieldPath,
-					FromFieldPath: ptr.To[string]("metadata.labels"),
-					ToFieldPath:   ptr.To[string]("metadata.labels"),
+				patch: v1beta1.ComposedPatch{
+					Type: v1beta1.PatchTypeToCompositeFieldPath,
+					Patch: v1beta1.Patch{
+						FromFieldPath: ptr.To[string]("metadata.labels"),
+						ToFieldPath:   ptr.To[string]("metadata.labels"),
+					},
 				},
 				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
@@ -446,10 +464,12 @@ func TestPatchApply(t *testing.T) {
 		"ValidToCompositeFieldPathPatchWithWildcards": {
 			reason: "When passed a wildcarded path, adds a field to each element of an array",
 			args: args{
-				patch: v1beta1.Patch{
-					Type:          v1beta1.PatchTypeToCompositeFieldPath,
-					FromFieldPath: ptr.To[string]("metadata.name"),
-					ToFieldPath:   ptr.To[string]("metadata.ownerReferences[*].name"),
+				patch: v1beta1.ComposedPatch{
+					Type: v1beta1.PatchTypeToCompositeFieldPath,
+					Patch: v1beta1.Patch{
+						FromFieldPath: ptr.To[string]("metadata.name"),
+						ToFieldPath:   ptr.To[string]("metadata.ownerReferences[*].name"),
+					},
 				},
 				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
@@ -499,10 +519,13 @@ func TestPatchApply(t *testing.T) {
 		"MissingCombineFromCompositeConfig": {
 			reason: "Should return an error if Combine config is not passed",
 			args: args{
-				patch: v1beta1.Patch{
-					Type:        v1beta1.PatchTypeCombineFromComposite,
-					ToFieldPath: ptr.To[string]("metadata.labels.destination"),
-					// Missing a Combine field
+				patch: v1beta1.ComposedPatch{
+					Type: v1beta1.PatchTypeCombineFromComposite,
+					Patch: v1beta1.Patch{
+						ToFieldPath: ptr.To[string]("metadata.labels.destination"),
+						// Missing a Combine field
+						Combine: nil,
+					},
 				},
 				xr: &composite.Unstructured{},
 				cd: &composed.Unstructured{},
@@ -516,17 +539,19 @@ func TestPatchApply(t *testing.T) {
 		"MissingCombineStrategyFromCompositeConfig": {
 			reason: "Should return an error if Combine strategy config is not passed",
 			args: args{
-				patch: v1beta1.Patch{
+				patch: v1beta1.ComposedPatch{
 					Type: v1beta1.PatchTypeCombineFromComposite,
-					Combine: &v1beta1.Combine{
-						Variables: []v1beta1.CombineVariable{
-							{FromFieldPath: "metadata.labels.source1"},
-							{FromFieldPath: "metadata.labels.source2"},
+					Patch: v1beta1.Patch{
+						Combine: &v1beta1.Combine{
+							Variables: []v1beta1.CombineVariable{
+								{FromFieldPath: "metadata.labels.source1"},
+								{FromFieldPath: "metadata.labels.source2"},
+							},
+							Strategy: v1beta1.CombineStrategyString,
+							// Missing a String combine config.
 						},
-						Strategy: v1beta1.CombineStrategyString,
-						// Missing a String combine config.
+						ToFieldPath: ptr.To[string]("metadata.labels.destination"),
 					},
-					ToFieldPath: ptr.To[string]("metadata.labels.destination"),
 				},
 				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
@@ -548,15 +573,17 @@ func TestPatchApply(t *testing.T) {
 		"MissingCombineVariablesFromCompositeConfig": {
 			reason: "Should return an error if no variables have been passed",
 			args: args{
-				patch: v1beta1.Patch{
+				patch: v1beta1.ComposedPatch{
 					Type: v1beta1.PatchTypeCombineFromComposite,
-					Combine: &v1beta1.Combine{
-						// This is empty.
-						Variables: []v1beta1.CombineVariable{},
-						Strategy:  v1beta1.CombineStrategyString,
-						String:    &v1beta1.StringCombine{Format: "%s-%s"},
+					Patch: v1beta1.Patch{
+						Combine: &v1beta1.Combine{
+							// This is empty.
+							Variables: []v1beta1.CombineVariable{},
+							Strategy:  v1beta1.CombineStrategyString,
+							String:    &v1beta1.StringCombine{Format: "%s-%s"},
+						},
+						ToFieldPath: ptr.To[string]("objectMeta.labels.destination"),
 					},
-					ToFieldPath: ptr.To[string]("objectMeta.labels.destination"),
 				},
 			},
 			want: want{
@@ -569,18 +596,20 @@ func TestPatchApply(t *testing.T) {
 			// not available.
 			reason: "Should return no error and not apply patch if an optional variable is missing",
 			args: args{
-				patch: v1beta1.Patch{
+				patch: v1beta1.ComposedPatch{
 					Type: v1beta1.PatchTypeCombineFromComposite,
-					Combine: &v1beta1.Combine{
-						Variables: []v1beta1.CombineVariable{
-							{FromFieldPath: "metadata.labels.source1"},
-							{FromFieldPath: "metadata.labels.source2"},
-							{FromFieldPath: "metadata.labels.source3"},
+					Patch: v1beta1.Patch{
+						Combine: &v1beta1.Combine{
+							Variables: []v1beta1.CombineVariable{
+								{FromFieldPath: "metadata.labels.source1"},
+								{FromFieldPath: "metadata.labels.source2"},
+								{FromFieldPath: "metadata.labels.source3"},
+							},
+							Strategy: v1beta1.CombineStrategyString,
+							String:   &v1beta1.StringCombine{Format: "%s-%s"},
 						},
-						Strategy: v1beta1.CombineStrategyString,
-						String:   &v1beta1.StringCombine{Format: "%s-%s"},
+						ToFieldPath: ptr.To[string]("metadata.labels.destination"),
 					},
-					ToFieldPath: ptr.To[string]("metadata.labels.destination"),
 				},
 				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
@@ -602,17 +631,19 @@ func TestPatchApply(t *testing.T) {
 		"ValidCombineFromComposite": {
 			reason: "Should correctly apply a CombineFromComposite patch with valid settings",
 			args: args{
-				patch: v1beta1.Patch{
+				patch: v1beta1.ComposedPatch{
 					Type: v1beta1.PatchTypeCombineFromComposite,
-					Combine: &v1beta1.Combine{
-						Variables: []v1beta1.CombineVariable{
-							{FromFieldPath: "metadata.labels.source1"},
-							{FromFieldPath: "metadata.labels.source2"},
+					Patch: v1beta1.Patch{
+						Combine: &v1beta1.Combine{
+							Variables: []v1beta1.CombineVariable{
+								{FromFieldPath: "metadata.labels.source1"},
+								{FromFieldPath: "metadata.labels.source2"},
+							},
+							Strategy: v1beta1.CombineStrategyString,
+							String:   &v1beta1.StringCombine{Format: "%s-%s"},
 						},
-						Strategy: v1beta1.CombineStrategyString,
-						String:   &v1beta1.StringCombine{Format: "%s-%s"},
+						ToFieldPath: ptr.To[string]("metadata.labels.destination"),
 					},
-					ToFieldPath: ptr.To[string]("metadata.labels.destination"),
 				},
 				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
@@ -657,17 +688,19 @@ func TestPatchApply(t *testing.T) {
 		"ValidCombineToComposite": {
 			reason: "Should correctly apply a CombineToComposite patch with valid settings",
 			args: args{
-				patch: v1beta1.Patch{
+				patch: v1beta1.ComposedPatch{
 					Type: v1beta1.PatchTypeCombineToComposite,
-					Combine: &v1beta1.Combine{
-						Variables: []v1beta1.CombineVariable{
-							{FromFieldPath: "metadata.labels.source1"},
-							{FromFieldPath: "metadata.labels.source2"},
+					Patch: v1beta1.Patch{
+						Combine: &v1beta1.Combine{
+							Variables: []v1beta1.CombineVariable{
+								{FromFieldPath: "metadata.labels.source1"},
+								{FromFieldPath: "metadata.labels.source2"},
+							},
+							Strategy: v1beta1.CombineStrategyString,
+							String:   &v1beta1.StringCombine{Format: "%s-%s"},
 						},
-						Strategy: v1beta1.CombineStrategyString,
-						String:   &v1beta1.StringCombine{Format: "%s-%s"},
+						ToFieldPath: ptr.To[string]("metadata.labels.destination"),
 					},
-					ToFieldPath: ptr.To[string]("metadata.labels.destination"),
 				},
 				xr: &composite.Unstructured{
 					Unstructured: unstructured.Unstructured{Object: MustObject(`{
@@ -713,7 +746,7 @@ func TestPatchApply(t *testing.T) {
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			ncp := tc.args.xr.DeepCopyObject().(resource.Composite)
-			err := Apply(tc.args.patch, ncp, tc.args.cd, tc.args.only...)
+			err := Apply(&tc.args.patch, ncp, tc.args.cd, tc.args.only...)
 
 			if tc.want.xr != nil {
 				if diff := cmp.Diff(tc.want.xr, ncp); diff != "" {
@@ -851,14 +884,18 @@ func TestComposedTemplates(t *testing.T) {
 			args: args{
 				cts: []v1beta1.ComposedTemplate{
 					{
-						Patches: []v1beta1.Patch{
+						Patches: []v1beta1.ComposedPatch{
 							{
-								Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-								FromFieldPath: ptr.To[string]("metadata.name"),
+								Type: v1beta1.PatchTypeFromCompositeFieldPath,
+								Patch: v1beta1.Patch{
+									FromFieldPath: ptr.To[string]("metadata.name"),
+								},
 							},
 							{
-								Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-								FromFieldPath: ptr.To[string]("metadata.namespace"),
+								Type: v1beta1.PatchTypeFromCompositeFieldPath,
+								Patch: v1beta1.Patch{
+									FromFieldPath: ptr.To[string]("metadata.namespace"),
+								},
 							},
 						},
 					},
@@ -867,14 +904,18 @@ func TestComposedTemplates(t *testing.T) {
 			want: want{
 				ct: []v1beta1.ComposedTemplate{
 					{
-						Patches: []v1beta1.Patch{
+						Patches: []v1beta1.ComposedPatch{
 							{
-								Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-								FromFieldPath: ptr.To[string]("metadata.name"),
+								Type: v1beta1.PatchTypeFromCompositeFieldPath,
+								Patch: v1beta1.Patch{
+									FromFieldPath: ptr.To[string]("metadata.name"),
+								},
 							},
 							{
-								Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-								FromFieldPath: ptr.To[string]("metadata.namespace"),
+								Type: v1beta1.PatchTypeFromCompositeFieldPath,
+								Patch: v1beta1.Patch{
+									FromFieldPath: ptr.To[string]("metadata.namespace"),
+								},
 							},
 						},
 					},
@@ -885,7 +926,7 @@ func TestComposedTemplates(t *testing.T) {
 			reason: "Should return error and not modify the patches field when referring to an undefined PatchSet",
 			args: args{
 				cts: []v1beta1.ComposedTemplate{{
-					Patches: []v1beta1.Patch{
+					Patches: []v1beta1.ComposedPatch{
 						{
 							Type:         v1beta1.PatchTypePatchSet,
 							PatchSetName: ptr.To[string]("patch-set-1"),
@@ -905,50 +946,60 @@ func TestComposedTemplates(t *testing.T) {
 				pss: []v1beta1.PatchSet{
 					{
 						Name: "patch-set-1",
-						Patches: []v1beta1.Patch{
+						Patches: []v1beta1.PatchSetPatch{
 							{
-								Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-								FromFieldPath: ptr.To[string]("metadata.namespace"),
+								Type: v1beta1.PatchTypeFromCompositeFieldPath,
+								Patch: v1beta1.Patch{
+									FromFieldPath: ptr.To[string]("metadata.namespace"),
+								},
 							},
 							{
-								Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-								FromFieldPath: ptr.To[string]("spec.parameters.test"),
+								Type: v1beta1.PatchTypeFromCompositeFieldPath,
+								Patch: v1beta1.Patch{
+									FromFieldPath: ptr.To[string]("spec.parameters.test"),
+								},
 							},
 						},
 					},
 					{
 						Name: "patch-set-2",
-						Patches: []v1beta1.Patch{
+						Patches: []v1beta1.PatchSetPatch{
 							{
-								Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-								FromFieldPath: ptr.To[string]("metadata.annotations.patch-test-1"),
+								Type: v1beta1.PatchTypeFromCompositeFieldPath,
+								Patch: v1beta1.Patch{
+									FromFieldPath: ptr.To[string]("metadata.annotations.patch-test-1"),
+								},
 							},
 							{
-								Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-								FromFieldPath: ptr.To[string]("metadata.annotations.patch-test-2"),
-								Transforms: []v1beta1.Transform{{
-									Type: v1beta1.TransformTypeMap,
-									Map: &v1beta1.MapTransform{
-										Pairs: map[string]extv1.JSON{
-											"k-1": asJSON("v-1"),
-											"k-2": asJSON("v-2"),
+								Type: v1beta1.PatchTypeFromCompositeFieldPath,
+								Patch: v1beta1.Patch{
+									FromFieldPath: ptr.To[string]("metadata.annotations.patch-test-2"),
+									Transforms: []v1beta1.Transform{{
+										Type: v1beta1.TransformTypeMap,
+										Map: &v1beta1.MapTransform{
+											Pairs: map[string]extv1.JSON{
+												"k-1": asJSON("v-1"),
+												"k-2": asJSON("v-2"),
+											},
 										},
-									},
-								}},
+									}},
+								},
 							},
 						},
 					},
 				},
 				cts: []v1beta1.ComposedTemplate{
 					{
-						Patches: []v1beta1.Patch{
+						Patches: []v1beta1.ComposedPatch{
 							{
 								Type:         v1beta1.PatchTypePatchSet,
 								PatchSetName: ptr.To[string]("patch-set-2"),
 							},
 							{
-								Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-								FromFieldPath: ptr.To[string]("metadata.name"),
+								Type: v1beta1.PatchTypeFromCompositeFieldPath,
+								Patch: v1beta1.Patch{
+									FromFieldPath: ptr.To[string]("metadata.name"),
+								},
 							},
 							{
 								Type:         v1beta1.PatchTypePatchSet,
@@ -957,7 +1008,7 @@ func TestComposedTemplates(t *testing.T) {
 						},
 					},
 					{
-						Patches: []v1beta1.Patch{
+						Patches: []v1beta1.ComposedPatch{
 							{
 								Type:         v1beta1.PatchTypePatchSet,
 								PatchSetName: ptr.To[string]("patch-set-1"),
@@ -970,47 +1021,61 @@ func TestComposedTemplates(t *testing.T) {
 				err: nil,
 				ct: []v1beta1.ComposedTemplate{
 					{
-						Patches: []v1beta1.Patch{
+						Patches: []v1beta1.ComposedPatch{
 							{
-								Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-								FromFieldPath: ptr.To[string]("metadata.annotations.patch-test-1"),
+								Type: v1beta1.PatchTypeFromCompositeFieldPath,
+								Patch: v1beta1.Patch{
+									FromFieldPath: ptr.To[string]("metadata.annotations.patch-test-1"),
+								},
 							},
 							{
-								Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-								FromFieldPath: ptr.To[string]("metadata.annotations.patch-test-2"),
-								Transforms: []v1beta1.Transform{{
-									Type: v1beta1.TransformTypeMap,
-									Map: &v1beta1.MapTransform{
-										Pairs: map[string]extv1.JSON{
-											"k-1": asJSON("v-1"),
-											"k-2": asJSON("v-2"),
+								Type: v1beta1.PatchTypeFromCompositeFieldPath,
+								Patch: v1beta1.Patch{
+									FromFieldPath: ptr.To[string]("metadata.annotations.patch-test-2"),
+									Transforms: []v1beta1.Transform{{
+										Type: v1beta1.TransformTypeMap,
+										Map: &v1beta1.MapTransform{
+											Pairs: map[string]extv1.JSON{
+												"k-1": asJSON("v-1"),
+												"k-2": asJSON("v-2"),
+											},
 										},
-									},
-								}},
+									}},
+								},
 							},
 							{
-								Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-								FromFieldPath: ptr.To[string]("metadata.name"),
+								Type: v1beta1.PatchTypeFromCompositeFieldPath,
+								Patch: v1beta1.Patch{
+									FromFieldPath: ptr.To[string]("metadata.name"),
+								},
 							},
 							{
-								Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-								FromFieldPath: ptr.To[string]("metadata.namespace"),
+								Type: v1beta1.PatchTypeFromCompositeFieldPath,
+								Patch: v1beta1.Patch{
+									FromFieldPath: ptr.To[string]("metadata.namespace"),
+								},
 							},
 							{
-								Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-								FromFieldPath: ptr.To[string]("spec.parameters.test"),
+								Type: v1beta1.PatchTypeFromCompositeFieldPath,
+								Patch: v1beta1.Patch{
+									FromFieldPath: ptr.To[string]("spec.parameters.test"),
+								},
 							},
 						},
 					},
 					{
-						Patches: []v1beta1.Patch{
+						Patches: []v1beta1.ComposedPatch{
 							{
-								Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-								FromFieldPath: ptr.To[string]("metadata.namespace"),
+								Type: v1beta1.PatchTypeFromCompositeFieldPath,
+								Patch: v1beta1.Patch{
+									FromFieldPath: ptr.To[string]("metadata.namespace"),
+								},
 							},
 							{
-								Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-								FromFieldPath: ptr.To[string]("spec.parameters.test"),
+								Type: v1beta1.PatchTypeFromCompositeFieldPath,
+								Patch: v1beta1.Patch{
+									FromFieldPath: ptr.To[string]("spec.parameters.test"),
+								},
 							},
 						},
 					},
@@ -1114,7 +1179,7 @@ func TestResolveTransforms(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ResolveTransforms(v1beta1.Patch{Transforms: tt.args.ts}, tt.args.input)
+			got, err := ResolveTransforms(tt.args.ts, tt.args.input)
 			if diff := cmp.Diff(tt.want.err, err, test.EquateErrors()); diff != "" {
 				t.Errorf("ResolveTransforms(...): -want error, +got error:\n%s", diff)
 			}

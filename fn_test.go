@@ -156,23 +156,25 @@ func TestRunFunction(t *testing.T) {
 							{
 								Name: "cool-resource",
 								Base: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"example.org/v1","kind":"CD"}`)},
-								Patches: []v1beta1.Patch{
+								Patches: []v1beta1.ComposedPatch{
 									{
-										Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-										FromFieldPath: ptr.To[string]("spec.widgets"),
-										ToFieldPath:   ptr.To[string]("spec.watchers"),
-										Transforms: []v1beta1.Transform{
-											{
-												Type: v1beta1.TransformTypeConvert,
-												Convert: &v1beta1.ConvertTransform{
-													ToType: v1beta1.TransformIOTypeInt64,
+										Type: v1beta1.PatchTypeFromCompositeFieldPath,
+										Patch: v1beta1.Patch{
+											FromFieldPath: ptr.To[string]("spec.widgets"),
+											ToFieldPath:   ptr.To[string]("spec.watchers"),
+											Transforms: []v1beta1.Transform{
+												{
+													Type: v1beta1.TransformTypeConvert,
+													Convert: &v1beta1.ConvertTransform{
+														ToType: v1beta1.TransformIOTypeInt64,
+													},
 												},
-											},
-											{
-												Type: v1beta1.TransformTypeMath,
-												Math: &v1beta1.MathTransform{
-													Type:     v1beta1.MathTransformTypeMultiply,
-													Multiply: ptr.To[int64](3),
+												{
+													Type: v1beta1.TransformTypeMath,
+													Math: &v1beta1.MathTransform{
+														Type:     v1beta1.MathTransformTypeMultiply,
+														Multiply: ptr.To[int64](3),
+													},
 												},
 											},
 										},
@@ -221,23 +223,25 @@ func TestRunFunction(t *testing.T) {
 								// patch the resource named "cool-resource" in
 								// the desired resources array.
 								Name: "cool-resource",
-								Patches: []v1beta1.Patch{
+								Patches: []v1beta1.ComposedPatch{
 									{
-										Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-										FromFieldPath: ptr.To[string]("spec.widgets"),
-										ToFieldPath:   ptr.To[string]("spec.watchers"),
-										Transforms: []v1beta1.Transform{
-											{
-												Type: v1beta1.TransformTypeConvert,
-												Convert: &v1beta1.ConvertTransform{
-													ToType: v1beta1.TransformIOTypeInt64,
+										Type: v1beta1.PatchTypeFromCompositeFieldPath,
+										Patch: v1beta1.Patch{
+											FromFieldPath: ptr.To[string]("spec.widgets"),
+											ToFieldPath:   ptr.To[string]("spec.watchers"),
+											Transforms: []v1beta1.Transform{
+												{
+													Type: v1beta1.TransformTypeConvert,
+													Convert: &v1beta1.ConvertTransform{
+														ToType: v1beta1.TransformIOTypeInt64,
+													},
 												},
-											},
-											{
-												Type: v1beta1.TransformTypeMath,
-												Math: &v1beta1.MathTransform{
-													Type:     v1beta1.MathTransformTypeMultiply,
-													Multiply: ptr.To[int64](3),
+												{
+													Type: v1beta1.TransformTypeMath,
+													Math: &v1beta1.MathTransform{
+														Type:     v1beta1.MathTransformTypeMultiply,
+														Multiply: ptr.To[int64](3),
+													},
 												},
 											},
 										},
@@ -291,11 +295,13 @@ func TestRunFunction(t *testing.T) {
 								// patch the resource named "cool-resource" in
 								// the desired resources array.
 								Name: "cool-resource",
-								Patches: []v1beta1.Patch{
+								Patches: []v1beta1.ComposedPatch{
 									{
-										Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-										FromFieldPath: ptr.To[string]("spec.widgets"),
-										ToFieldPath:   ptr.To[string]("spec.watchers"),
+										Type: v1beta1.PatchTypeFromCompositeFieldPath,
+										Patch: v1beta1.Patch{
+											FromFieldPath: ptr.To[string]("spec.widgets"),
+											ToFieldPath:   ptr.To[string]("spec.watchers"),
+										},
 									},
 								},
 							},
@@ -387,25 +393,29 @@ func TestRunFunction(t *testing.T) {
 								// patch the resource named "cool-resource" in
 								// the desired resources array.
 								Name: "cool-resource",
-								Patches: []v1beta1.Patch{
+								Patches: []v1beta1.ComposedPatch{
 									{
 										// This patch should work.
-										Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-										FromFieldPath: ptr.To[string]("spec.widgets"),
-										ToFieldPath:   ptr.To[string]("spec.watchers"),
+										Type: v1beta1.PatchTypeFromCompositeFieldPath,
+										Patch: v1beta1.Patch{
+											FromFieldPath: ptr.To[string]("spec.widgets"),
+											ToFieldPath:   ptr.To[string]("spec.watchers"),
+										},
 									},
 									{
 										// This patch should return an error,
 										// because the required path does not
 										// exist.
-										Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-										FromFieldPath: ptr.To[string]("spec.doesNotExist"),
-										ToFieldPath:   ptr.To[string]("spec.explode"),
-										Policy: &v1beta1.PatchPolicy{
-											FromFieldPath: func() *v1beta1.FromFieldPathPolicy {
-												r := v1beta1.FromFieldPathPolicyRequired
-												return &r
-											}(),
+										Type: v1beta1.PatchTypeFromCompositeFieldPath,
+										Patch: v1beta1.Patch{
+											FromFieldPath: ptr.To[string]("spec.doesNotExist"),
+											ToFieldPath:   ptr.To[string]("spec.explode"),
+											Policy: &v1beta1.PatchPolicy{
+												FromFieldPath: func() *v1beta1.FromFieldPathPolicy {
+													r := v1beta1.FromFieldPathPolicyRequired
+													return &r
+												}(),
+											},
 										},
 									},
 								},
@@ -572,23 +582,25 @@ func TestRunFunction(t *testing.T) {
 							{
 								Name: "cool-resource",
 								Base: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"example.org/v1","kind":"CD"}`)},
-								Patches: []v1beta1.Patch{
+								Patches: []v1beta1.ComposedPatch{
 									{
-										Type:          v1beta1.PatchTypeToCompositeFieldPath,
-										FromFieldPath: ptr.To[string]("spec.widgets"),
-										ToFieldPath:   ptr.To[string]("spec.watchers"),
-										Transforms: []v1beta1.Transform{
-											{
-												Type: v1beta1.TransformTypeConvert,
-												Convert: &v1beta1.ConvertTransform{
-													ToType: v1beta1.TransformIOTypeInt64,
+										Type: v1beta1.PatchTypeToCompositeFieldPath,
+										Patch: v1beta1.Patch{
+											FromFieldPath: ptr.To[string]("spec.widgets"),
+											ToFieldPath:   ptr.To[string]("spec.watchers"),
+											Transforms: []v1beta1.Transform{
+												{
+													Type: v1beta1.TransformTypeConvert,
+													Convert: &v1beta1.ConvertTransform{
+														ToType: v1beta1.TransformIOTypeInt64,
+													},
 												},
-											},
-											{
-												Type: v1beta1.TransformTypeMath,
-												Math: &v1beta1.MathTransform{
-													Type:     v1beta1.MathTransformTypeMultiply,
-													Multiply: ptr.To[int64](3),
+												{
+													Type: v1beta1.TransformTypeMath,
+													Math: &v1beta1.MathTransform{
+														Type:     v1beta1.MathTransformTypeMultiply,
+														Multiply: ptr.To[int64](3),
+													},
 												},
 											},
 										},
