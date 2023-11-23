@@ -196,58 +196,19 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 			log.Debug("Found corresponding observed resource",
 				"ready", ready,
 				"name", ocd.Resource.GetName())
-
-			// TODO(negz): Should failures to patch the XR be terminal? It could
-			// indicate a required patch failed. A required patch means roughly
-			// "this patch has to succeed before you mutate the resource". This
-			// is useful to make sure we never create a composed resource in the
-			// wrong state. It's less clear how useful it is for the XR, given
-			// we'll only ever be updating it, not creating it.
-
-			// We want to patch the XR from observed composed resources, not
-			// from desired state. This is because folks will typically be
-			// patching from a field that is set once the observed resource is
-			// applied such as its status.
-			if err := RenderToCompositePatches(dxr.Resource, ocd.Resource, t.Patches); err != nil {
-				response.Warning(rsp, errors.Wrapf(err, "cannot render ToComposite patches for composed resource %q", t.Name))
-				log.Info("Cannot render ToComposite patches for composed resource", "warning", err)
-				warnings++
-			}
-
-			// TODO(negz): Same as above, but for the Environment. What does it
-			// mean for a required patch to the environment to fail? Should it
-			// be terminal?
-
-			// Run all patches that are from the (observed) composed resource to
-			// the environment.
-			if err := RenderToEnvironmentPatches(env, ocd.Resource, t.Patches); err != nil {
-				response.Warning(rsp, errors.Wrapf(err, "cannot render ToEnvironment patches for composed resource %q", t.Name))
-				log.Info("Cannot render ToEnvironment patches for composed resource", "warning", err)
-				warnings++
-			}
 		}
 
-		// If either of the below renderings return an error, most likely a
-		// required FromComposite or FromEnvironment patch failed. A required
-		// patch means roughly "this patch has to succeed before you mutate the
-		// resource." This is useful to make sure we never create a composed
-		// resource in the wrong state. To that end, we don't want to add this
-		// resource to our accumulated desired state.
-		if err := RenderFromCompositePatches(dcd.Resource, oxr.Resource, t.Patches); err != nil {
-			response.Warning(rsp, errors.Wrapf(err, "cannot render FromComposite patches for composed resource %q", t.Name))
-			log.Info("Cannot render FromComposite patches for composed resource", "warning", err)
+		errs, store := RenderComposedPatches(ocd.Resource, dcd.Resource, oxr.Resource, dxr.Resource, env, t.Patches)
+		for _, err := range errs {
+			response.Warning(rsp, errors.Wrapf(err, "cannot render patches for composed resource %q", t.Name))
+			log.Info("Cannot render patches for composed resource", "warning", err)
 			warnings++
-			continue
-		}
-		if err := RenderFromEnvironmentPatches(dcd.Resource, env, t.Patches); err != nil {
-			response.Warning(rsp, errors.Wrapf(err, "cannot render FromEnvironment patches for composed resource %q", t.Name))
-			log.Info("Cannot render FromEnvironment patches for composed resource", "warning", err)
-			warnings++
-			continue
 		}
 
-		// Add or replace our desired resource.
-		desired[resource.Name(t.Name)] = dcd
+		if store {
+			// Add or replace our desired resource.
+			desired[resource.Name(t.Name)] = dcd
+		}
 	}
 
 	if err := response.SetDesiredCompositeResource(rsp, dxr); err != nil {
