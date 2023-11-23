@@ -114,15 +114,9 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 	}
 
 	if input.Environment != nil {
-		// Run all patches that are from the (observed) XR to the environment.
-		if err := RenderToEnvironmentPatches(env, oxr.Resource, input.Environment.Patches); err != nil {
+		// Run all patches that are from the (observed) XR to the environment or from the environment to the (desired) XR.
+		if err := RenderEnvironmentPatches(env, oxr.Resource, dxr.Resource, input.Environment.Patches); err != nil {
 			response.Fatal(rsp, errors.Wrapf(err, "cannot render ToEnvironment patches from the composite resource"))
-			return rsp, nil
-		}
-
-		// Run all patches that are from the environment to the (desired) XR.
-		if err := RenderFromEnvironmentPatches(dxr.Resource, env, input.Environment.Patches); err != nil {
-			response.Fatal(rsp, errors.Wrapf(err, "cannot render FromEnvironment patches to the composite resource"))
 			return rsp, nil
 		}
 	}
