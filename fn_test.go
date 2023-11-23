@@ -10,7 +10,9 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 
 	"github.com/crossplane/crossplane-runtime/pkg/logging"
@@ -643,6 +645,279 @@ func TestRunFunction(t *testing.T) {
 				},
 			},
 		},
+		"PatchToCompositeWithEnvironmentPatches": {
+			reason: "A basic ToCompositeFieldPath patch should work with environment.patches.",
+			args: args{
+				req: &fnv1beta1.RunFunctionRequest{
+					Input: resource.MustStructObject(&v1beta1.Resources{
+						Resources: []v1beta1.ComposedTemplate{
+							{
+								Name: "cool-resource",
+								Base: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"example.org/v1","kind":"CD"}`)},
+							}},
+						Environment: &v1beta1.Environment{
+							Patches: []v1beta1.EnvironmentPatch{
+								{
+									Type: v1beta1.PatchTypeFromEnvironmentFieldPath,
+									Patch: v1beta1.Patch{
+										FromFieldPath: ptr.To[string]("data.widgets"),
+										ToFieldPath:   ptr.To[string]("spec.watchers"),
+										Transforms: []v1beta1.Transform{
+											{
+												Type: v1beta1.TransformTypeConvert,
+												Convert: &v1beta1.ConvertTransform{
+													ToType: v1beta1.TransformIOTypeInt64,
+												},
+											},
+											{
+												Type: v1beta1.TransformTypeMath,
+												Math: &v1beta1.MathTransform{
+													Type:     v1beta1.MathTransformTypeMultiply,
+													Multiply: ptr.To[int64](3),
+												}}}}}}}}),
+					Observed: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{}}`),
+						},
+						Resources: map[string]*fnv1beta1.Resource{},
+					},
+					Context: contextWithEnvironment(map[string]interface{}{
+						"widgets": "10",
+					})},
+			},
+			want: want{
+				rsp: &fnv1beta1.RunFunctionResponse{
+					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							// spec.watchers = 10 * 3 = 30
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":30}}`),
+						},
+						Resources: map[string]*fnv1beta1.Resource{
+							"cool-resource": {
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD"}`),
+							}}},
+					Context: contextWithEnvironment(map[string]interface{}{
+						"widgets": "10",
+					})}}},
+		"EnvironmentPatchToEnvironment": {
+			reason: "A basic ToEnvironment patch should work with environment.patches.",
+			args: args{
+				req: &fnv1beta1.RunFunctionRequest{
+					Input: resource.MustStructObject(&v1beta1.Resources{
+						Resources: []v1beta1.ComposedTemplate{
+							{
+								Name: "cool-resource",
+								Base: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"example.org/v1","kind":"CD"}`)},
+							}},
+						Environment: &v1beta1.Environment{
+							Patches: []v1beta1.EnvironmentPatch{
+								{
+									Type: v1beta1.PatchTypeToEnvironmentFieldPath,
+									Patch: v1beta1.Patch{
+										FromFieldPath: ptr.To[string]("spec.watchers"),
+										ToFieldPath:   ptr.To[string]("data.widgets"),
+										Transforms: []v1beta1.Transform{
+											{
+												Type: v1beta1.TransformTypeMath,
+												Math: &v1beta1.MathTransform{
+													Type:     v1beta1.MathTransformTypeMultiply,
+													Multiply: ptr.To[int64](3),
+												},
+											},
+											{
+												Type: v1beta1.TransformTypeConvert,
+												Convert: &v1beta1.ConvertTransform{
+													ToType: v1beta1.TransformIOTypeString,
+												},
+											}}}}}}}),
+					Observed: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":10}}`),
+						},
+						Resources: map[string]*fnv1beta1.Resource{},
+					},
+					Context: contextWithEnvironment(nil)},
+			},
+			want: want{
+				rsp: &fnv1beta1.RunFunctionResponse{
+					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD"}`),
+						},
+						Resources: map[string]*fnv1beta1.Resource{
+							"cool-resource": {
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD"}`),
+							}}},
+					Context: contextWithEnvironment(map[string]interface{}{
+						"widgets": "30",
+					})}}},
+		"PatchComposedResourceFromEnvironment": {
+			reason: "A basic FromEnvironmentPatch should work if defined at spec.resources[*].patches.",
+			args: args{
+				req: &fnv1beta1.RunFunctionRequest{
+					Input: resource.MustStructObject(&v1beta1.Resources{
+						Resources: []v1beta1.ComposedTemplate{{
+							Name: "cool-resource",
+							Base: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"example.org/v1","kind":"CD"}`)},
+							Patches: []v1beta1.ComposedPatch{{
+								Type: v1beta1.PatchTypeFromEnvironmentFieldPath,
+								Patch: v1beta1.Patch{
+									FromFieldPath: ptr.To[string]("data.widgets"),
+									ToFieldPath:   ptr.To[string]("spec.watchers"),
+									Transforms: []v1beta1.Transform{{
+										Type: v1beta1.TransformTypeConvert,
+										Convert: &v1beta1.ConvertTransform{
+											ToType: v1beta1.TransformIOTypeInt64,
+										},
+									}, {
+										Type: v1beta1.TransformTypeMath,
+										Math: &v1beta1.MathTransform{
+											Type:     v1beta1.MathTransformTypeMultiply,
+											Multiply: ptr.To[int64](3),
+										},
+									}}}}},
+						}}}),
+					Observed: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{}}`),
+						},
+						Resources: map[string]*fnv1beta1.Resource{},
+					},
+					Context: contextWithEnvironment(map[string]interface{}{
+						"widgets": "10",
+					})},
+			},
+			want: want{
+				rsp: &fnv1beta1.RunFunctionResponse{
+					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD"}`),
+						},
+						Resources: map[string]*fnv1beta1.Resource{
+							"cool-resource": {
+								// spec.watchers = 10 * 3 = 30
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":30}}`),
+							}}},
+					Context: contextWithEnvironment(map[string]interface{}{
+						"widgets": "10",
+					})}}},
+
+		"PatchComposedResourceFromEnvironmentShadowedNotSet": {
+			reason: "A basic FromEnvironmentPatch should work if defined at spec.resources[*].patches, even if a successive patch shadows it and its source is not set.",
+			args: args{
+				req: &fnv1beta1.RunFunctionRequest{
+					Input: resource.MustStructObject(&v1beta1.Resources{
+						Resources: []v1beta1.ComposedTemplate{{
+							Name: "cool-resource",
+							Base: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"example.org/v1","kind":"CD"}`)},
+							Patches: []v1beta1.ComposedPatch{{
+								Type: v1beta1.PatchTypeFromEnvironmentFieldPath,
+								Patch: v1beta1.Patch{
+									FromFieldPath: ptr.To[string]("data.widgets"),
+									ToFieldPath:   ptr.To[string]("spec.watchers"),
+									Transforms: []v1beta1.Transform{{
+										Type: v1beta1.TransformTypeConvert,
+										Convert: &v1beta1.ConvertTransform{
+											ToType: v1beta1.TransformIOTypeInt64,
+										},
+									}, {
+										Type: v1beta1.TransformTypeMath,
+										Math: &v1beta1.MathTransform{
+											Type:     v1beta1.MathTransformTypeMultiply,
+											Multiply: ptr.To[int64](3),
+										},
+									}}}},
+								{
+									Type: v1beta1.PatchTypeFromCompositeFieldPath,
+									Patch: v1beta1.Patch{
+										FromFieldPath: ptr.To[string]("spec.watchers"),
+										ToFieldPath:   ptr.To[string]("spec.watchers"),
+									}}}}}}),
+					Observed: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{}}`),
+						},
+						Resources: map[string]*fnv1beta1.Resource{},
+					},
+					Context: contextWithEnvironment(map[string]interface{}{
+						"widgets": "10",
+					})},
+			},
+			want: want{
+				rsp: &fnv1beta1.RunFunctionResponse{
+					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD"}`),
+						},
+						Resources: map[string]*fnv1beta1.Resource{
+							"cool-resource": {
+								// spec.watchers = 10 * 3 = 30
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":30}}`),
+							}}},
+					Context: contextWithEnvironment(map[string]interface{}{
+						"widgets": "10",
+					})}}},
+		"PatchComposedResourceFromEnvironmentShadowedSet": {
+			reason: "A basic FromEnvironmentPatch should work if defined at spec.resources[*].patches, even if a successive patch shadows it and its source is set.",
+			args: args{
+				req: &fnv1beta1.RunFunctionRequest{
+					Input: resource.MustStructObject(&v1beta1.Resources{
+						Resources: []v1beta1.ComposedTemplate{{
+							Name: "cool-resource",
+							Base: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"example.org/v1","kind":"CD"}`)},
+							Patches: []v1beta1.ComposedPatch{{
+								Type: v1beta1.PatchTypeFromEnvironmentFieldPath,
+								Patch: v1beta1.Patch{
+									FromFieldPath: ptr.To[string]("data.widgets"),
+									ToFieldPath:   ptr.To[string]("spec.watchers"),
+									Transforms: []v1beta1.Transform{{
+										Type: v1beta1.TransformTypeConvert,
+										Convert: &v1beta1.ConvertTransform{
+											ToType: v1beta1.TransformIOTypeInt64,
+										},
+									}, {
+										Type: v1beta1.TransformTypeMath,
+										Math: &v1beta1.MathTransform{
+											Type:     v1beta1.MathTransformTypeMultiply,
+											Multiply: ptr.To[int64](3),
+										},
+									}}}},
+								{
+									Type: v1beta1.PatchTypeFromCompositeFieldPath,
+									Patch: v1beta1.Patch{
+										FromFieldPath: ptr.To[string]("spec.watchers"),
+										ToFieldPath:   ptr.To[string]("spec.watchers"),
+									}}}}}}),
+					Observed: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							// I want this in the environment, 42
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":42}}`),
+						},
+						Resources: map[string]*fnv1beta1.Resource{},
+					},
+					Context: contextWithEnvironment(map[string]interface{}{
+						"widgets": "10",
+					})},
+			},
+			want: want{
+				rsp: &fnv1beta1.RunFunctionResponse{
+					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD"}`),
+						},
+						Resources: map[string]*fnv1beta1.Resource{
+							"cool-resource": {
+								// spec.watchers comes from the composite resource, 42
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":42}}`),
+							}}},
+					Context: contextWithEnvironment(map[string]interface{}{
+						"widgets": "10",
+					})}}},
 	}
 
 	for name, tc := range cases {
@@ -659,4 +934,25 @@ func TestRunFunction(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Crossplane sends as context a fake resource:
+// { "apiVersion": "internal.crossplane.io/v1alpha1", "kind": "Environment", "data": {... the actual environment content ...} }
+// See: https://github.com/crossplane/crossplane/blob/806f0d20d146f6f4f1735c5ec6a7dc78923814b3/internal/controller/apiextensions/composite/environment_fetcher.go#L85C1-L85C1
+// That's because the patching code expects a resource to be able to use
+// runtime.DefaultUnstructuredConverter.FromUnstructured to convert it back to
+// an object. This is also why all patches need to specify the full path from data.
+func contextWithEnvironment(data map[string]interface{}) *structpb.Struct {
+	if data == nil {
+		data = map[string]interface{}{}
+	}
+	u := unstructured.Unstructured{Object: map[string]interface{}{
+		"data": data,
+	}}
+	u.SetGroupVersionKind(schema.GroupVersionKind{Group: "internal.crossplane.io", Version: "v1alpha1", Kind: "Environment"})
+	d, err := structpb.NewStruct(u.UnstructuredContent())
+	if err != nil {
+		panic(err)
+	}
+	return &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(d)}}
 }
