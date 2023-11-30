@@ -40,10 +40,11 @@ spec:
                   between the XR and the Environment. Either from the Environment
                   to the XR, or vice versa.
                 items:
-                  description: Patch objects are applied between composite and composed
-                    resources. Their behaviour depends on the Type selected. The default
-                    Type, FromCompositeFieldPath, copies a value from the composite
-                    resource to the composed resource, applying any defined transformers.
+                  description: EnvironmentPatch objects are applied between the composite
+                    resource and the environment. Their behaviour depends on the Type
+                    selected. The default Type, FromCompositeFieldPath, copies a value
+                    from the composite resource to the environment, applying any defined
+                    transformers.
                   properties:
                     combine:
                       description: Combine is the patch configuration for a CombineFromComposite,
@@ -93,10 +94,6 @@ spec:
                       description: FromFieldPath is the path of the field on the resource
                         whose value is to be used as input. Required when type is
                         FromCompositeFieldPath or ToCompositeFieldPath.
-                      type: string
-                    patchSetName:
-                      description: PatchSetName to include patches from. Required
-                        when type is PatchSet.
                       type: string
                     policy:
                       description: Policy configures the specifics of patching behaviour.
@@ -325,7 +322,6 @@ spec:
                         object.
                       enum:
                       - FromCompositeFieldPath
-                      - PatchSet
                       - ToCompositeFieldPath
                       - CombineFromComposite
                       - CombineToComposite
@@ -353,11 +349,8 @@ spec:
                 patches:
                   description: Patches will be applied as an overlay to the base resource.
                   items:
-                    description: Patch objects are applied between composite and composed
-                      resources. Their behaviour depends on the Type selected. The
-                      default Type, FromCompositeFieldPath, copies a value from the
-                      composite resource to the composed resource, applying any defined
-                      transformers.
+                    description: PatchSetPatch defines a set of Patches that can be
+                      referenced by name by other patches of type PatchSet.
                     properties:
                       combine:
                         description: Combine is the patch configuration for a CombineFromComposite,
@@ -408,10 +401,6 @@ spec:
                         description: FromFieldPath is the path of the field on the
                           resource whose value is to be used as input. Required when
                           type is FromCompositeFieldPath or ToCompositeFieldPath.
-                        type: string
-                      patchSetName:
-                        description: PatchSetName to include patches from. Required
-                          when type is PatchSet.
                         type: string
                       policy:
                         description: Policy configures the specifics of patching behaviour.
@@ -641,13 +630,16 @@ spec:
                         default: FromCompositeFieldPath
                         description: Type sets the patching behaviour to be used.
                           Each patch type may require its own fields to be set on
-                          the Patch object.
+                          the ComposedPatch object.
                         enum:
                         - FromCompositeFieldPath
-                        - PatchSet
                         - ToCompositeFieldPath
                         - CombineFromComposite
                         - CombineToComposite
+                        - FromEnvironmentFieldPath
+                        - ToEnvironmentFieldPath
+                        - CombineFromEnvironment
+                        - CombineToEnvironment
                         type: string
                     type: object
                   type: array
@@ -727,11 +719,11 @@ spec:
                 patches:
                   description: Patches to and from the composed resource.
                   items:
-                    description: Patch objects are applied between composite and composed
-                      resources. Their behaviour depends on the Type selected. The
-                      default Type, FromCompositeFieldPath, copies a value from the
-                      composite resource to the composed resource, applying any defined
-                      transformers.
+                    description: ComposedPatch objects are applied between composite
+                      and composed resources. Their behaviour depends on the Type
+                      selected. The default Type, FromCompositeFieldPath, copies a
+                      value from the composite resource to the composed resource,
+                      applying any defined transformers.
                     properties:
                       combine:
                         description: Combine is the patch configuration for a CombineFromComposite,
@@ -1015,13 +1007,17 @@ spec:
                         default: FromCompositeFieldPath
                         description: Type sets the patching behaviour to be used.
                           Each patch type may require its own fields to be set on
-                          the Patch object.
+                          the ComposedPatch object.
                         enum:
                         - FromCompositeFieldPath
                         - PatchSet
                         - ToCompositeFieldPath
                         - CombineFromComposite
                         - CombineToComposite
+                        - FromEnvironmentFieldPath
+                        - ToEnvironmentFieldPath
+                        - CombineFromEnvironment
+                        - CombineToEnvironment
                         type: string
                     type: object
                   type: array

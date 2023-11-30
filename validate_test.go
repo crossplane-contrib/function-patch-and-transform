@@ -237,7 +237,7 @@ func TestValidateConnectionDetail(t *testing.T) {
 
 func TestValidatePatch(t *testing.T) {
 	type args struct {
-		patch v1beta1.Patch
+		patch v1beta1.ComposedPatch
 	}
 
 	type want struct {
@@ -252,22 +252,26 @@ func TestValidatePatch(t *testing.T) {
 		"ValidFromCompositeFieldPath": {
 			reason: "FromCompositeFieldPath patch with FromFieldPath set should be valid",
 			args: args{
-				patch: v1beta1.Patch{
-					Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-					FromFieldPath: ptr.To[string]("spec.forProvider.foo"),
+				patch: v1beta1.ComposedPatch{
+					Type: v1beta1.PatchTypeFromCompositeFieldPath,
+					Patch: v1beta1.Patch{
+						FromFieldPath: ptr.To[string]("spec.forProvider.foo"),
+					},
 				},
 			},
 		},
 		"FromCompositeFieldPathWithInvalidTransforms": {
 			reason: "FromCompositeFieldPath with invalid transforms should return error",
 			args: args{
-				patch: v1beta1.Patch{
-					Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-					FromFieldPath: ptr.To[string]("spec.forProvider.foo"),
-					Transforms: []v1beta1.Transform{
-						{
-							Type: v1beta1.TransformTypeMath,
-							Math: nil,
+				patch: v1beta1.ComposedPatch{
+					Type: v1beta1.PatchTypeFromCompositeFieldPath,
+					Patch: v1beta1.Patch{
+						FromFieldPath: ptr.To[string]("spec.forProvider.foo"),
+						Transforms: []v1beta1.Transform{
+							{
+								Type: v1beta1.TransformTypeMath,
+								Math: nil,
+							},
 						},
 					},
 				},
@@ -282,9 +286,11 @@ func TestValidatePatch(t *testing.T) {
 		"InvalidFromCompositeFieldPathMissingFromFieldPath": {
 			reason: "Invalid FromCompositeFieldPath missing FromFieldPath should return error",
 			args: args{
-				patch: v1beta1.Patch{
-					Type:          v1beta1.PatchTypeFromCompositeFieldPath,
-					FromFieldPath: nil,
+				patch: v1beta1.ComposedPatch{
+					Type: v1beta1.PatchTypeFromCompositeFieldPath,
+					Patch: v1beta1.Patch{
+						FromFieldPath: nil,
+					},
 				},
 			},
 			want: want{
@@ -297,9 +303,11 @@ func TestValidatePatch(t *testing.T) {
 		"InvalidFromCompositeFieldPathMissingToFieldPath": {
 			reason: "Invalid ToCompositeFieldPath missing ToFieldPath should return error",
 			args: args{
-				patch: v1beta1.Patch{
-					Type:        v1beta1.PatchTypeToCompositeFieldPath,
-					ToFieldPath: nil,
+				patch: v1beta1.ComposedPatch{
+					Type: v1beta1.PatchTypeToCompositeFieldPath,
+					Patch: v1beta1.Patch{
+						ToFieldPath: nil,
+					},
 				},
 			},
 			want: want{
@@ -312,7 +320,7 @@ func TestValidatePatch(t *testing.T) {
 		"Invalidv1beta1.PatchSetMissingv1beta1.PatchSetName": {
 			reason: "Invalid v1beta1.PatchSet missing v1beta1.PatchSetName should return error",
 			args: args{
-				patch: v1beta1.Patch{
+				patch: v1beta1.ComposedPatch{
 					Type: v1beta1.PatchTypePatchSet,
 				},
 			},
@@ -326,7 +334,7 @@ func TestValidatePatch(t *testing.T) {
 		"InvalidCombineMissingCombine": {
 			reason: "Invalid Combine missing Combine should return error",
 			args: args{
-				patch: v1beta1.Patch{
+				patch: v1beta1.ComposedPatch{
 					Type: v1beta1.PatchTypeCombineToComposite,
 				},
 			},
@@ -340,16 +348,18 @@ func TestValidatePatch(t *testing.T) {
 		"InvalidCombineMissingToFieldPath": {
 			reason: "Invalid Combine missing ToFieldPath should return error",
 			args: args{
-				patch: v1beta1.Patch{
+				patch: v1beta1.ComposedPatch{
 					Type: v1beta1.PatchTypeCombineToComposite,
-					Combine: &v1beta1.Combine{
-						Variables: []v1beta1.CombineVariable{
-							{
-								FromFieldPath: "spec.forProvider.foo",
+					Patch: v1beta1.Patch{
+						Combine: &v1beta1.Combine{
+							Variables: []v1beta1.CombineVariable{
+								{
+									FromFieldPath: "spec.forProvider.foo",
+								},
 							},
 						},
+						ToFieldPath: nil,
 					},
-					ToFieldPath: nil,
 				},
 			},
 			want: want{
@@ -362,7 +372,7 @@ func TestValidatePatch(t *testing.T) {
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			err := ValidatePatch(tc.args.patch)
+			err := ValidatePatch(&tc.args.patch)
 			if diff := cmp.Diff(tc.want.err, err, cmpopts.IgnoreFields(field.Error{}, "Detail", "BadValue")); diff != "" {
 				t.Errorf("%s\nValidatePatch(...): -want, +got:\n%s", tc.reason, diff)
 			}
