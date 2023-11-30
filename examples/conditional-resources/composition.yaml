@@ -15,6 +15,7 @@ spec:
     input:
       apiVersion: conditional-pt.fn.crossplane.io/v1beta1
       kind: Resources
+      condition: observed.composite.resource.spec.render == true 
       resources:
          - name: blue-resource
            condition: observed.composite.resource.spec.deployment.blue == true
