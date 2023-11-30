@@ -2,12 +2,14 @@ package main
 
 import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/json"
 
 	"github.com/crossplane/crossplane-runtime/pkg/errors"
 	"github.com/crossplane/crossplane-runtime/pkg/resource"
+
+	"github.com/crossplane/function-sdk-go/resource/composed"
+	"github.com/crossplane/function-sdk-go/resource/composite"
 
 	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
 )
@@ -58,47 +60,92 @@ func RenderFromJSON(o resource.Object, data []byte) error {
 	return nil
 }
 
-// RenderFromCompositePatches renders the supplied composed resource by applying
-// all patches that are _from_ the supplied composite resource.
-func RenderFromCompositePatches(cd resource.Composed, xr resource.Composite, p []v1beta1.Patch) error {
-	for i := range p {
-		if err := Apply(p[i], xr, cd, v1beta1.PatchTypeFromCompositeFieldPath, v1beta1.PatchTypeCombineFromComposite); err != nil {
-			return errors.Wrapf(err, errFmtPatch, p[i].GetType(), i)
+// RenderEnvironmentPatches renders the supplied environment by applying all
+// patches that are to the environment, from the supplied XR.
+func RenderEnvironmentPatches(env *unstructured.Unstructured, oxr, dxr *composite.Unstructured, ps []v1beta1.EnvironmentPatch) error {
+	for i, p := range ps {
+		p := p
+		switch p.Type {
+		case v1beta1.PatchTypeToEnvironmentFieldPath, v1beta1.PatchTypeCombineToEnvironment:
+			if err := ApplyToObjects(&p, env, oxr); err != nil {
+				return errors.Wrapf(err, errFmtPatch, p.Type, i)
+			}
+		case v1beta1.PatchTypeFromEnvironmentFieldPath, v1beta1.PatchTypeCombineFromEnvironment:
+			if err := ApplyToObjects(&p, env, dxr); err != nil {
+				return errors.Wrapf(err, errFmtPatch, p.Type, i)
+			}
+		case v1beta1.PatchTypePatchSet, v1beta1.PatchTypeFromCompositeFieldPath, v1beta1.PatchTypeCombineFromComposite, v1beta1.PatchTypeToCompositeFieldPath, v1beta1.PatchTypeCombineToComposite:
+			// nothing to do
 		}
 	}
 	return nil
 }
 
-// RenderToCompositePatches renders the supplied composite resource by applying
-// all patches that are _from_ the supplied composed resource.
-func RenderToCompositePatches(xr resource.Composite, cd resource.Composed, p []v1beta1.Patch) error {
-	for i := range p {
-		if err := Apply(p[i], xr, cd, v1beta1.PatchTypeToCompositeFieldPath, v1beta1.PatchTypeCombineToComposite); err != nil {
-			return errors.Wrapf(err, errFmtPatch, p[i].GetType(), i)
-		}
-	}
-	return nil
-}
+// RenderComposedPatches renders the supplied composed resource by applying all
+// patches that are to or from the supplied composite resource and environment
+// in the order they were defined. Properly selecting the right source or
+// destination between observed and desired resources.
+func RenderComposedPatches( //nolint:gocyclo // just a switch
+	ocd *composed.Unstructured,
+	dcd *composed.Unstructured,
+	oxr *composite.Unstructured,
+	dxr *composite.Unstructured,
+	env *unstructured.Unstructured,
+	ps []v1beta1.ComposedPatch,
+) (errs []error, store bool) {
+	for i, p := range ps {
+		p := p
+		switch t := p.Type; t {
+		case v1beta1.PatchTypeToCompositeFieldPath, v1beta1.PatchTypeCombineToComposite:
+			// TODO(negz): Should failures to patch the XR be terminal? It could
+			// indicate a required patch failed. A required patch means roughly
+			// "this patch has to succeed before you mutate the resource". This
+			// is useful to make sure we never create a composed resource in the
+			// wrong state. It's less clear how useful it is for the XR, given
+			// we'll only ever be updating it, not creating it.
 
-// RenderFromEnvironmentPatches renders the supplied object (an XR or composed
-// resource) by applying all patches that are from the supplied environment.
-func RenderFromEnvironmentPatches(o runtime.Object, env *unstructured.Unstructured, p []v1beta1.Patch) error {
-	for i := range p {
-		if err := ApplyToObjects(p[i], env, o, v1beta1.PatchTypeFromEnvironmentFieldPath, v1beta1.PatchTypeCombineFromEnvironment); err != nil {
-			return errors.Wrapf(err, errFmtPatch, p[i].Type, i)
-		}
-	}
-	return nil
-}
+			// We want to patch the XR from observed composed resources, not
+			// from desired state. This is because folks will typically be
+			// patching from a field that is set once the observed resource is
+			// applied such as its status.
+			if ocd == nil {
+				continue
+			}
+			if err := ApplyToObjects(&p, dxr, ocd); err != nil {
+				errs = append(errs, errors.Wrapf(err, errFmtPatch, t, i))
+			}
+		case v1beta1.PatchTypeToEnvironmentFieldPath, v1beta1.PatchTypeCombineToEnvironment:
+			// TODO(negz): Same as above, but for the Environment. What does it
+			// mean for a required patch to the environment to fail? Should it
+			// be terminal?
 
-// RenderToEnvironmentPatches renders the supplied environment by applying all
-// patches that are to the environment, from the supplied object (an XR or
-// composed resource).
-func RenderToEnvironmentPatches(env *unstructured.Unstructured, o runtime.Object, p []v1beta1.Patch) error {
-	for i := range p {
-		if err := ApplyToObjects(p[i], env, o, v1beta1.PatchTypeToEnvironmentFieldPath, v1beta1.PatchTypeCombineToEnvironment); err != nil {
-			return errors.Wrapf(err, errFmtPatch, p[i].Type, i)
+			// Run all patches that are from the (observed) composed resource to
+			// the environment.
+			if ocd == nil {
+				continue
+			}
+			if err := ApplyToObjects(&p, env, ocd); err != nil {
+				errs = append(errs, errors.Wrapf(err, errFmtPatch, t, i))
+			}
+		// If either of the below renderings return an error, most likely a
+		// required FromComposite or FromEnvironment patch failed. A required
+		// patch means roughly "this patch has to succeed before you mutate the
+		// resource." This is useful to make sure we never create a composed
+		// resource in the wrong state. To that end, we don't want to add this
+		// resource to our accumulated desired state.
+		case v1beta1.PatchTypeFromCompositeFieldPath, v1beta1.PatchTypeCombineFromComposite:
+			if err := ApplyToObjects(&p, oxr, dcd); err != nil {
+				errs = append(errs, errors.Wrapf(err, errFmtPatch, t, i))
+				return errs, false
+			}
+		case v1beta1.PatchTypeFromEnvironmentFieldPath, v1beta1.PatchTypeCombineFromEnvironment:
+			if err := ApplyToObjects(&p, env, dcd); err != nil {
+				errs = append(errs, errors.Wrapf(err, errFmtPatch, t, i))
+				return errs, false
+			}
+		case v1beta1.PatchTypePatchSet:
+			// Already resolved - nothing to do.
 		}
 	}
-	return nil
+	return errs, true
 }

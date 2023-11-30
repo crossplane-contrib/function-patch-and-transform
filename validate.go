@@ -59,7 +59,8 @@ func ValidateComposedTemplate(t v1beta1.ComposedTemplate) *field.Error {
 		return field.Required(field.NewPath("name"), "name is required")
 	}
 	for i, p := range t.Patches {
-		if err := ValidatePatch(p); err != nil {
+		p := p
+		if err := ValidatePatch(&p); err != nil {
 			return WrapFieldError(err, field.NewPath("patches").Index(i))
 		}
 	}
@@ -82,7 +83,8 @@ func ValidatePatchSet(ps v1beta1.PatchSet) *field.Error {
 		return field.Required(field.NewPath("name"), "name is required")
 	}
 	for i, p := range ps.Patches {
-		if err := ValidatePatch(p); err != nil {
+		p := p
+		if err := ValidatePatch(&p); err != nil {
 			return WrapFieldError(err, field.NewPath("patches").Index(i))
 		}
 	}
@@ -95,6 +97,7 @@ func ValidateEnvironment(e *v1beta1.Environment) *field.Error {
 		return nil
 	}
 	for i, p := range e.Patches {
+		p := p
 		switch p.GetType() { //nolint:exhaustive // Intentionally targeting only environment patches.
 		case v1beta1.PatchTypeCombineToEnvironment,
 			v1beta1.PatchTypeCombineFromEnvironment,
@@ -104,7 +107,7 @@ func ValidateEnvironment(e *v1beta1.Environment) *field.Error {
 			return field.Invalid(field.NewPath("patches").Index(i).Key("type"), p.Type, "invalid environment patch type")
 		}
 
-		if err := ValidatePatch(p); err != nil {
+		if err := ValidatePatch(&p); err != nil {
 			return WrapFieldError(err, field.NewPath("patches").Index(i))
 		}
 	}
@@ -157,35 +160,39 @@ func ValidateMatchConditionReadinessCheck(m *v1beta1.MatchConditionReadinessChec
 	return nil
 }
 
-// ValidatePatch validates a Patch.
-func ValidatePatch(p v1beta1.Patch) *field.Error {
+// ValidatePatch validates a ComposedPatch.
+func ValidatePatch(p PatchInterface) *field.Error { //nolint: gocyclo // This is a long but simple/same-y switch.
 	switch p.GetType() {
 	case v1beta1.PatchTypeFromCompositeFieldPath,
 		v1beta1.PatchTypeToCompositeFieldPath,
 		v1beta1.PatchTypeFromEnvironmentFieldPath,
 		v1beta1.PatchTypeToEnvironmentFieldPath:
-		if p.FromFieldPath == nil {
-			return field.Required(field.NewPath("fromFieldPath"), fmt.Sprintf("fromFieldPath must be set for patch type %s", p.Type))
+		if p.GetFromFieldPath() == "" {
+			return field.Required(field.NewPath("fromFieldPath"), fmt.Sprintf("fromFieldPath must be set for patch type %s", p.GetType()))
 		}
 	case v1beta1.PatchTypePatchSet:
-		if p.PatchSetName == nil {
-			return field.Required(field.NewPath("patchSetName"), fmt.Sprintf("patchSetName must be set for patch type %s", p.Type))
+		ps, ok := p.(PatchWithPatchSetName)
+		if !ok {
+			return field.Invalid(field.NewPath("type"), p.GetType(), fmt.Sprintf("patch type %T does not support patch of type %s", p, p.GetType()))
+		}
+		if ps.GetPatchSetName() == "" {
+			return field.Required(field.NewPath("patchSetName"), fmt.Sprintf("patchSetName must be set for patch type %s", p.GetType()))
 		}
 	case v1beta1.PatchTypeCombineFromComposite,
 		v1beta1.PatchTypeCombineToComposite,
 		v1beta1.PatchTypeCombineFromEnvironment,
 		v1beta1.PatchTypeCombineToEnvironment:
-		if p.Combine == nil {
-			return field.Required(field.NewPath("combine"), fmt.Sprintf("combine must be set for patch type %s", p.Type))
+		if p.GetCombine() == nil {
+			return field.Required(field.NewPath("combine"), fmt.Sprintf("combine must be set for patch type %s", p.GetType()))
 		}
-		if p.ToFieldPath == nil {
-			return field.Required(field.NewPath("toFieldPath"), fmt.Sprintf("toFieldPath must be set for patch type %s", p.Type))
+		if p.GetToFieldPath() == "" {
+			return field.Required(field.NewPath("toFieldPath"), fmt.Sprintf("toFieldPath must be set for patch type %s", p.GetType()))
 		}
 	default:
 		// Should never happen
-		return field.Invalid(field.NewPath("type"), p.Type, "unknown patch type")
+		return field.Invalid(field.NewPath("type"), p.GetType(), "unknown patch type")
 	}
-	for i, t := range p.Transforms {
+	for i, t := range p.GetTransforms() {
 		if err := ValidateTransform(t); err != nil {
 			return WrapFieldError(err, field.NewPath("transforms").Index(i))
 		}
