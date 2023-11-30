@@ -25,16 +25,32 @@ const (
 	errFmtExpandingArrayFieldPaths    = "cannot expand ToFieldPath %s"
 )
 
+// A PatchInterface is a patch that can be applied between resources.
+type PatchInterface interface {
+	GetType() v1beta1.PatchType
+	GetFromFieldPath() string
+	GetToFieldPath() string
+	GetCombine() *v1beta1.Combine
+	GetTransforms() []v1beta1.Transform
+	GetPolicy() *v1beta1.PatchPolicy
+}
+
+// PatchWithPatchSetName is a PatchInterface that has a PatchSetName field.
+type PatchWithPatchSetName interface {
+	PatchInterface
+	GetPatchSetName() string
+}
+
 // Apply executes a patching operation between the from and to resources.
 // Applies all patch types unless an 'only' filter is supplied.
-func Apply(p v1beta1.Patch, xr resource.Composite, cd resource.Composed, only ...v1beta1.PatchType) error {
+func Apply(p PatchInterface, xr resource.Composite, cd resource.Composed, only ...v1beta1.PatchType) error {
 	return ApplyToObjects(p, xr, cd, only...)
 }
 
 // ApplyToObjects works like Apply but accepts any kind of runtime.Object. It
 // might be vulnerable to conversion panics (see
 // https://github.com/crossplane/crossplane/pull/3394 for details).
-func ApplyToObjects(p v1beta1.Patch, a, b runtime.Object, only ...v1beta1.PatchType) error {
+func ApplyToObjects(p PatchInterface, a, b runtime.Object, only ...v1beta1.PatchType) error {
 	if filterPatch(p, only...) {
 		return nil
 	}
@@ -51,11 +67,11 @@ func ApplyToObjects(p v1beta1.Patch, a, b runtime.Object, only ...v1beta1.PatchT
 	case v1beta1.PatchTypePatchSet:
 		// Already resolved - nothing to do.
 	}
-	return errors.Errorf(errFmtInvalidPatchType, p.Type)
+	return errors.Errorf(errFmtInvalidPatchType, p.GetType())
 }
 
 // filterPatch returns true if patch should be filtered (not applied)
-func filterPatch(p v1beta1.Patch, only ...v1beta1.PatchType) bool {
+func filterPatch(p PatchInterface, only ...v1beta1.PatchType) bool {
 	// filter does not apply if not set
 	if len(only) == 0 {
 		return false
@@ -70,9 +86,9 @@ func filterPatch(p v1beta1.Patch, only ...v1beta1.PatchType) bool {
 }
 
 // ResolveTransforms applies a list of transforms to a patch value.
-func ResolveTransforms(c v1beta1.Patch, input any) (any, error) {
+func ResolveTransforms(ts []v1beta1.Transform, input any) (any, error) {
 	var err error
-	for i, t := range c.Transforms {
+	for i, t := range ts {
 		if input, err = Resolve(t, input); err != nil {
 			// TODO(negz): Including the type might help find the offending transform faster.
 			return nil, errors.Wrapf(err, errFmtTransformAtIndex, i)
@@ -84,14 +100,9 @@ func ResolveTransforms(c v1beta1.Patch, input any) (any, error) {
 // ApplyFromFieldPathPatch patches the "to" resource, using a source field
 // on the "from" resource. Values may be transformed if any are defined on
 // the patch.
-func ApplyFromFieldPathPatch(p v1beta1.Patch, from, to runtime.Object) error {
-	if p.FromFieldPath == nil {
-		return errors.Errorf(errFmtRequiredField, "FromFieldPath", p.Type)
-	}
-
-	// Default to patching the same field on the composed resource.
-	if p.ToFieldPath == nil {
-		p.ToFieldPath = p.FromFieldPath
+func ApplyFromFieldPathPatch(p PatchInterface, from, to runtime.Object) error {
+	if p.GetFromFieldPath() == "" {
+		return errors.Errorf(errFmtRequiredField, "FromFieldPath", p.GetType())
 	}
 
 	fromMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(from)
@@ -99,8 +110,8 @@ func ApplyFromFieldPathPatch(p v1beta1.Patch, from, to runtime.Object) error {
 		return err
 	}
 
-	in, err := fieldpath.Pave(fromMap).GetValue(*p.FromFieldPath)
-	if IsOptionalFieldPathNotFound(err, p.Policy) {
+	in, err := fieldpath.Pave(fromMap).GetValue(p.GetFromFieldPath())
+	if IsOptionalFieldPathNotFound(err, p.GetPolicy()) {
 		return nil
 	}
 	if err != nil {
@@ -108,35 +119,36 @@ func ApplyFromFieldPathPatch(p v1beta1.Patch, from, to runtime.Object) error {
 	}
 
 	// Apply transform pipeline
-	out, err := ResolveTransforms(p, in)
+	out, err := ResolveTransforms(p.GetTransforms(), in)
 	if err != nil {
 		return err
 	}
 
-	// Patch all expanded fields if the ToFieldPath contains wildcards
-	if strings.Contains(*p.ToFieldPath, "[*]") {
-		return patchFieldValueToMultiple(*p.ToFieldPath, out, to)
+	// ComposedPatch all expanded fields if the ToFieldPath contains wildcards
+	if strings.Contains(p.GetToFieldPath(), "[*]") {
+		return patchFieldValueToMultiple(p.GetToFieldPath(), out, to)
 	}
 
-	return errors.Wrap(patchFieldValueToObject(*p.ToFieldPath, out, to), "cannot patch to object")
+	return errors.Wrap(patchFieldValueToObject(p.GetToFieldPath(), out, to), "cannot patch to object")
 }
 
 // ApplyCombineFromVariablesPatch patches the "to" resource, taking a list of
 // input variables and combining them into a single output value.
 // The single output value may then be further transformed if they are defined
 // on the patch.
-func ApplyCombineFromVariablesPatch(p v1beta1.Patch, from, to runtime.Object) error {
+func ApplyCombineFromVariablesPatch(p PatchInterface, from, to runtime.Object) error {
 	// Combine patch requires configuration
-	if p.Combine == nil {
-		return errors.Errorf(errFmtRequiredField, "Combine", p.Type)
+	if p.GetCombine() == nil {
+		return errors.Errorf(errFmtRequiredField, "Combine", p.GetType())
 	}
 	// Destination field path is required since we can't default to multiple
 	// fields.
-	if p.ToFieldPath == nil {
-		return errors.Errorf(errFmtRequiredField, "ToFieldPath", p.Type)
+	if p.GetToFieldPath() == "" {
+		return errors.Errorf(errFmtRequiredField, "ToFieldPath", p.GetType())
 	}
 
-	vl := len(p.Combine.Variables)
+	combine := p.GetCombine()
+	vl := len(combine.Variables)
 
 	if vl < 1 {
 		return errors.New(errCombineRequiresVariables)
@@ -153,7 +165,7 @@ func ApplyCombineFromVariablesPatch(p v1beta1.Patch, from, to runtime.Object) er
 	// NOTE: This currently assumes all variables define a 'fromFieldPath'
 	// value. If we add new variable types, this may not be the case and
 	// this code may be better served split out into a dedicated function.
-	for i, sp := range p.Combine.Variables {
+	for i, sp := range combine.Variables {
 		iv, err := fieldpath.Pave(fromMap).GetValue(sp.FromFieldPath)
 
 		// If any source field is not found, we will not
@@ -162,7 +174,7 @@ func ApplyCombineFromVariablesPatch(p v1beta1.Patch, from, to runtime.Object) er
 		// number of inputs (e.g. a string format
 		// expecting 3 fields '%s-%s-%s' but only
 		// receiving 2 values).
-		if IsOptionalFieldPathNotFound(err, p.Policy) {
+		if IsOptionalFieldPathNotFound(err, p.GetPolicy()) {
 			return nil
 		}
 		if err != nil {
@@ -172,18 +184,18 @@ func ApplyCombineFromVariablesPatch(p v1beta1.Patch, from, to runtime.Object) er
 	}
 
 	// Combine input values
-	cb, err := Combine(*p.Combine, in)
+	cb, err := Combine(*p.GetCombine(), in)
 	if err != nil {
 		return err
 	}
 
 	// Apply transform pipeline
-	out, err := ResolveTransforms(p, cb)
+	out, err := ResolveTransforms(p.GetTransforms(), cb)
 	if err != nil {
 		return err
 	}
 
-	return errors.Wrap(patchFieldValueToObject(*p.ToFieldPath, out, to), "cannot patch to object")
+	return errors.Wrap(patchFieldValueToObject(p.GetToFieldPath(), out, to), "cannot patch to object")
 }
 
 // IsOptionalFieldPathNotFound returns true if the supplied error indicates a
@@ -231,19 +243,19 @@ func CombineString(format string, vars []any) string {
 // ComposedTemplates returns the supplied composed resource templates with any
 // supplied patchsets dereferenced.
 func ComposedTemplates(pss []v1beta1.PatchSet, cts []v1beta1.ComposedTemplate) ([]v1beta1.ComposedTemplate, error) {
-	pn := make(map[string][]v1beta1.Patch)
+	pn := make(map[string][]v1beta1.ComposedPatch)
 	for _, s := range pss {
 		for _, p := range s.Patches {
 			if p.Type == v1beta1.PatchTypePatchSet {
 				return nil, errors.New(errPatchSetType)
 			}
 		}
-		pn[s.Name] = s.Patches
+		pn[s.Name] = s.GetComposedPatches()
 	}
 
 	ct := make([]v1beta1.ComposedTemplate, len(cts))
 	for i, r := range cts {
-		var po []v1beta1.Patch
+		var po []v1beta1.ComposedPatch
 		for _, p := range r.Patches {
 			if p.Type != v1beta1.PatchTypePatchSet {
 				po = append(po, p)

@@ -57,21 +57,91 @@ type Environment struct {
 	// composition's resources are composed. These patches are between the XR
 	// and the Environment. Either from the Environment to the XR, or vice
 	// versa.
-	Patches []Patch `json:"patches,omitempty"`
+	Patches []EnvironmentPatch `json:"patches,omitempty"`
 }
 
-// Patch objects are applied between composite and composed resources. Their
-// behaviour depends on the Type selected. The default Type,
-// FromCompositeFieldPath, copies a value from the composite resource to
-// the composed resource, applying any defined transformers.
-type Patch struct {
+// EnvironmentPatch objects are applied between the composite resource and
+// the environment. Their behaviour depends on the Type selected. The default
+// Type, FromCompositeFieldPath, copies a value from the composite resource
+// to the environment, applying any defined transformers.
+type EnvironmentPatch struct {
 	// Type sets the patching behaviour to be used. Each patch type may require
 	// its own fields to be set on the Patch object.
 	// +optional
-	// +kubebuilder:validation:Enum=FromCompositeFieldPath;PatchSet;ToCompositeFieldPath;CombineFromComposite;CombineToComposite
+	// +kubebuilder:validation:Enum=FromCompositeFieldPath;ToCompositeFieldPath;CombineFromComposite;CombineToComposite
 	// +kubebuilder:default=FromCompositeFieldPath
 	Type PatchType `json:"type,omitempty"`
 
+	Patch `json:",inline"`
+}
+
+// GetType returns the patch type. If the type is not set, it returns the default type.
+func (ep *EnvironmentPatch) GetType() PatchType {
+	if ep.Type == "" {
+		return PatchTypeFromCompositeFieldPath
+	}
+	return ep.Type
+}
+
+// ComposedPatch objects are applied between composite and composed resources.
+// Their behaviour depends on the Type selected. The default Type,
+// FromCompositeFieldPath, copies a value from the composite resource to the
+// composed resource, applying any defined transformers.
+type ComposedPatch struct {
+	// Type sets the patching behaviour to be used. Each patch type may require
+	// its own fields to be set on the ComposedPatch object.
+	// +optional
+	// +kubebuilder:validation:Enum=FromCompositeFieldPath;PatchSet;ToCompositeFieldPath;CombineFromComposite;CombineToComposite;FromEnvironmentFieldPath;ToEnvironmentFieldPath;CombineFromEnvironment;CombineToEnvironment
+	// +kubebuilder:default=FromCompositeFieldPath
+	Type PatchType `json:"type,omitempty"`
+
+	// PatchSetName to include patches from. Required when type is PatchSet.
+	// +optional
+	PatchSetName *string `json:"patchSetName,omitempty"`
+
+	Patch `json:",inline"`
+}
+
+// GetType returns the patch type. If the type is not set, it returns the default type.
+func (p *ComposedPatch) GetType() PatchType {
+	if p.Type == "" {
+		return PatchTypeFromCompositeFieldPath
+	}
+	return p.Type
+}
+
+// GetPatchSetName returns the PatchSetName for this ComposedPatch, or an empty
+// string if it is nil.
+func (p *ComposedPatch) GetPatchSetName() string {
+	if p.PatchSetName == nil {
+		return ""
+	}
+	return *p.PatchSetName
+}
+
+// PatchSetPatch defines a set of Patches that can be referenced by name by
+// other patches of type PatchSet.
+type PatchSetPatch struct {
+	// Type sets the patching behaviour to be used. Each patch type may require
+	// its own fields to be set on the ComposedPatch object.
+	// +optional
+	// +kubebuilder:validation:Enum=FromCompositeFieldPath;ToCompositeFieldPath;CombineFromComposite;CombineToComposite;FromEnvironmentFieldPath;ToEnvironmentFieldPath;CombineFromEnvironment;CombineToEnvironment
+	// +kubebuilder:default=FromCompositeFieldPath
+	Type PatchType `json:"type,omitempty"`
+
+	Patch `json:",inline"`
+}
+
+// GetType returns the patch type. If the type is not set, it returns the default type.
+func (psp *PatchSetPatch) GetType() PatchType {
+	if psp.Type == "" {
+		return PatchTypeFromCompositeFieldPath
+	}
+	return psp.Type
+}
+
+// Patch defines a patch between a source and destination.
+type Patch struct {
 	// FromFieldPath is the path of the field on the resource whose value is
 	// to be used as input. Required when type is FromCompositeFieldPath or
 	// ToCompositeFieldPath.
@@ -88,10 +158,6 @@ type Patch struct {
 	// propagate to the same path as fromFieldPath.
 	// +optional
 	ToFieldPath *string `json:"toFieldPath,omitempty"`
-
-	// PatchSetName to include patches from. Required when type is PatchSet.
-	// +optional
-	PatchSetName *string `json:"patchSetName,omitempty"`
 
 	// Transforms are the list of functions that are used as a FIFO pipe for the
 	// input to be transformed.
@@ -114,17 +180,25 @@ func (p *Patch) GetFromFieldPath() string {
 // GetToFieldPath returns the ToFieldPath for this Patch, or an empty string if it is nil.
 func (p *Patch) GetToFieldPath() string {
 	if p.ToFieldPath == nil {
-		return ""
+		// Default to patching the same field on the composed resource.
+		return p.GetFromFieldPath()
 	}
 	return *p.ToFieldPath
 }
 
-// GetType returns the patch type. If the type is not set, it returns the default type.
-func (p *Patch) GetType() PatchType {
-	if p.Type == "" {
-		return PatchTypeFromCompositeFieldPath
-	}
-	return p.Type
+// GetCombine returns the Combine for this ComposedPatch, or nil if it is nil.
+func (p *Patch) GetCombine() *Combine {
+	return p.Combine
+}
+
+// GetTransforms returns the Transforms for this ComposedPatch, or nil if it is nil.
+func (p *Patch) GetTransforms() []Transform {
+	return p.Transforms
+}
+
+// GetPolicy returns the PatchPolicy for this ComposedPatch, or nil if it is nil.
+func (p *Patch) GetPolicy() *PatchPolicy {
+	return p.Policy
 }
 
 // A CombineVariable defines the source of a value that is combined with

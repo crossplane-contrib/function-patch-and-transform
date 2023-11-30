@@ -18,7 +18,7 @@ metadata:
   annotations:
     render.crossplane.io/runtime: Development
 spec:
-  package: xpkg.upbound.io/borrelli-org/function-conditional-patch-and-transform:v0.3.0
+  package: xpkg.upbound.io/borrelli-org/function-conditional-patch-and-transform:v0.4.0
 ```
 
 ## What this function does

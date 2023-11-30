@@ -28,7 +28,19 @@ type PatchSet struct {
 	Name string `json:"name"`
 
 	// Patches will be applied as an overlay to the base resource.
-	Patches []Patch `json:"patches"`
+	Patches []PatchSetPatch `json:"patches"`
+}
+
+// GetComposedPatches returns the composed patches from the patch set.
+func (ps *PatchSet) GetComposedPatches() []ComposedPatch {
+	out := make([]ComposedPatch, len(ps.Patches))
+	for i, p := range ps.Patches {
+		out[i] = ComposedPatch{
+			Type:  p.GetType(),
+			Patch: p.Patch,
+		}
+	}
+	return out
 }
 
 // ComposedTemplate is used to provide information about how the composed
@@ -52,7 +64,7 @@ type ComposedTemplate struct {
 
 	// Patches to and from the composed resource.
 	// +optional
-	Patches []Patch `json:"patches,omitempty"`
+	Patches []ComposedPatch `json:"patches,omitempty"`
 
 	// ConnectionDetails lists the propagation secret keys from this composed
 	// resource to the composition instance connection secret.
