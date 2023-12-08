@@ -2,8 +2,11 @@ package main
 
 import (
 	"fmt"
+	"html"
+	"html/template"
 	"strings"
 
+	"github.com/Masterminds/sprig"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -225,6 +228,11 @@ func Combine(c v1beta1.Combine, vars []any) (any, error) {
 			return nil, errors.Errorf(errFmtCombineConfigMissing, c.Strategy)
 		}
 		out = CombineString(c.String.Format, vars)
+	case v1beta1.CombineStrategyTemplate:
+		if c.Template == nil {
+			return nil, errors.Errorf(errFmtCombineConfigMissing, c.Strategy)
+		}
+		out = CombineTemplate(c.Template.Template, vars)
 	default:
 		return nil, errors.Errorf(errFmtCombineStrategyNotSupported, c.Strategy)
 	}
@@ -238,6 +246,20 @@ func Combine(c v1beta1.Combine, vars []any) (any, error) {
 // its input variables.
 func CombineString(format string, vars []any) string {
 	return fmt.Sprintf(format, vars...)
+}
+
+// CombineTemplate returns a single output by executing a sprig template
+func CombineTemplate(t string, vars []any) string {
+	tmpl, err := template.New("template").Funcs(sprig.TxtFuncMap()).Parse(t)
+	if err != nil {
+		return ""
+	}
+	var b strings.Builder
+	err = tmpl.Execute(&b, vars)
+	if err != nil {
+		return ""
+	}
+	return html.UnescapeString(b.String())
 }
 
 // ComposedTemplates returns the supplied composed resource templates with any

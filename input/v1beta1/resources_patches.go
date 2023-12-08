@@ -216,7 +216,8 @@ type CombineStrategy string
 
 // CombineStrategy strategy definitions.
 const (
-	CombineStrategyString CombineStrategy = "string"
+	CombineStrategyString   CombineStrategy = "string"
+	CombineStrategyTemplate CombineStrategy = "template"
 )
 
 // A Combine configures a patch that combines more than
@@ -236,6 +237,8 @@ type Combine struct {
 	// string, using the relevant settings for formatting purposes.
 	// +optional
 	String *StringCombine `json:"string,omitempty"`
+
+	Template *TemplateCombine `json:"template,omitempty"`
 }
 
 // A StringCombine combines multiple input values into a single string.
@@ -243,4 +246,11 @@ type StringCombine struct {
 	// Format the input using a Go format string. See
 	// https://golang.org/pkg/fmt/ for details.
 	Format string `json:"fmt"`
+}
+
+// A TemplateCombine combines multiple input values into a single string, using Sprig templates
+type TemplateCombine struct {
+	// Template is a Sprig template that will be used to combine the input values.
+	// See https://masterminds.github.io/sprig/ for details.
+	Template string `json:"template"`
 }

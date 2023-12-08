@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/adler32"
+	"html"
 	"html/template"
 	"regexp"
 	"strconv"
@@ -96,7 +97,6 @@ func Resolve(t v1beta1.Transform, input any) (any, error) { //nolint:gocyclo // 
 	default:
 		return nil, errors.Errorf(errFmtTypeNotSupported, string(t.Type))
 	}
-
 	return out, errors.Wrapf(err, errFmtTransformTypeFailed, string(t.Type))
 }
 
@@ -289,18 +289,17 @@ func ResolveString(t *v1beta1.StringTransform, input any) (string, error) {
 			return "", errors.Errorf(errStringTransformTypeRegexp, string(t.Type))
 		}
 		return stringRegexpTransform(input, *t.Regexp)
-	case "Template":
+	case v1beta1.StringTransformTypeTemplate:
 		if t.Template == nil {
 			return "", errors.Errorf(errStringTransformTypeFailed, string(t.Type))
 		}
-		return stringTemplateTransform(t.Template, input)
+		return stringTemplateTransform(input, *t.Template)
 	default:
 		return "", errors.Errorf(errStringTransformTypeFailed, string(t.Type))
 	}
 }
 
-func stringTemplateTransform(input any, t v1beta1.StringTransformTypeTemplate) (string, error) {
-	// Render template using Sprig functions where t is the string template and input is the data
+func stringTemplateTransform(input any, t string) (string, error) {
 	tmpl, err := template.New("template").Funcs(sprig.TxtFuncMap()).Parse(t)
 	if err != nil {
 		return "", err
@@ -310,7 +309,7 @@ func stringTemplateTransform(input any, t v1beta1.StringTransformTypeTemplate) (
 	if err != nil {
 		return "", err
 	}
-	return b.String(), nil
+	return html.UnescapeString(b.String()), nil
 }
 
 func stringConvertTransform(t *v1beta1.StringConversionType, input any) (string, error) {

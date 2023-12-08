@@ -24,10 +24,75 @@ spec:
               region: us-east-2
         patches:
         - type: FromCompositeFieldPath
-          fromFieldPath: "location"
+          fromFieldPath: "spec.location"
           toFieldPath: "spec.forProvider.region"
           transforms:
           - type: map
             map: 
               EU: "eu-north-1"
               US: "us-east-2"
+
+      - name: bucket-policy
+        base:
+          apiVersion: s3.aws.upbound.io/v1beta1
+          kind: BucketPolicy
+          spec:
+            forProvider:
+              region: us-east-2
+              bucketSelector:
+                matchControllerRef: true
+        patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.location"
+          toFieldPath: "spec.forProvider.region"
+          transforms:
+          - type: map
+            map: 
+              EU: "eu-north-1"
+              US: "us-east-2"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.location"
+          toFieldPath: "metadata.labels.locationOne"
+          transforms:
+          - type: string
+            string: 
+              type: Template
+              template: '{{ .}}'
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.location"
+          toFieldPath: "metadata.labels.locationTwo"
+          transforms:
+          - type: string
+            string: 
+              type: Template
+              template: '{{ . | lower }}'
+        - type: CombineFromComposite
+          toFieldPath: "spec.forProvider.policy"
+          combine:
+            strategy: template
+            variables:
+              - fromFieldPath: spec.writeAccessPrincipalArns
+              - fromFieldPath: spec.readAccessPrincipalArns
+            template:
+              template: |
+                {
+                  "Version":"2012-10-17",
+                  "Statement":[
+                    {
+                      "Sid":"PolicyForAllowUploadWithACL",
+                      "Effect":"Allow",
+                      "Principal":{"AWS": {{ index . 0 | toJson }}  },
+                      "Action":"s3:PutObject",
+                      "Resource":"arn:aws:s3:::DOC-EXAMPLE-BUCKET/*",
+                      "Condition": {
+                        "StringEquals": {"s3:x-amz-acl":"bucket-owner-full-control"}
+                      },
+                    {
+                      "Sid":"PolicyForAllowedRead",
+                      "Effect":"Allow",
+                      "Principal":{"AWS": {{ index . 1 | toJson }}  },
+                      "Action":"s3:GetObject",
+                      "Resource":"*",
+                    }
+                  ]
+                }
