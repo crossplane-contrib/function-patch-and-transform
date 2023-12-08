@@ -44,23 +44,7 @@ spec:
         patches:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.location"
-          toFieldPath: "spec.forProvider.region"
-          transforms:
-          - type: map
-            map: 
-              EU: "eu-north-1"
-              US: "us-east-2"
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.location"
-          toFieldPath: "metadata.labels.locationOne"
-          transforms:
-          - type: string
-            string: 
-              type: Template
-              template: '{{ .}}'
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.location"
-          toFieldPath: "metadata.labels.locationTwo"
+          toFieldPath: "metadata.labels.location"
           transforms:
           - type: string
             string: 
