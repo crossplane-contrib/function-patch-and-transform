@@ -33,6 +33,7 @@ type PatchInterface interface {
 	GetType() v1beta1.PatchType
 	GetFromFieldPath() string
 	GetToFieldPath() string
+	GetVariableName() string
 	GetCombine() *v1beta1.Combine
 	GetTransforms() []v1beta1.Transform
 	GetPolicy() *v1beta1.PatchPolicy
@@ -232,7 +233,25 @@ func Combine(c v1beta1.Combine, vars []any) (any, error) {
 		if c.Template == nil {
 			return nil, errors.Errorf(errFmtCombineConfigMissing, c.Strategy)
 		}
-		out = CombineTemplate(c.Template.Template, vars)
+		// loop through c and print patch GetVariableName
+		for _, v := range c.Variables {
+			fmt.Printf("CombineStrategyTemplate v: %v\n", v.VariableName)
+		}
+		// print length of c.Variables and vars
+		fmt.Printf("CombineStrategyTemplate len(c.Variables): %v\n", len(c.Variables))
+		fmt.Printf("CombineStrategyTemplate len(c.Variables): %v\n", len(vars))
+
+		// build a map of variables to pass to CombineTemplate
+		varMap := make(map[string]any)
+		for i, v := range vars {
+			fmt.Printf("var name: %s\n", c.Variables[i].VariableName)
+			var varName = c.Variables[i].VariableName
+			if varName == "" {
+				varName = fmt.Sprintf("%d", i)
+			}
+			varMap[varName] = v
+		}
+		out = CombineTemplate(c.Template.Template, varMap)
 	default:
 		return nil, errors.Errorf(errFmtCombineStrategyNotSupported, c.Strategy)
 	}
@@ -249,7 +268,8 @@ func CombineString(format string, vars []any) string {
 }
 
 // CombineTemplate returns a single output by executing a sprig template
-func CombineTemplate(t string, vars []any) string {
+func CombineTemplate(t string, vars map[string]interface{}) string {
+	fmt.Printf("CombineTemplate: %s\n", vars)
 	tmpl, err := template.New("template").Funcs(sprig.TxtFuncMap()).Parse(t)
 	if err != nil {
 		return ""
