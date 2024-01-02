@@ -57,9 +57,14 @@ With this function you can use P&T with other functions. For example you can
 create a desired resource using the [Go Templating][fn-go-templating] function,
 then patch the result using this function.
 
+To include results from previous functions, simply provide a `resources` entry
+for each and specify a `name` field that matches the name of the resource from
+the previous function. Also, do not specify any value for the `base` field of
+each resource.
+
 It's not just patches either. You can use P&T to derive composite resource
 connection details from a resource produced by another function, or use it to
-determine whether a resource produced by another function is ready
+determine whether a resource produced by another function is ready.
 
 ### Decouple P&T development from Crossplane core
 
