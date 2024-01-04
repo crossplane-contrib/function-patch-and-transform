@@ -208,6 +208,7 @@ const (
 	StringTransformTypeTrimPrefix StringTransformType = "TrimPrefix"
 	StringTransformTypeTrimSuffix StringTransformType = "TrimSuffix"
 	StringTransformTypeRegexp     StringTransformType = "Regexp"
+	StringTransformTypeTemplate   StringTransformType = "Template"
 )
 
 // StringConversionType converts a string.
@@ -231,7 +232,7 @@ type StringTransform struct {
 
 	// Type of the string transform to be run.
 	// +optional
-	// +kubebuilder:validation:Enum=Format;Convert;TrimPrefix;TrimSuffix;Regexp
+	// +kubebuilder:validation:Enum=Format;Convert;TrimPrefix;TrimSuffix;Regexp;Template
 	// +kubebuilder:default=Format
 	Type StringTransformType `json:"type,omitempty"`
 
@@ -257,6 +258,11 @@ type StringTransform struct {
 	// Extract a match from the input using a regular expression.
 	// +optional
 	Regexp *StringTransformRegexp `json:"regexp,omitempty"`
+
+	// Render a template using the input as data.
+	// See https://pkg.go.dev/github.com/pschlump/sprig for details.
+	// +optional
+	Template *string `json:"template,omitempty"`
 }
 
 // A StringTransformRegexp extracts a match from the input using a regular

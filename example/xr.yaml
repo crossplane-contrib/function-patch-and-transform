@@ -5,3 +5,9 @@ metadata:
   name: example-xr
 spec:
   location: US
+  writeAccessPrincipalArns:
+  - "111122223333"
+  - "444455556666"
+  readAccessPrincipalArns:
+  - "123456789012"
+  - "987654321098"

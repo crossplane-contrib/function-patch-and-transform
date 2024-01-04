@@ -9,6 +9,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/adler32"
+	"html"
+	"html/template"
 	"regexp"
 	"strconv"
 	"strings"
@@ -17,6 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/utils/ptr"
 
+	"github.com/Masterminds/sprig"
 	"github.com/crossplane/crossplane-runtime/pkg/errors"
 
 	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
@@ -94,7 +97,6 @@ func Resolve(t v1beta1.Transform, input any) (any, error) { //nolint:gocyclo // 
 	default:
 		return nil, errors.Errorf(errFmtTypeNotSupported, string(t.Type))
 	}
-
 	return out, errors.Wrapf(err, errFmtTransformTypeFailed, string(t.Type))
 }
 
@@ -287,9 +289,27 @@ func ResolveString(t *v1beta1.StringTransform, input any) (string, error) {
 			return "", errors.Errorf(errStringTransformTypeRegexp, string(t.Type))
 		}
 		return stringRegexpTransform(input, *t.Regexp)
+	case v1beta1.StringTransformTypeTemplate:
+		if t.Template == nil {
+			return "", errors.Errorf(errStringTransformTypeFailed, string(t.Type))
+		}
+		return stringTemplateTransform(input, *t.Template)
 	default:
 		return "", errors.Errorf(errStringTransformTypeFailed, string(t.Type))
 	}
+}
+
+func stringTemplateTransform(input any, t string) (string, error) {
+	tmpl, err := template.New("template").Funcs(sprig.TxtFuncMap()).Parse(t)
+	if err != nil {
+		return "", err
+	}
+	var b strings.Builder
+	err = tmpl.Execute(&b, input)
+	if err != nil {
+		return "", err
+	}
+	return html.UnescapeString(b.String()), nil
 }
 
 func stringConvertTransform(t *v1beta1.StringConversionType, input any) (string, error) {

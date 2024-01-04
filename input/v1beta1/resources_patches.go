@@ -167,6 +167,11 @@ type Patch struct {
 	// Policy configures the specifics of patching behaviour.
 	// +optional
 	Policy *PatchPolicy `json:"policy,omitempty"`
+
+	// VariableName is used by the CombineToComposite patch to identify the
+	// variable in the template.
+	// +optional
+	VariableName *string `json:"variableName,omitempty"`
 }
 
 // GetFromFieldPath returns the FromFieldPath for this Patch, or an empty string if it is nil.
@@ -184,6 +189,14 @@ func (p *Patch) GetToFieldPath() string {
 		return p.GetFromFieldPath()
 	}
 	return *p.ToFieldPath
+}
+
+// GetVariableName returns the VariableName for this Patch, or an empty string if it is nil.
+func (p *Patch) GetVariableName() string {
+	if p.VariableName == nil {
+		return ""
+	}
+	return *p.FromFieldPath
 }
 
 // GetCombine returns the Combine for this ComposedPatch, or nil if it is nil.
@@ -208,6 +221,10 @@ type CombineVariable struct {
 	// FromFieldPath is the path of the field on the source whose value is
 	// to be used as input.
 	FromFieldPath string `json:"fromFieldPath"`
+
+	// VariableName is used by the CombineToComposite patch to identify the
+	// variable in the template.
+	VariableName string `json:"variableName,omitempty"`
 }
 
 // A CombineStrategy determines what strategy will be applied to combine
@@ -216,7 +233,8 @@ type CombineStrategy string
 
 // CombineStrategy strategy definitions.
 const (
-	CombineStrategyString CombineStrategy = "string"
+	CombineStrategyString   CombineStrategy = "string"
+	CombineStrategyTemplate CombineStrategy = "template"
 )
 
 // A Combine configures a patch that combines more than
@@ -236,6 +254,8 @@ type Combine struct {
 	// string, using the relevant settings for formatting purposes.
 	// +optional
 	String *StringCombine `json:"string,omitempty"`
+
+	Template *TemplateCombine `json:"template,omitempty"`
 }
 
 // A StringCombine combines multiple input values into a single string.
@@ -243,4 +263,11 @@ type StringCombine struct {
 	// Format the input using a Go format string. See
 	// https://golang.org/pkg/fmt/ for details.
 	Format string `json:"fmt"`
+}
+
+// A TemplateCombine combines multiple input values into a single string, using Sprig templates
+type TemplateCombine struct {
+	// Template is a Sprig template that will be used to combine the input values.
+	// See https://masterminds.github.io/sprig/ for details.
+	Template string `json:"template"`
 }
