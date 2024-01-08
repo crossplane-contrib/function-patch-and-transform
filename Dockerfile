@@ -19,7 +19,7 @@ ARG TARGETARCH
 RUN --mount=target=. \
     --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
-    GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o /function .
+    GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o /function ./cmd/fn
 
 # Produce the Function image.
 FROM gcr.io/distroless/base-debian11 AS image
