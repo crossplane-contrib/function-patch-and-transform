@@ -1,4 +1,4 @@
-package main
+package fn
 
 import (
 	"context"
@@ -27,6 +27,23 @@ type Function struct {
 	fnv1beta1.UnimplementedFunctionRunnerServiceServer
 
 	log logging.Logger
+}
+
+// FunctionOpt can modify a Function upon creation.
+type FunctionOpt func(f *Function)
+
+// WithLogger adds a logger to a Function.
+func WithLogger(log logging.Logger) FunctionOpt {
+	return func(f *Function) { f.log = log }
+}
+
+// NewFunction creates a new Function with the given options.
+func NewFunction(opts ...FunctionOpt) *Function {
+	f := &Function{}
+	for _, opt := range opts {
+		opt(f)
+	}
+	return f
 }
 
 // RunFunction runs the Function.
