@@ -246,7 +246,7 @@ func ComposedTemplates(pss []v1beta1.PatchSet, cts []v1beta1.ComposedTemplate) (
 	pn := make(map[string][]v1beta1.ComposedPatch)
 	for _, s := range pss {
 		for _, p := range s.Patches {
-			if p.Type == v1beta1.PatchTypePatchSet {
+			if p.GetType() == v1beta1.PatchTypePatchSet {
 				return nil, errors.New(errPatchSetType)
 			}
 		}
@@ -257,12 +257,12 @@ func ComposedTemplates(pss []v1beta1.PatchSet, cts []v1beta1.ComposedTemplate) (
 	for i, r := range cts {
 		var po []v1beta1.ComposedPatch
 		for _, p := range r.Patches {
-			if p.Type != v1beta1.PatchTypePatchSet {
+			if p.GetType() != v1beta1.PatchTypePatchSet {
 				po = append(po, p)
 				continue
 			}
 			if p.PatchSetName == nil {
-				return nil, errors.Errorf(errFmtRequiredField, "PatchSetName", p.Type)
+				return nil, errors.Errorf(errFmtRequiredField, "PatchSetName", p.GetType())
 			}
 			ps, ok := pn[*p.PatchSetName]
 			if !ok {
