@@ -104,7 +104,7 @@ func ValidateEnvironment(e *v1beta1.Environment) *field.Error {
 			v1beta1.PatchTypeFromEnvironmentFieldPath,
 			v1beta1.PatchTypeToEnvironmentFieldPath:
 		default:
-			return field.Invalid(field.NewPath("patches").Index(i).Key("type"), p.Type, "invalid environment patch type")
+			return field.Invalid(field.NewPath("patches").Index(i).Key("type"), p.GetType(), "invalid environment patch type")
 		}
 
 		if err := ValidatePatch(&p); err != nil {
