@@ -658,9 +658,9 @@ func TestRunFunction(t *testing.T) {
 						Environment: &v1beta1.Environment{
 							Patches: []v1beta1.EnvironmentPatch{
 								{
-									Type: v1beta1.PatchTypeFromEnvironmentFieldPath,
+									Type: v1beta1.PatchTypeToCompositeFieldPath,
 									Patch: v1beta1.Patch{
-										FromFieldPath: ptr.To[string]("data.widgets"),
+										FromFieldPath: ptr.To[string]("widgets"),
 										ToFieldPath:   ptr.To[string]("spec.watchers"),
 										Transforms: []v1beta1.Transform{
 											{
@@ -713,10 +713,10 @@ func TestRunFunction(t *testing.T) {
 						Environment: &v1beta1.Environment{
 							Patches: []v1beta1.EnvironmentPatch{
 								{
-									Type: v1beta1.PatchTypeToEnvironmentFieldPath,
+									Type: v1beta1.PatchTypeFromCompositeFieldPath,
 									Patch: v1beta1.Patch{
 										FromFieldPath: ptr.To[string]("spec.watchers"),
-										ToFieldPath:   ptr.To[string]("data.widgets"),
+										ToFieldPath:   ptr.To[string]("widgets"),
 										Transforms: []v1beta1.Transform{
 											{
 												Type: v1beta1.TransformTypeMath,
@@ -764,7 +764,7 @@ func TestRunFunction(t *testing.T) {
 							Patches: []v1beta1.ComposedPatch{{
 								Type: v1beta1.PatchTypeFromEnvironmentFieldPath,
 								Patch: v1beta1.Patch{
-									FromFieldPath: ptr.To[string]("data.widgets"),
+									FromFieldPath: ptr.To[string]("widgets"),
 									ToFieldPath:   ptr.To[string]("spec.watchers"),
 									Transforms: []v1beta1.Transform{{
 										Type: v1beta1.TransformTypeConvert,
@@ -816,7 +816,7 @@ func TestRunFunction(t *testing.T) {
 							Patches: []v1beta1.ComposedPatch{{
 								Type: v1beta1.PatchTypeFromEnvironmentFieldPath,
 								Patch: v1beta1.Patch{
-									FromFieldPath: ptr.To[string]("data.widgets"),
+									FromFieldPath: ptr.To[string]("widgets"),
 									ToFieldPath:   ptr.To[string]("spec.watchers"),
 									Transforms: []v1beta1.Transform{{
 										Type: v1beta1.TransformTypeConvert,
@@ -872,7 +872,7 @@ func TestRunFunction(t *testing.T) {
 							Patches: []v1beta1.ComposedPatch{{
 								Type: v1beta1.PatchTypeFromEnvironmentFieldPath,
 								Patch: v1beta1.Patch{
-									FromFieldPath: ptr.To[string]("data.widgets"),
+									FromFieldPath: ptr.To[string]("widgets"),
 									ToFieldPath:   ptr.To[string]("spec.watchers"),
 									Transforms: []v1beta1.Transform{{
 										Type: v1beta1.TransformTypeConvert,
@@ -937,18 +937,16 @@ func TestRunFunction(t *testing.T) {
 }
 
 // Crossplane sends as context a fake resource:
-// { "apiVersion": "internal.crossplane.io/v1alpha1", "kind": "Environment", "data": {... the actual environment content ...} }
+// { "apiVersion": "internal.crossplane.io/v1alpha1", "kind": "Environment", ... the actual environment content ... }
 // See: https://github.com/crossplane/crossplane/blob/806f0d20d146f6f4f1735c5ec6a7dc78923814b3/internal/controller/apiextensions/composite/environment_fetcher.go#L85C1-L85C1
 // That's because the patching code expects a resource to be able to use
 // runtime.DefaultUnstructuredConverter.FromUnstructured to convert it back to
-// an object. This is also why all patches need to specify the full path from data.
+// an object.
 func contextWithEnvironment(data map[string]interface{}) *structpb.Struct {
 	if data == nil {
 		data = map[string]interface{}{}
 	}
-	u := unstructured.Unstructured{Object: map[string]interface{}{
-		"data": data,
-	}}
+	u := unstructured.Unstructured{Object: data}
 	u.SetGroupVersionKind(schema.GroupVersionKind{Group: "internal.crossplane.io", Version: "v1alpha1", Kind: "Environment"})
 	d, err := structpb.NewStruct(u.UnstructuredContent())
 	if err != nil {
