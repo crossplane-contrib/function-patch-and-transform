@@ -98,11 +98,12 @@ func ValidateEnvironment(e *v1beta1.Environment) *field.Error {
 	}
 	for i, p := range e.Patches {
 		p := p
-		switch p.GetType() { //nolint:exhaustive // Intentionally targeting only environment patches.
-		case v1beta1.PatchTypeCombineToEnvironment,
-			v1beta1.PatchTypeCombineFromEnvironment,
-			v1beta1.PatchTypeFromEnvironmentFieldPath,
-			v1beta1.PatchTypeToEnvironmentFieldPath:
+		switch p.GetType() { //nolint:exhaustive // Only target valid patches according the API spec
+		case
+			v1beta1.PatchTypeFromCompositeFieldPath,
+			v1beta1.PatchTypeToCompositeFieldPath,
+			v1beta1.PatchTypeCombineFromComposite,
+			v1beta1.PatchTypeCombineToComposite:
 		default:
 			return field.Invalid(field.NewPath("patches").Index(i).Key("type"), p.GetType(), "invalid environment patch type")
 		}
