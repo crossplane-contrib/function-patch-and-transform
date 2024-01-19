@@ -192,17 +192,13 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 				"name", ocd.Resource.GetName())
 		}
 
-		errs, store := RenderComposedPatches(ocd.Resource, dcd.Resource, oxr.Resource, dxr.Resource, env, t.Patches)
-		for _, err := range errs {
-			response.Warning(rsp, errors.Wrapf(err, "cannot render patches for composed resource %q", t.Name))
-			log.Info("Cannot render patches for composed resource", "warning", err)
-			warnings++
+		// TODO(negz): No need for multiple errors?
+		if err := RenderComposedPatches(ocd.Resource, dcd.Resource, oxr.Resource, dxr.Resource, env, t.Patches); err != nil {
+			response.Fatal(rsp, errors.Wrapf(err, "cannot render patches for composed resource %q", t.Name))
+			return rsp, nil
 		}
 
-		if store {
-			// Add or replace our desired resource.
-			desired[resource.Name(t.Name)] = dcd
-		}
+		desired[resource.Name(t.Name)] = dcd
 	}
 
 	if err := response.SetDesiredCompositeResource(rsp, dxr); err != nil {

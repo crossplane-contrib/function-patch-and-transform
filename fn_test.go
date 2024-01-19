@@ -406,18 +406,10 @@ func TestRunFunction(t *testing.T) {
 									},
 									{
 										// This patch should return an error,
-										// because the required path does not
-										// exist.
+										// because the path is not an array.
 										Type: v1beta1.PatchTypeFromCompositeFieldPath,
 										Patch: v1beta1.Patch{
-											FromFieldPath: ptr.To[string]("spec.doesNotExist"),
-											ToFieldPath:   ptr.To[string]("spec.explode"),
-											Policy: &v1beta1.PatchPolicy{
-												FromFieldPath: func() *v1beta1.FromFieldPathPolicy {
-													r := v1beta1.FromFieldPathPolicyRequired
-													return &r
-												}(),
-											},
+											FromFieldPath: ptr.To[string]("spec.widgets[0]"),
 										},
 									},
 								},
@@ -458,11 +450,10 @@ func TestRunFunction(t *testing.T) {
 					},
 					Results: []*fnv1beta1.Result{
 						{
-							Severity: fnv1beta1.Severity_SEVERITY_WARNING,
-							Message:  fmt.Sprintf("cannot render patches for composed resource %q: cannot apply the %q patch at index 1: spec.doesNotExist: no such field", "cool-resource", "FromCompositeFieldPath"),
+							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
+							Message:  fmt.Sprintf("cannot render patches for composed resource %q: cannot apply the %q patch at index 1: spec.widgets: not an array", "cool-resource", "FromCompositeFieldPath"),
 						},
 					},
-					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
 				},
 			},
 		},

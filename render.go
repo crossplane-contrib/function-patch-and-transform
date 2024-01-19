@@ -85,14 +85,7 @@ func RenderEnvironmentPatches(env *unstructured.Unstructured, oxr, dxr *composit
 // patches that are to or from the supplied composite resource and environment
 // in the order they were defined. Properly selecting the right source or
 // destination between observed and desired resources.
-func RenderComposedPatches( //nolint:gocyclo // just a switch
-	ocd *composed.Unstructured,
-	dcd *composed.Unstructured,
-	oxr *composite.Unstructured,
-	dxr *composite.Unstructured,
-	env *unstructured.Unstructured,
-	ps []v1beta1.ComposedPatch,
-) (errs []error, store bool) {
+func RenderComposedPatches(ocd, dcd *composed.Unstructured, oxr, dxr *composite.Unstructured, env *unstructured.Unstructured, ps []v1beta1.ComposedPatch) error { //nolint:gocyclo // just a switch
 	for i, p := range ps {
 		p := p
 		switch t := p.GetType(); t {
@@ -112,7 +105,7 @@ func RenderComposedPatches( //nolint:gocyclo // just a switch
 				continue
 			}
 			if err := ApplyToObjects(&p, dxr, ocd); err != nil {
-				errs = append(errs, errors.Wrapf(err, errFmtPatch, t, i))
+				return errors.Wrapf(err, errFmtPatch, t, i)
 			}
 		case v1beta1.PatchTypeToEnvironmentFieldPath, v1beta1.PatchTypeCombineToEnvironment:
 			// TODO(negz): Same as above, but for the Environment. What does it
@@ -125,7 +118,7 @@ func RenderComposedPatches( //nolint:gocyclo // just a switch
 				continue
 			}
 			if err := ApplyToObjects(&p, env, ocd); err != nil {
-				errs = append(errs, errors.Wrapf(err, errFmtPatch, t, i))
+				return errors.Wrapf(err, errFmtPatch, t, i)
 			}
 		// If either of the below renderings return an error, most likely a
 		// required FromComposite or FromEnvironment patch failed. A required
@@ -135,17 +128,15 @@ func RenderComposedPatches( //nolint:gocyclo // just a switch
 		// resource to our accumulated desired state.
 		case v1beta1.PatchTypeFromCompositeFieldPath, v1beta1.PatchTypeCombineFromComposite:
 			if err := ApplyToObjects(&p, oxr, dcd); err != nil {
-				errs = append(errs, errors.Wrapf(err, errFmtPatch, t, i))
-				return errs, false
+				return errors.Wrapf(err, errFmtPatch, t, i)
 			}
 		case v1beta1.PatchTypeFromEnvironmentFieldPath, v1beta1.PatchTypeCombineFromEnvironment:
 			if err := ApplyToObjects(&p, env, dcd); err != nil {
-				errs = append(errs, errors.Wrapf(err, errFmtPatch, t, i))
-				return errs, false
+				return errors.Wrapf(err, errFmtPatch, t, i)
 			}
 		case v1beta1.PatchTypePatchSet:
 			// Already resolved - nothing to do.
 		}
 	}
-	return errs, true
+	return nil
 }
