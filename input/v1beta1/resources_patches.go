@@ -36,8 +36,8 @@ const (
 type PatchPolicy struct {
 	// FromFieldPath specifies how to patch from a field path. The default is
 	// 'Optional', which means the patch will be a no-op if the specified
-	// fromFieldPath does not exist. Use 'Required' if the patch should fail if
-	// the specified path does not exist.
+	// fromFieldPath does not exist. Use 'Required' to prevent the creation of a
+	// new composed resource until the required path exists.
 	// +kubebuilder:validation:Enum=Optional;Required
 	// +optional
 	FromFieldPath *FromFieldPathPolicy `json:"fromFieldPath,omitempty"`

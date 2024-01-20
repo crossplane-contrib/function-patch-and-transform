@@ -385,7 +385,7 @@ func TestRunFunction(t *testing.T) {
 			},
 		},
 		"FailedPatchNotSaved": {
-			reason: "If we fail to patch a desired resource produced by a previous Function in the pipeline we should return a warning result, and leave the original desired resource untouched.",
+			reason: "If we fail to patch a desired resource produced by a previous Function in the pipeline we should return a fatal result.",
 			args: args{
 				req: &fnv1beta1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
@@ -451,7 +451,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
-							Message:  fmt.Sprintf("cannot render patches for composed resource %q: cannot apply the %q patch at index 1: spec.widgets: not an array", "cool-resource", "FromCompositeFieldPath"),
+							Message:  fmt.Sprintf("cannot render composed resource %q %q patch at index 1: spec.widgets: not an array", "cool-resource", "FromCompositeFieldPath"),
 						},
 					},
 				},

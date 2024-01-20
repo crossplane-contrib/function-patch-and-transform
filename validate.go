@@ -189,6 +189,7 @@ func ValidatePatch(p PatchInterface) *field.Error { //nolint: gocyclo // This is
 		if p.GetToFieldPath() == "" {
 			return field.Required(field.NewPath("toFieldPath"), fmt.Sprintf("toFieldPath must be set for patch type %s", p.GetType()))
 		}
+		return WrapFieldError(ValidateCombine(p.GetCombine()), field.NewPath("combine"))
 	default:
 		// Should never happen
 		return field.Invalid(field.NewPath("type"), p.GetType(), "unknown patch type")
@@ -196,6 +197,32 @@ func ValidatePatch(p PatchInterface) *field.Error { //nolint: gocyclo // This is
 	for i, t := range p.GetTransforms() {
 		if err := ValidateTransform(t); err != nil {
 			return WrapFieldError(err, field.NewPath("transforms").Index(i))
+		}
+	}
+
+	return nil
+}
+
+// ValidateCombine validates a Combine.
+func ValidateCombine(c *v1beta1.Combine) *field.Error {
+	switch c.Strategy {
+	case v1beta1.CombineStrategyString:
+		if c.String == nil {
+			return field.Required(field.NewPath("string"), fmt.Sprintf("string must be set for combine strategy %s", c.Strategy))
+		}
+	case "":
+		return field.Required(field.NewPath("strategy"), "a combine strategy must be provided")
+	default:
+		return field.Invalid(field.NewPath("strategy"), c.Strategy, "unknown strategy type")
+	}
+
+	if len(c.Variables) == 0 {
+		return field.Required(field.NewPath("variables"), "at least one variable must be provided")
+	}
+
+	for i := range c.Variables {
+		if c.Variables[i].FromFieldPath == "" {
+			return field.Required(field.NewPath("variables").Index(i).Child("fromFieldPath"), "fromFieldPath must be set for each combine variable")
 		}
 	}
 
