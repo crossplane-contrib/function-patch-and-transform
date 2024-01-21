@@ -65,16 +65,16 @@ func RenderFromJSON(o resource.Object, data []byte) error {
 func RenderEnvironmentPatches(env *unstructured.Unstructured, oxr, dxr *composite.Unstructured, ps []v1beta1.EnvironmentPatch) error {
 	for i, p := range ps {
 		p := p
-		switch p.Type {
-		case v1beta1.PatchTypeToEnvironmentFieldPath, v1beta1.PatchTypeCombineToEnvironment:
-			if err := ApplyToObjects(&p, env, oxr); err != nil {
-				return errors.Wrapf(err, errFmtPatch, p.Type, i)
+		switch p.GetType() {
+		case v1beta1.PatchTypeFromCompositeFieldPath, v1beta1.PatchTypeCombineFromComposite:
+			if err := ApplyToObjects(&p, oxr, env); err != nil {
+				return errors.Wrapf(err, errFmtPatch, p.GetType(), i)
 			}
-		case v1beta1.PatchTypeFromEnvironmentFieldPath, v1beta1.PatchTypeCombineFromEnvironment:
-			if err := ApplyToObjects(&p, env, dxr); err != nil {
-				return errors.Wrapf(err, errFmtPatch, p.Type, i)
+		case v1beta1.PatchTypeToCompositeFieldPath, v1beta1.PatchTypeCombineToComposite:
+			if err := ApplyToObjects(&p, dxr, env); err != nil {
+				return errors.Wrapf(err, errFmtPatch, p.GetType(), i)
 			}
-		case v1beta1.PatchTypePatchSet, v1beta1.PatchTypeFromCompositeFieldPath, v1beta1.PatchTypeCombineFromComposite, v1beta1.PatchTypeToCompositeFieldPath, v1beta1.PatchTypeCombineToComposite:
+		case v1beta1.PatchTypePatchSet, v1beta1.PatchTypeFromEnvironmentFieldPath, v1beta1.PatchTypeCombineFromEnvironment, v1beta1.PatchTypeToEnvironmentFieldPath, v1beta1.PatchTypeCombineToEnvironment:
 			// nothing to do
 		}
 	}
@@ -95,7 +95,7 @@ func RenderComposedPatches( //nolint:gocyclo // just a switch
 ) (errs []error, store bool) {
 	for i, p := range ps {
 		p := p
-		switch t := p.Type; t {
+		switch t := p.GetType(); t {
 		case v1beta1.PatchTypeToCompositeFieldPath, v1beta1.PatchTypeCombineToComposite:
 			// TODO(negz): Should failures to patch the XR be terminal? It could
 			// indicate a required patch failed. A required patch means roughly
