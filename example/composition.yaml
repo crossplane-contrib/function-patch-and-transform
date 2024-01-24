@@ -19,12 +19,9 @@ spec:
         base:
           apiVersion: s3.aws.upbound.io/v1beta1
           kind: Bucket
-          spec:
-            forProvider:
-              region: us-east-2
         patches:
         - type: FromCompositeFieldPath
-          fromFieldPath: "location"
+          fromFieldPath: "spec.location"
           toFieldPath: "spec.forProvider.region"
           transforms:
           - type: map
