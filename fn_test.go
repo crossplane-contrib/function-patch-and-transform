@@ -384,17 +384,171 @@ func TestRunFunction(t *testing.T) {
 				},
 			},
 		},
-		"FailedPatchNotSaved": {
-			reason: "If we fail to patch a desired resource produced by a previous Function in the pipeline we should return a fatal result.",
+		"OptionalFieldPathNotFound": {
+			reason: "If we fail to patch a desired resource because an optional field path was not found we should skip the patch.",
 			args: args{
 				req: &fnv1beta1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
 							{
-								// This template base no base, so we try to
-								// patch the resource named "cool-resource" in
-								// the desired resources array.
 								Name: "cool-resource",
+								Base: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"example.org/v1","kind":"CD","spec":{}}`)},
+								Patches: []v1beta1.ComposedPatch{
+									{
+										// This patch should work.
+										Type: v1beta1.PatchTypeFromCompositeFieldPath,
+										Patch: v1beta1.Patch{
+											FromFieldPath: ptr.To[string]("spec.widgets"),
+											ToFieldPath:   ptr.To[string]("spec.watchers"),
+										},
+									},
+									{
+										// This patch should be skipped, because
+										// the path is not found
+										Type: v1beta1.PatchTypeFromCompositeFieldPath,
+										Patch: v1beta1.Patch{
+											FromFieldPath: ptr.To[string]("spec.doesNotExist"),
+										},
+									},
+								},
+							},
+						},
+					}),
+					Observed: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1beta1.RunFunctionResponse{
+					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
+						},
+						Resources: map[string]*fnv1beta1.Resource{
+							"cool-resource": {
+								// Watchers becomes "10" because our first patch
+								// worked. We only skipped the second patch.
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":"10"}}`),
+							},
+						},
+					},
+					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
+				},
+			},
+		},
+		"RequiredFieldPathNotFound": {
+			reason: "If we fail to patch a desired resource because a required field path was not found, and the resource doesn't exist, we should not add it to desired state (i.e. create it).",
+			args: args{
+				req: &fnv1beta1.RunFunctionRequest{
+					Input: resource.MustStructObject(&v1beta1.Resources{
+						Resources: []v1beta1.ComposedTemplate{
+							{
+								Name: "new-resource",
+								Base: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"example.org/v1","kind":"CD","spec":{}}`)},
+								Patches: []v1beta1.ComposedPatch{
+									{
+										// This patch will fail because the path
+										// is not found.
+										Type: v1beta1.PatchTypeFromCompositeFieldPath,
+										Patch: v1beta1.Patch{
+											FromFieldPath: ptr.To[string]("spec.doesNotExist"),
+											Policy: &v1beta1.PatchPolicy{
+												FromFieldPath: ptr.To[v1beta1.FromFieldPathPolicy](v1beta1.FromFieldPathPolicyRequired),
+											},
+										},
+									},
+								},
+							},
+							{
+								Name: "existing-resource",
+								Base: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"example.org/v1","kind":"CD","spec":{}}`)},
+								Patches: []v1beta1.ComposedPatch{
+									{
+										// This patch should work.
+										Type: v1beta1.PatchTypeFromCompositeFieldPath,
+										Patch: v1beta1.Patch{
+											FromFieldPath: ptr.To[string]("spec.widgets"),
+											ToFieldPath:   ptr.To[string]("spec.watchers"),
+										},
+									},
+									{
+										// This patch will fail because the path
+										// is not found.
+										Type: v1beta1.PatchTypeFromCompositeFieldPath,
+										Patch: v1beta1.Patch{
+											FromFieldPath: ptr.To[string]("spec.doesNotExist"),
+											Policy: &v1beta1.PatchPolicy{
+												FromFieldPath: ptr.To[v1beta1.FromFieldPathPolicy](v1beta1.FromFieldPathPolicyRequired),
+											},
+										},
+									},
+								},
+							},
+						},
+					}),
+					Observed: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
+						},
+						Resources: map[string]*fnv1beta1.Resource{
+							// "existing-resource" exists.
+							"existing-resource": {},
+
+							// Note "new-resource" doesn't appear in the
+							// observed resources. It doesn't yet exist.
+						},
+					},
+					Desired: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1beta1.RunFunctionResponse{
+					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
+						},
+						Resources: map[string]*fnv1beta1.Resource{
+							// Note that the first patch did work. We only
+							// skipped the patch from the required field path.
+							"existing-resource": {
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":"10"}}`),
+							},
+
+							// Note "new-resource" doesn't appear here.
+						},
+					},
+					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
+					Results: []*fnv1beta1.Result{
+						{
+							Severity: fnv1beta1.Severity_SEVERITY_WARNING,
+							Message:  `not adding new composed resource "new-resource" to desired state because "FromCompositeFieldPath" patch at index 0 has 'policy.fromFieldPath: Required': spec.doesNotExist: no such field`,
+						},
+						{
+							Severity: fnv1beta1.Severity_SEVERITY_WARNING,
+							Message:  `cannot render composed resource "existing-resource" "FromCompositeFieldPath" patch at index 1: ignoring 'policy.fromFieldPath: Required' because 'to' resource already exists: spec.doesNotExist: no such field`,
+						},
+					},
+				},
+			},
+		},
+		"PatchErrorIsFatal": {
+			reason: "If we fail to patch a desired resource we should return a fatal result.",
+			args: args{
+				req: &fnv1beta1.RunFunctionRequest{
+					Input: resource.MustStructObject(&v1beta1.Resources{
+						Resources: []v1beta1.ComposedTemplate{
+							{
+								Name: "cool-resource",
+								Base: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"example.org/v1","kind":"CD","spec":{}}`)},
 								Patches: []v1beta1.ComposedPatch{
 									{
 										// This patch should work.
@@ -425,11 +579,6 @@ func TestRunFunction(t *testing.T) {
 						Composite: &fnv1beta1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
-							"cool-resource": {
-								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":42}}`),
-							},
-						},
 					},
 				},
 			},
@@ -439,13 +588,6 @@ func TestRunFunction(t *testing.T) {
 					Desired: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
-						},
-						Resources: map[string]*fnv1beta1.Resource{
-							"cool-resource": {
-								// spec.watchers would be "10" if we didn't
-								// discard the patch that worked.
-								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":42}}`),
-							},
 						},
 					},
 					Results: []*fnv1beta1.Result{
