@@ -78,6 +78,11 @@ func (in *ComposedTemplate) DeepCopyInto(out *ComposedTemplate) {
 		*out = new(runtime.RawExtension)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.Condition != nil {
+		in, out := &in.Condition, &out.Condition
+		*out = new(string)
+		**out = **in
+	}
 	if in.Patches != nil {
 		in, out := &in.Patches, &out.Patches
 		*out = make([]ComposedPatch, len(*in))
@@ -460,6 +465,11 @@ func (in *Resources) DeepCopyInto(out *Resources) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
+	if in.Condition != nil {
+		in, out := &in.Condition, &out.Condition
+		*out = new(string)
+		**out = **in
+	}
 	if in.PatchSets != nil {
 		in, out := &in.PatchSets, &out.PatchSets
 		*out = make([]PatchSet, len(*in))

@@ -22,6 +22,8 @@ import (
 	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
 )
 
+const conditionError = "Condition error"
+
 // Function performs patch-and-transform style Composition.
 type Function struct {
 	fnv1beta1.UnimplementedFunctionRunnerServiceServer
@@ -43,6 +45,21 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 	if err := request.GetInput(req, input); err != nil {
 		response.Fatal(rsp, errors.Wrap(err, "cannot get Function input"))
 		return rsp, nil
+	}
+
+	// Evaluate any Conditions using the values from the Observed XR
+	if input.Condition != nil {
+		// Evaluate the condition to see if we should run
+		run, err := EvaluateCondition(input.Condition, req)
+		if err != nil {
+			response.Fatal(rsp, errors.Wrap(err, conditionError))
+			return rsp, nil
+		}
+		if !run {
+			log.Debug("Condition evaluated to false. Skipping run.")
+			return rsp, nil
+		}
+		log.Debug("Condition evaluated to true.")
 	}
 
 	// Our input is an opaque object nested in a Composition, so unfortunately
@@ -140,6 +157,20 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 
 		dcd := &resource.DesiredComposed{Resource: composed.New()}
 
+		if t.Condition != nil {
+			// Evaluate the condition to see if we should skip this template.
+			run, err := EvaluateCondition(t.Condition, req)
+			if err != nil {
+				log.Info(err.Error())
+				response.Fatal(rsp, errors.Wrap(err, conditionError))
+				return rsp, nil
+			}
+			if !run {
+				log.Debug("Condition evaluated to false. Skipping template.")
+				continue
+			}
+			log.Debug("Condition evaluated to true.")
+		}
 		// If we have a base template, render it into our desired resource. If a
 		// previous Function produced a desired resource with this name we'll
 		// overwrite it. If we don't have a base template we'll try to patch to
