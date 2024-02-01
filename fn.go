@@ -7,6 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/crossplane/crossplane-runtime/pkg/errors"
+	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
 	"github.com/crossplane/crossplane-runtime/pkg/logging"
 	"github.com/crossplane/crossplane-runtime/pkg/reconciler/managed"
 
@@ -114,10 +115,14 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 	}
 
 	if input.Environment != nil {
-		// Run all patches that are from the (observed) XR to the environment or from the environment to the (desired) XR.
-		if err := RenderEnvironmentPatches(env, oxr.Resource, dxr.Resource, input.Environment.Patches); err != nil {
-			response.Fatal(rsp, errors.Wrapf(err, "cannot render ToEnvironment patches from the composite resource"))
-			return rsp, nil
+		// Run all patches that are from the (observed) XR to the environment or
+		// from the environment to the (desired) XR.
+		for i := range input.Environment.Patches {
+			p := &input.Environment.Patches[i]
+			if err := ApplyEnvironmentPatch(p, env, oxr.Resource, dxr.Resource); err != nil {
+				response.Fatal(rsp, errors.Wrapf(err, "cannot apply the %q environment patch at index %d", p.GetType(), i))
+				return rsp, nil
+			}
 		}
 	}
 
@@ -155,8 +160,8 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 			}
 		}
 
-		ocd, ok := observed[resource.Name(t.Name)]
-		if ok {
+		ocd, exists := observed[resource.Name(t.Name)]
+		if exists {
 			existing++
 			log.Debug("Resource template corresponds to existing composed resource", "metadata-name", ocd.Resource.GetName())
 
@@ -192,17 +197,56 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 				"name", ocd.Resource.GetName())
 		}
 
-		errs, store := RenderComposedPatches(ocd.Resource, dcd.Resource, oxr.Resource, dxr.Resource, env, t.Patches)
-		for _, err := range errs {
-			response.Warning(rsp, errors.Wrapf(err, "cannot render patches for composed resource %q", t.Name))
-			log.Info("Cannot render patches for composed resource", "warning", err)
-			warnings++
+		// Run all patches that are to a desired composed resource, or from an
+		// observed composed resource.
+		skip := false
+		for i := range t.Patches {
+			p := &t.Patches[i]
+			if err := ApplyComposedPatch(p, ocd.Resource, dcd.Resource, oxr.Resource, dxr.Resource, env); err != nil {
+				if fieldpath.IsNotFound(err) {
+					// This is a patch from a required field path that does not
+					// exist. The point of FromFieldPathPolicyRequired is to
+					// block creation of the new 'to' resource until the 'from'
+					// field path exists.
+					//
+					// The only kind of resource we could be patching to that
+					// might not exist at this point is a composed resource. So
+					// if we're patching to a composed resource that doesn't
+					// exist we want to avoid creating it. Otherwise, we just
+					// treat the patch from a required field path the same way
+					// we'd treat a patch from an optional field path and skip
+					// it.
+					if p.GetPolicy().GetFromFieldPathPolicy() == v1beta1.FromFieldPathPolicyRequired {
+						if ToComposedResource(p) && !exists {
+							response.Warning(rsp, errors.Wrapf(err, "not adding new composed resource %q to desired state because %q patch at index %d has 'policy.fromFieldPath: Required'", t.Name, p.GetType(), i))
+
+							// There's no point processing further patches.
+							// They'll either be from an observed composed
+							// resource that doesn't exist yet, or to a desired
+							// composed resource that we'll discard.
+							skip = true
+							break
+						}
+						response.Warning(rsp, errors.Wrapf(err, "cannot render composed resource %q %q patch at index %d: ignoring 'policy.fromFieldPath: Required' because 'to' resource already exists", t.Name, p.GetType(), i))
+					}
+
+					// If any optional field path isn't found we just skip this
+					// patch and move on. The path may be populated by a
+					// subsequent patch.
+					continue
+				}
+				response.Fatal(rsp, errors.Wrapf(err, "cannot render composed resource %q %q patch at index %d", t.Name, p.GetType(), i))
+				return rsp, nil
+			}
 		}
 
-		if store {
-			// Add or replace our desired resource.
-			desired[resource.Name(t.Name)] = dcd
+		// Skip adding this resource to the desired state because it doesn't
+		// exist yet, and a required FromFieldPath was not (yet) found.
+		if skip {
+			continue
 		}
+
+		desired[resource.Name(t.Name)] = dcd
 	}
 
 	if err := response.SetDesiredCompositeResource(rsp, dxr); err != nil {
