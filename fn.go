@@ -5,6 +5,7 @@ import (
 
 	"google.golang.org/protobuf/types/known/structpb"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/util/json"
 
 	"github.com/crossplane/crossplane-runtime/pkg/errors"
 	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
@@ -154,7 +155,7 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 			// We want to return this resource unmutated if rendering fails.
 			dcd.Resource = cd.Resource.DeepCopy()
 		default:
-			if err := RenderFromJSON(dcd.Resource, t.Base.Raw); err != nil {
+			if err := json.Unmarshal(t.Base.Raw, dcd.Resource); err != nil {
 				response.Fatal(rsp, errors.Wrapf(err, "cannot parse base template of composed resource %q", t.Name))
 				return rsp, nil
 			}
