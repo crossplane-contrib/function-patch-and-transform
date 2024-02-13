@@ -117,6 +117,18 @@ spec:
                           - Optional
                           - Required
                           type: string
+                        toFieldPath:
+                          description: |-
+                            ToFieldPath specifies how to patch to a field path. The default is
+                            'Replace', which means the patch will completely replace the target field,
+                            or create it if it does not exist. Use 'MergeObject' to merge the patch
+                            object with the target object, or 'AppendArray' to append the patch array
+                            to the target array.
+                          enum:
+                          - Replace
+                          - MergeObject
+                          - AppendArray
+                          type: string
                       type: object
                     toFieldPath:
                       description: |-
@@ -447,6 +459,18 @@ spec:
                             enum:
                             - Optional
                             - Required
+                            type: string
+                          toFieldPath:
+                            description: |-
+                              ToFieldPath specifies how to patch to a field path. The default is
+                              'Replace', which means the patch will completely replace the target field,
+                              or create it if it does not exist. Use 'MergeObject' to merge the patch
+                              object with the target object, or 'AppendArray' to append the patch array
+                              to the target array.
+                            enum:
+                            - Replace
+                            - MergeObject
+                            - AppendArray
                             type: string
                         type: object
                       toFieldPath:
@@ -842,6 +866,18 @@ spec:
                             enum:
                             - Optional
                             - Required
+                            type: string
+                          toFieldPath:
+                            description: |-
+                              ToFieldPath specifies how to patch to a field path. The default is
+                              'Replace', which means the patch will completely replace the target field,
+                              or create it if it does not exist. Use 'MergeObject' to merge the patch
+                              object with the target object, or 'AppendArray' to append the patch array
+                              to the target array.
+                            enum:
+                            - Replace
+                            - MergeObject
+                            - AppendArray
                             type: string
                         type: object
                       toFieldPath:

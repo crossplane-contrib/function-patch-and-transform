@@ -199,7 +199,23 @@ func ValidatePatch(p PatchInterface) *field.Error { //nolint: gocyclo // This is
 			return WrapFieldError(err, field.NewPath("transforms").Index(i))
 		}
 	}
-
+	if pp := p.GetPolicy(); pp != nil {
+		switch pp.GetToFieldPathPolicy() {
+		case v1beta1.ToFieldPathPolicyReplace,
+			v1beta1.ToFieldPathPolicyAppendArray,
+			v1beta1.ToFieldPathPolicyMergeObject:
+			// ok
+		default:
+			return field.Invalid(field.NewPath("policy", "toFieldPathPolicy"), pp.GetToFieldPathPolicy(), "unknown toFieldPathPolicy")
+		}
+		switch pp.GetFromFieldPathPolicy() {
+		case v1beta1.FromFieldPathPolicyRequired,
+			v1beta1.FromFieldPathPolicyOptional:
+			// ok
+		default:
+			return field.Invalid(field.NewPath("policy", "fromFieldPathPolicy"), pp.GetFromFieldPathPolicy(), "unknown fromFieldPathPolicy")
+		}
+	}
 	return nil
 }
 

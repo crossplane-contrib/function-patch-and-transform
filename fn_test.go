@@ -465,7 +465,7 @@ func TestRunFunction(t *testing.T) {
 							},
 							{
 								Name: "existing-resource",
-								Base: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"example.org/v1","kind":"CD","spec":{}}`)},
+								Base: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"targetObject": {"keep": "me"}}}`)},
 								Patches: []v1beta1.ComposedPatch{
 									{
 										// This patch should work.
@@ -473,6 +473,17 @@ func TestRunFunction(t *testing.T) {
 										Patch: v1beta1.Patch{
 											FromFieldPath: ptr.To[string]("spec.widgets"),
 											ToFieldPath:   ptr.To[string]("spec.watchers"),
+										},
+									},
+									{
+										// This patch should work too and properly handle mergeOptions.
+										Type: v1beta1.PatchTypeFromCompositeFieldPath,
+										Patch: v1beta1.Patch{
+											FromFieldPath: ptr.To[string]("spec.sourceObject"),
+											ToFieldPath:   ptr.To[string]("spec.targetObject"),
+											Policy: &v1beta1.PatchPolicy{
+												ToFieldPath: ptr.To(v1beta1.ToFieldPathPolicyMergeObject),
+											},
 										},
 									},
 									{
@@ -492,7 +503,7 @@ func TestRunFunction(t *testing.T) {
 					}),
 					Observed: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
-							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10", "sourceObject": {"me": "too"}}}`),
 						},
 						Resources: map[string]*fnv1beta1.Resource{
 							// "existing-resource" exists.
@@ -520,7 +531,7 @@ func TestRunFunction(t *testing.T) {
 							// Note that the first patch did work. We only
 							// skipped the patch from the required field path.
 							"existing-resource": {
-								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":"10"}}`),
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":"10", "targetObject": {"me": "too", "keep": "me"}}}`),
 							},
 
 							// Note "new-resource" doesn't appear here.
@@ -534,7 +545,7 @@ func TestRunFunction(t *testing.T) {
 						},
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_WARNING,
-							Message:  `cannot render composed resource "existing-resource" "FromCompositeFieldPath" patch at index 1: ignoring 'policy.fromFieldPath: Required' because 'to' resource already exists: spec.doesNotExist: no such field`,
+							Message:  `cannot render composed resource "existing-resource" "FromCompositeFieldPath" patch at index 2: ignoring 'policy.fromFieldPath: Required' because 'to' resource already exists: spec.doesNotExist: no such field`,
 						},
 					},
 				},

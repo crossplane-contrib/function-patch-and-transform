@@ -32,6 +32,16 @@ const (
 	FromFieldPathPolicyRequired FromFieldPathPolicy = "Required"
 )
 
+// A ToFieldPathPolicy determines how to patch to a field path.
+type ToFieldPathPolicy string
+
+// ToFieldPath patch policies.
+const (
+	ToFieldPathPolicyReplace     ToFieldPathPolicy = "Replace"
+	ToFieldPathPolicyMergeObject ToFieldPathPolicy = "MergeObject"
+	ToFieldPathPolicyAppendArray ToFieldPathPolicy = "AppendArray"
+)
+
 // A PatchPolicy configures the specifics of patching behaviour.
 type PatchPolicy struct {
 	// FromFieldPath specifies how to patch from a field path. The default is
@@ -41,6 +51,15 @@ type PatchPolicy struct {
 	// +kubebuilder:validation:Enum=Optional;Required
 	// +optional
 	FromFieldPath *FromFieldPathPolicy `json:"fromFieldPath,omitempty"`
+
+	// ToFieldPath specifies how to patch to a field path. The default is
+	// 'Replace', which means the patch will completely replace the target field,
+	// or create it if it does not exist. Use 'MergeObject' to merge the patch
+	// object with the target object, or 'AppendArray' to append the patch array
+	// to the target array.
+	// +kubebuilder:validation:Enum=Replace;MergeObject;AppendArray
+	// +optional
+	ToFieldPath *ToFieldPathPolicy `json:"toFieldPath,omitempty"`
 }
 
 // GetFromFieldPathPolicy returns the FromFieldPathPolicy for this PatchPolicy, defaulting to FromFieldPathPolicyOptional if not specified.
@@ -49,6 +68,14 @@ func (pp *PatchPolicy) GetFromFieldPathPolicy() FromFieldPathPolicy {
 		return FromFieldPathPolicyOptional
 	}
 	return *pp.FromFieldPath
+}
+
+// GetToFieldPathPolicy returns the ToFieldPathPolicy for this PatchPolicy, defaulting to ToFieldPathPolicyReplace if not specified.
+func (pp *PatchPolicy) GetToFieldPathPolicy() ToFieldPathPolicy {
+	if pp == nil || pp.ToFieldPath == nil {
+		return ToFieldPathPolicyReplace
+	}
+	return *pp.ToFieldPath
 }
 
 // Environment represents the Composition environment.

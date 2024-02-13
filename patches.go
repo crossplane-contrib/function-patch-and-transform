@@ -7,7 +7,9 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/ptr"
 
+	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
 
 	"github.com/crossplane/function-sdk-go/resource/composed"
@@ -20,11 +22,11 @@ const (
 	errPatchSetType = "a patch in a PatchSet cannot be of type PatchSet"
 
 	errFmtUndefinedPatchSet           = "cannot find PatchSet by name %s"
-	errFmtInvalidPatchType            = "patch type %s is unsupported"
 	errFmtCombineStrategyNotSupported = "combine strategy %s is not supported"
 	errFmtCombineConfigMissing        = "given combine strategy %s requires configuration"
 	errFmtCombineStrategyFailed       = "%s strategy could not combine"
 	errFmtExpandingArrayFieldPaths    = "cannot expand ToFieldPath %s"
+	errFmtInvalidPatchPolicy          = "invalid patch policy %s"
 )
 
 // A PatchInterface is a patch that can be applied between resources.
@@ -80,7 +82,35 @@ func ApplyFromFieldPathPatch(p PatchInterface, from, to runtime.Object) error {
 		return patchFieldValueToMultiple(p.GetToFieldPath(), out, to)
 	}
 
-	return errors.Wrap(patchFieldValueToObject(p.GetToFieldPath(), out, to), "cannot patch to object")
+	mo, err := toMergeOption(p)
+	if err != nil {
+		return err
+	}
+
+	return errors.Wrap(patchFieldValueToObject(p.GetToFieldPath(), out, to, mo), "cannot patch to object")
+}
+
+// toMergeOption returns the MergeOptions from the PatchPolicy's ToFieldPathPolicy, if defined.
+func toMergeOption(p PatchInterface) (mo *xpv1.MergeOptions, err error) {
+	if p == nil {
+		return nil, nil
+	}
+	pp := p.GetPolicy()
+	if pp == nil {
+		return nil, nil
+	}
+	switch pp.GetToFieldPathPolicy() {
+	case v1beta1.ToFieldPathPolicyReplace:
+		// nothing to do, this is the default
+	case v1beta1.ToFieldPathPolicyAppendArray:
+		mo = &xpv1.MergeOptions{AppendSlice: ptr.To(true)}
+	case v1beta1.ToFieldPathPolicyMergeObject:
+		mo = &xpv1.MergeOptions{KeepMapValues: ptr.To(true)}
+	default:
+		// should never happen
+		return nil, errors.Errorf(errFmtInvalidPatchPolicy, pp.GetToFieldPathPolicy())
+	}
+	return mo, nil
 }
 
 // ApplyCombineFromVariablesPatch patches the "to" resource, taking a list of
@@ -127,7 +157,7 @@ func ApplyCombineFromVariablesPatch(p PatchInterface, from, to runtime.Object) e
 		return err
 	}
 
-	return errors.Wrap(patchFieldValueToObject(p.GetToFieldPath(), out, to), "cannot patch to object")
+	return errors.Wrap(patchFieldValueToObject(p.GetToFieldPath(), out, to, nil), "cannot patch to object")
 }
 
 // ApplyEnvironmentPatch applies a patch to or from the environment. Patches to
@@ -298,13 +328,15 @@ func ComposedTemplates(pss []v1beta1.PatchSet, cts []v1beta1.ComposedTemplate) (
 
 // patchFieldValueToObject applies the value to the "to" object at the given
 // path, returning any errors as they occur.
-func patchFieldValueToObject(fieldPath string, value any, to runtime.Object) error {
+// If no merge options is supplied, then destination field is replaced
+// with the given value.
+func patchFieldValueToObject(fieldPath string, value any, to runtime.Object, mo *xpv1.MergeOptions) error {
 	paved, err := fieldpath.PaveObject(to)
 	if err != nil {
 		return err
 	}
 
-	if err := paved.SetValue(fieldPath, value); err != nil {
+	if err := paved.MergeValue(fieldPath, value, mo); err != nil {
 		return err
 	}
 
