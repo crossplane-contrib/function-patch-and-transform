@@ -12,7 +12,7 @@ import (
 	fnv1beta1 "github.com/crossplane/function-sdk-go/proto/v1beta1"
 	"github.com/crossplane/function-sdk-go/resource"
 
-	"github.com/stevendborrelli/function-conditional-patch-and-transform/input/v1beta1"
+	"github.com/upboundcare/function-conditional-patch-and-transform/input/v1beta1"
 )
 
 func TestEvaluateCondition(t *testing.T) {

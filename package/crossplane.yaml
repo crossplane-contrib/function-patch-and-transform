@@ -5,7 +5,7 @@ metadata:
   name: function-conditional-patch-and-transform
   annotations:
     meta.crossplane.io/maintainer: Crossplane Maintainers <info@crossplane.io>
-    meta.crossplane.io/source: github.com/stevendborrelli/function-conditional-patch-and-transform
+    meta.crossplane.io/source: github.com/upboundcare/function-conditional-patch-and-transform
     meta.crossplane.io/license: Apache-2.0
     meta.crossplane.io/description: A patch & transform composition function that supports conditionals
     meta.crossplane.io/readme: |
@@ -13,6 +13,6 @@ metadata:
       that adds support for Conditional invocation of the function and the rendering
       of individual resources.
       See the
-      [README](https://github.com/stevendborrelli/function-conditional-patch-and-transform)
+      [README](https://github.com/upboundcare/function-conditional-patch-and-transform)
       for examples and documentation.
 spec: {}

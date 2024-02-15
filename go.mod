@@ -1,4 +1,4 @@
-module github.com/stevendborrelli/function-conditional-patch-and-transform
+module github.com/upboundcare/function-conditional-patch-and-transform
 
 go 1.21
 
