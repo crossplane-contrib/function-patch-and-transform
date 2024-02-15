@@ -1,6 +1,6 @@
 # function-conditional-patch-and-transform
 
-[![CI](https://github.com/stevendborrelli/function-conditional-patch-and-transform/actions/workflows/ci.yml/badge.svg)](https://github.com/stevendborrelli/function-conditional-patch-and-transform/actions/workflows/ci.yml) ![GitHub release (latest SemVer)](https://img.shields.io/github/release/crossplane-contrib/function-conditional-patch-and-transform)
+[![CI](https://github.com/upboundcare/function-conditional-patch-and-transform/actions/workflows/ci.yml/badge.svg)](https://github.com/upboundcare/function-conditional-patch-and-transform/actions/workflows/ci.yml) ![GitHub release (latest SemVer)](https://img.shields.io/github/release/crossplane-contrib/function-conditional-patch-and-transform)
 
 This composition function is a fork of the upstream [function-patch-and-transform](https://github.com/crossplane-contrib/function-patch-and-transform)
 that adds support for Conditional invocation of the function and the rendering
@@ -18,7 +18,7 @@ metadata:
   annotations:
     render.crossplane.io/runtime: Development
 spec:
-  package: xpkg.upbound.io/borrelli-org/function-conditional-patch-and-transform:v0.4.0
+  package: xpkg.upbound.io/upboundcare/function-conditional-patch-and-transform:v0.4.0
 ```
 
 ## What this function does
@@ -240,7 +240,7 @@ $ crossplane xpkg build -f package --embed-runtime-image=runtime
 [docs-composition]: https://docs.crossplane.io/v1.14/getting-started/provider-aws-part-2/#create-a-deployment-template
 [docs-functions]: https://docs.crossplane.io/v1.14/concepts/composition-functions/
 [docs-pandt]: https://docs.crossplane.io/v1.14/concepts/patch-and-transform/
-[fn-go-templating]: https://github.com/stevendborrelli/function-go-templating
+[fn-go-templating]: https://github.com/upboundcare/function-go-templating
 [#4617]: https://github.com/crossplane/crossplane/issues/4617
 [#4746]: https://github.com/crossplane/crossplane/issues/4746
 [go]: https://go.dev
