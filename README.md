@@ -128,11 +128,12 @@ These fields are now required. This makes P&T configuration less ambiguous:
 * `resources[i].patches[i].transforms[i].math.type`
 
 Also, the `resources[i].patches[i].policy.mergeOptions` field is no longer
-supported.
-
-Composition functions use Kubernetes server-side apply to intelligently merge
-arrays and objects. This requires merge configuration to be specified at the
-composed resource schema level (i.e. in CRDs) per [#4617].
+supported. The same capability can be achieved by setting
+`resources[i].patches[i].policy.toFieldPath` to:
+- `MergeObject` - equivalent to
+  `resources[i].patches[i].policy.mergeOptions.keepMapValues: true`
+- `AppendArray` - equivalent to
+  `resources[i].patches[i].policy.mergeOptions.appendSlice: false`
 
 ## Developing this function
 
