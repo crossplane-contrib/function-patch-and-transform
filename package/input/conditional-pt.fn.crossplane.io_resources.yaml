@@ -4,9 +4,9 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.14.0
-  name: resources.pt.fn.crossplane.io
+  name: resources.conditional-pt.fn.crossplane.io
 spec:
-  group: pt.fn.crossplane.io
+  group: conditional-pt.fn.crossplane.io
   names:
     categories:
     - crossplane

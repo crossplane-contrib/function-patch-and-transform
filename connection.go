@@ -9,7 +9,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/pkg/resource"
 
-	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
+	"github.com/upboundcare/function-conditional-patch-and-transform/input/v1beta1"
 )
 
 // ConnectionDetailsExtractor extracts the connection details of a resource.

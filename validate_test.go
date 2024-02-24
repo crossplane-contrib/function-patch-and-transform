@@ -9,7 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/ptr"
 
-	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
+	"github.com/upboundcare/function-conditional-patch-and-transform/input/v1beta1"
 )
 
 func TestValidateReadinessCheck(t *testing.T) {

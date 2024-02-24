@@ -15,7 +15,7 @@ import (
 	"github.com/crossplane/function-sdk-go/resource/composed"
 	"github.com/crossplane/function-sdk-go/resource/composite"
 
-	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
+	"github.com/upboundcare/function-conditional-patch-and-transform/input/v1beta1"
 )
 
 const (

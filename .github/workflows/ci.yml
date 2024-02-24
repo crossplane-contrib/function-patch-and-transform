@@ -30,7 +30,7 @@ env:
 
   # The package to push, without a version tag. The default matches GitHub. For
   # example xpkg.upbound.io/crossplane/function-template-go.
-  XPKG: xpkg.upbound.io/${{ github.repository}}
+  XPKG: xpkg.upbound.io/upboundcare/function-conditional-patch-and-transform
 
   # The package version to push. The default is 0.0.0-gitsha.
   XPKG_VERSION: ${{ inputs.version }}
@@ -144,7 +144,7 @@ jobs:
         run: "curl -sL https://raw.githubusercontent.com/crossplane/crossplane/master/install.sh | sh"
 
       - name: Login to Upbound
-        uses: docker/login-action@v3
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3
         if: env.XPKG_ACCESS_ID != ''
         with:
           registry: xpkg.upbound.io

@@ -19,7 +19,7 @@ import (
 	"github.com/crossplane/function-sdk-go/resource/composed"
 	"github.com/crossplane/function-sdk-go/response"
 
-	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
+	"github.com/upboundcare/function-conditional-patch-and-transform/input/v1beta1"
 )
 
 const conditionError = "Condition error"
@@ -171,6 +171,7 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 			}
 			log.Debug("Condition evaluated to true.")
 		}
+
 		// If we have a base template, render it into our desired resource. If a
 		// previous Function produced a desired resource with this name we'll
 		// overwrite it. If we don't have a base template we'll try to patch to
