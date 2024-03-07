@@ -897,6 +897,142 @@ func TestRunFunction(t *testing.T) {
 					Context: contextWithEnvironment(map[string]interface{}{
 						"widgets": "30",
 					})}}},
+		"EnvironmentPatchOptionalNotFoundSkipped": {
+			reason: "A basic ToEnvironment patch with optional or not field path policy should be skipped",
+			args: args{
+				req: &fnv1beta1.RunFunctionRequest{
+					Input: resource.MustStructObject(&v1beta1.Resources{
+						Resources: []v1beta1.ComposedTemplate{
+							{
+								Name: "cool-resource",
+								Base: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"example.org/v1","kind":"CD"}`)},
+							}},
+						Environment: &v1beta1.Environment{
+							Patches: []v1beta1.EnvironmentPatch{
+								{
+									Type: v1beta1.PatchTypeFromCompositeFieldPath,
+									Patch: v1beta1.Patch{
+										FromFieldPath: ptr.To[string]("spec.watchers"),
+										ToFieldPath:   ptr.To[string]("widgets"),
+										Transforms: []v1beta1.Transform{
+											{
+												Type: v1beta1.TransformTypeMath,
+												Math: &v1beta1.MathTransform{
+													Type:     v1beta1.MathTransformTypeMultiply,
+													Multiply: ptr.To[int64](3),
+												},
+											},
+											{
+												Type: v1beta1.TransformTypeConvert,
+												Convert: &v1beta1.ConvertTransform{
+													ToType: v1beta1.TransformIOTypeString,
+												},
+											}}},
+								},
+								{
+									// This patch should be skipped, because
+									// the path is not found
+									Type: v1beta1.PatchTypeFromCompositeFieldPath,
+									Patch: v1beta1.Patch{
+										FromFieldPath: ptr.To[string]("spec.doesNotExist"),
+									},
+								},
+								{
+									// This patch should be skipped, because
+									// the path is not found
+									Type: v1beta1.PatchTypeFromCompositeFieldPath,
+									Patch: v1beta1.Patch{
+										FromFieldPath: ptr.To[string]("spec.doesNotExist"),
+										Policy: &v1beta1.PatchPolicy{
+											FromFieldPath: ptr.To(v1beta1.FromFieldPathPolicyOptional),
+										},
+									},
+								}}}}),
+					Observed: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":10}}`),
+						},
+						Resources: map[string]*fnv1beta1.Resource{},
+					},
+					Context: contextWithEnvironment(nil),
+				}},
+			want: want{
+				rsp: &fnv1beta1.RunFunctionResponse{
+					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD"}`),
+						},
+						Resources: map[string]*fnv1beta1.Resource{
+							"cool-resource": {
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD"}`),
+							}}},
+					Context: contextWithEnvironment(map[string]interface{}{
+						"widgets": "30",
+					},
+					)}}},
+		"EnvironmentPatchRequiredNotFoundError": {
+			reason: "A basic ToEnvironment patch with required field path policy should return an error",
+			args: args{
+				req: &fnv1beta1.RunFunctionRequest{
+					Input: resource.MustStructObject(&v1beta1.Resources{
+						Resources: []v1beta1.ComposedTemplate{
+							{
+								Name: "cool-resource",
+								Base: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"example.org/v1","kind":"CD"}`)},
+							}},
+						Environment: &v1beta1.Environment{
+							Patches: []v1beta1.EnvironmentPatch{
+								{
+									Type: v1beta1.PatchTypeFromCompositeFieldPath,
+									Patch: v1beta1.Patch{
+										FromFieldPath: ptr.To[string]("spec.watchers"),
+										ToFieldPath:   ptr.To[string]("widgets"),
+										Transforms: []v1beta1.Transform{
+											{
+												Type: v1beta1.TransformTypeMath,
+												Math: &v1beta1.MathTransform{
+													Type:     v1beta1.MathTransformTypeMultiply,
+													Multiply: ptr.To[int64](3),
+												},
+											},
+											{
+												Type: v1beta1.TransformTypeConvert,
+												Convert: &v1beta1.ConvertTransform{
+													ToType: v1beta1.TransformIOTypeString,
+												},
+											}}},
+								},
+								{
+									// This patch should be skipped, because
+									// the path is not found
+									Type: v1beta1.PatchTypeFromCompositeFieldPath,
+									Patch: v1beta1.Patch{
+										FromFieldPath: ptr.To[string]("spec.doesNotExist"),
+										Policy: &v1beta1.PatchPolicy{
+											FromFieldPath: ptr.To(v1beta1.FromFieldPathPolicyRequired),
+										},
+									},
+								}}}}),
+					Observed: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":10}}`),
+						},
+						Resources: map[string]*fnv1beta1.Resource{},
+					},
+					Context: contextWithEnvironment(nil),
+				}},
+			want: want{
+				rsp: &fnv1beta1.RunFunctionResponse{
+					Meta:    &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Context: contextWithEnvironment(map[string]interface{}{}),
+					Results: []*fnv1beta1.Result{
+						{
+							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
+							Message:  `cannot apply the "FromCompositeFieldPath" environment patch at index 1: spec.doesNotExist: no such field`,
+						},
+					},
+				}}},
 		"PatchComposedResourceFromEnvironment": {
 			reason: "A basic FromEnvironmentPatch should work if defined at spec.resources[*].patches.",
 			args: args{
