@@ -121,6 +121,12 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 		for i := range input.Environment.Patches {
 			p := &input.Environment.Patches[i]
 			if err := ApplyEnvironmentPatch(p, env, oxr.Resource, dxr.Resource); err != nil {
+
+				// Ignore not found errors if patch policy is set to Optional
+				if fieldpath.IsNotFound(err) && p.GetPolicy().GetFromFieldPathPolicy() == v1beta1.FromFieldPathPolicyOptional {
+					continue
+				}
+
 				response.Fatal(rsp, errors.Wrapf(err, "cannot apply the %q environment patch at index %d", p.GetType(), i))
 				return rsp, nil
 			}
