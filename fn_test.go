@@ -482,7 +482,7 @@ func TestRunFunction(t *testing.T) {
 											FromFieldPath: ptr.To[string]("spec.sourceObject"),
 											ToFieldPath:   ptr.To[string]("spec.targetObject"),
 											Policy: &v1beta1.PatchPolicy{
-												ToFieldPath: ptr.To(v1beta1.ToFieldPathPolicyMergeObject),
+												ToFieldPath: ptr.To(v1beta1.ToFieldPathPolicyMergeObjects),
 											},
 										},
 									},
