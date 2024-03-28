@@ -37,8 +37,15 @@ type ToFieldPathPolicy string
 
 // ToFieldPath patch policies.
 const (
-	ToFieldPathPolicyReplace     ToFieldPathPolicy = "Replace"
+	ToFieldPathPolicyReplace                       ToFieldPathPolicy = "Replace"
+	ToFieldPathPolicyMergeObjects                  ToFieldPathPolicy = "MergeObjects"
+	ToFieldPathPolicyMergeObjectsAppendArrays      ToFieldPathPolicy = "MergeObjectsAppendArrays"
+	ToFieldPathPolicyForceMergeObjects             ToFieldPathPolicy = "ForceMergeObjects"
+	ToFieldPathPolicyForceMergeObjectsAppendArrays ToFieldPathPolicy = "ForceMergeObjectsAppendArrays"
+
+	// Deprecated: Use MergeObjects, which is functionally identical.
 	ToFieldPathPolicyMergeObject ToFieldPathPolicy = "MergeObject"
+	// Deprecated: Use ForceMergeObjectsAppendArrays, which is functionally identical.
 	ToFieldPathPolicyAppendArray ToFieldPathPolicy = "AppendArray"
 )
 
@@ -54,10 +61,17 @@ type PatchPolicy struct {
 
 	// ToFieldPath specifies how to patch to a field path. The default is
 	// 'Replace', which means the patch will completely replace the target field,
-	// or create it if it does not exist. Use 'MergeObject' to merge the patch
-	// object with the target object, or 'AppendArray' to append the patch array
-	// to the target array.
-	// +kubebuilder:validation:Enum=Replace;MergeObject;AppendArray
+	// or create it if it does not exist. Use 'MergeObjects' to recursively merge the patch
+	// object with the target object, while keeping target object keys, but overwriting any array values, or use
+	// 'MergeObjectsAppendArrays' to recursively merge the patch object with the target object, while keeping
+	// target object keys and appending any array values to target array values, or use
+	// 'ForceMergeObjects' to recursively merge the patch object with the target object, overwriting
+	// any target object keys, including array values, or use
+	// 'ForceMergeObjectsAppendArrays' to recursively merge the patch object with the target object,
+	// overwriting target object keys, and appending any array values to target array values.
+	// 'MergeObject' is deprecated, use 'MergeObjects' instead, which is functionally identical.
+	// 'AppendArray' is deprecated, use 'ForceMergeObjectsAppendArrays' instead, which is functionally identical.
+	// +kubebuilder:validation:Enum=Replace;MergeObjects;MergeObjectsAppendArrays;ForceMergeObjects;ForceMergeObjectsAppendArrays;MergeObject;AppendArray
 	// +optional
 	ToFieldPath *ToFieldPathPolicy `json:"toFieldPath,omitempty"`
 }
