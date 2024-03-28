@@ -102,10 +102,14 @@ func toMergeOption(p PatchInterface) (mo *xpv1.MergeOptions, err error) {
 	switch pp.GetToFieldPathPolicy() {
 	case v1beta1.ToFieldPathPolicyReplace:
 		// nothing to do, this is the default
-	case v1beta1.ToFieldPathPolicyAppendArray:
-		mo = &xpv1.MergeOptions{AppendSlice: ptr.To(true)}
-	case v1beta1.ToFieldPathPolicyMergeObject:
+	case v1beta1.ToFieldPathPolicyMergeObjects, v1beta1.ToFieldPathPolicyMergeObject: //nolint:staticcheck // MergeObject is deprecated but we must still support it.
 		mo = &xpv1.MergeOptions{KeepMapValues: ptr.To(true)}
+	case v1beta1.ToFieldPathPolicyMergeObjectsAppendArrays:
+		mo = &xpv1.MergeOptions{KeepMapValues: ptr.To(true), AppendSlice: ptr.To(true)}
+	case v1beta1.ToFieldPathPolicyForceMergeObjects:
+		mo = &xpv1.MergeOptions{KeepMapValues: ptr.To(false)}
+	case v1beta1.ToFieldPathPolicyForceMergeObjectsAppendArrays, v1beta1.ToFieldPathPolicyAppendArray: //nolint:staticcheck // AppendArray is deprecated but we must still support it.
+		mo = &xpv1.MergeOptions{AppendSlice: ptr.To(true)}
 	default:
 		// should never happen
 		return nil, errors.Errorf(errFmtInvalidPatchPolicy, pp.GetToFieldPathPolicy())

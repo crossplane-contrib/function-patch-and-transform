@@ -130,10 +130,14 @@ These fields are now required. This makes P&T configuration less ambiguous:
 Also, the `resources[i].patches[i].policy.mergeOptions` field is no longer
 supported. The same capability can be achieved by setting
 `resources[i].patches[i].policy.toFieldPath` to:
-- `MergeObject` - equivalent to
+- `MergeObjects` - equivalent to
   `resources[i].patches[i].policy.mergeOptions.keepMapValues: true`
-- `AppendArray` - equivalent to
-  `resources[i].patches[i].policy.mergeOptions.appendSlice: false`
+- `MergeObjectsAppendArrays` - equivalent to
+  `resources[i].patches[i].policy.mergeOptions{keepMapValues: true, appendSlice: true}`
+- `ForceMergeObjects` - equivalent to
+  `resources[i].patches[i].policy.mergeOptions.keepMapValues: false`
+- `ForceMergeObjectsAppendArrays` - equivalent to
+  `resources[i].patches[i].policy.mergeOptions.appendSlice: true`
 
 ## Developing this function
 
