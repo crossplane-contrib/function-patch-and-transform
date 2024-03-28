@@ -77,14 +77,14 @@ func ApplyFromFieldPathPatch(p PatchInterface, from, to runtime.Object) error {
 		return err
 	}
 
-	// ComposedPatch all expanded fields if the ToFieldPath contains wildcards
-	if strings.Contains(p.GetToFieldPath(), "[*]") {
-		return patchFieldValueToMultiple(p.GetToFieldPath(), out, to)
-	}
-
 	mo, err := toMergeOption(p)
 	if err != nil {
 		return err
+	}
+
+	// ComposedPatch all expanded fields if the ToFieldPath contains wildcards
+	if strings.Contains(p.GetToFieldPath(), "[*]") {
+		return patchFieldValueToMultiple(p.GetToFieldPath(), out, to, mo)
 	}
 
 	return errors.Wrap(patchFieldValueToObject(p.GetToFieldPath(), out, to, mo), "cannot patch to object")
@@ -350,7 +350,7 @@ func patchFieldValueToObject(fieldPath string, value any, to runtime.Object, mo 
 // patchFieldValueToMultiple, given a path with wildcards in an array index,
 // expands the arrays paths in the "to" object and patches the value into each
 // of the resulting fields, returning any errors as they occur.
-func patchFieldValueToMultiple(fieldPath string, value any, to runtime.Object) error {
+func patchFieldValueToMultiple(fieldPath string, value any, to runtime.Object, mo *xpv1.MergeOptions) error {
 	paved, err := fieldpath.PaveObject(to)
 	if err != nil {
 		return err
@@ -366,7 +366,7 @@ func patchFieldValueToMultiple(fieldPath string, value any, to runtime.Object) e
 	}
 
 	for _, field := range arrayFieldPaths {
-		if err := paved.SetValue(field, value); err != nil {
+		if err := paved.MergeValue(field, value, mo); err != nil {
 			return err
 		}
 	}
