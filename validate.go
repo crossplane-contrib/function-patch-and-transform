@@ -202,8 +202,12 @@ func ValidatePatch(p PatchInterface) *field.Error { //nolint: gocyclo // This is
 	if pp := p.GetPolicy(); pp != nil {
 		switch pp.GetToFieldPathPolicy() {
 		case v1beta1.ToFieldPathPolicyReplace,
-			v1beta1.ToFieldPathPolicyAppendArray,
-			v1beta1.ToFieldPathPolicyMergeObject:
+			v1beta1.ToFieldPathPolicyMergeObjects,
+			v1beta1.ToFieldPathPolicyMergeObjectsAppendArrays,
+			v1beta1.ToFieldPathPolicyForceMergeObjects,
+			v1beta1.ToFieldPathPolicyForceMergeObjectsAppendArrays,
+			v1beta1.ToFieldPathPolicyMergeObject,
+			v1beta1.ToFieldPathPolicyAppendArray:
 			// ok
 		default:
 			return field.Invalid(field.NewPath("policy", "toFieldPathPolicy"), pp.GetToFieldPathPolicy(), "unknown toFieldPathPolicy")
