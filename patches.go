@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/utils/ptr"
 
 	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
@@ -77,6 +78,16 @@ func ApplyFromFieldPathPatch(p PatchInterface, from, to runtime.Object) error {
 		return err
 	}
 
+	// Round-trip the "from" source field value through Kubernetes JSON decoder,
+	// so that the json integers are unmarshalled as int64 consistent with "to"/dest value handling.
+	// Kubernetes JSON decoder will get us a map[string]any where number values are int64,
+	// but protojson and structpb will get us one where number values are float64.
+	// https://pkg.go.dev/sigs.k8s.io/json#UnmarshalCaseSensitivePreserveInts
+	v, err := toValidJSON(out)
+	if err != nil {
+		return err
+	}
+
 	mo, err := toMergeOption(p)
 	if err != nil {
 		return err
@@ -84,10 +95,22 @@ func ApplyFromFieldPathPatch(p PatchInterface, from, to runtime.Object) error {
 
 	// ComposedPatch all expanded fields if the ToFieldPath contains wildcards
 	if strings.Contains(p.GetToFieldPath(), "[*]") {
-		return patchFieldValueToMultiple(p.GetToFieldPath(), out, to, mo)
+		return patchFieldValueToMultiple(p.GetToFieldPath(), v, to, mo)
 	}
 
-	return errors.Wrap(patchFieldValueToObject(p.GetToFieldPath(), out, to, mo), "cannot patch to object")
+	return errors.Wrap(patchFieldValueToObject(p.GetToFieldPath(), v, to, mo), "cannot patch to object")
+}
+
+func toValidJSON(value any) (any, error) {
+	var v any
+	j, err := json.Marshal(value)
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot marshal value to JSON")
+	}
+	if err := json.Unmarshal(j, &v); err != nil {
+		return nil, errors.Wrap(err, "cannot unmarshal value from JSON")
+	}
+	return v, nil
 }
 
 // toMergeOption returns the MergeOptions from the PatchPolicy's ToFieldPathPolicy, if defined.
