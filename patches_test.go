@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -9,6 +8,7 @@ import (
 	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/utils/ptr"
 
 	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
@@ -193,6 +193,78 @@ func TestApplyFromFieldPathPatch(t *testing.T) {
 						}`)},
 				},
 				err: errors.Errorf(errFmtExpandingArrayFieldPaths, "metadata.ownerReferences[*].badField"),
+			},
+		},
+		"ValidToFieldPathWithWildcardsAndMergePolicy": {
+			reason: "When passed a wildcarded path with appendSlice policy, appends the from field slice items to each of the expanded array field, with slice deduplication",
+			args: args{
+				p: &v1beta1.ComposedPatch{
+					Type: v1beta1.PatchTypeFromCompositeFieldPath,
+					Patch: v1beta1.Patch{
+						FromFieldPath: ptr.To[string]("spec.parameters.allowedGroups"),
+						ToFieldPath:   ptr.To[string]("spec.forProvider.accessRules[*].allowedGroups"),
+						Policy: &v1beta1.PatchPolicy{
+							ToFieldPath: ptr.To(v1beta1.ToFieldPathPolicyForceMergeObjectsAppendArrays),
+						},
+					},
+				},
+				from: &composite.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+							"apiVersion": "test.crossplane.io/v1",
+							"kind": "XR",
+							"spec": {
+								"parameters": {
+									"allowedGroups": [12345678, 7891234]
+								}
+							}
+						}`)},
+				},
+				to: &composed.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+							"apiVersion": "test.crossplane.io/v1",
+							"kind": "Composed",
+							"spec": {
+								"forProvider": {
+									"accessRules": [
+										{
+											"action": "Allow",
+											"destination": "e1",
+											"allowedGroups": [12345678]
+										},
+										{
+											"action": "Allow",
+											"destination": "e2",
+											"allowedGroups": [12345678]
+										}
+									]
+								}
+							}
+						}`)},
+				},
+			},
+			want: want{
+				to: &composed.Unstructured{
+					Unstructured: unstructured.Unstructured{Object: MustObject(`{
+							"apiVersion": "test.crossplane.io/v1",
+							"kind": "Composed",
+							"spec": {
+								"forProvider": {
+									"accessRules": [
+										{
+											"action": "Allow",
+											"destination": "e1",
+											"allowedGroups": [12345678, 7891234]
+										},
+										{
+											"action": "Allow",
+											"destination": "e2",
+											"allowedGroups": [12345678, 7891234]
+										}
+									]
+								}
+							}
+						}`)},
+				},
 			},
 		},
 		"DefaultToFieldCompositeFieldPathPatch": {
