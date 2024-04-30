@@ -119,6 +119,8 @@ use `crossplane beta render`.
 This function has a few small, intentional breaking changes compared to the
 native implementation.
 
+### New Required fields
+
 These fields are now required. This makes P&T configuration less ambiguous:
 
 * `resources[i].name`
@@ -127,17 +129,41 @@ These fields are now required. This makes P&T configuration less ambiguous:
 * `resources[i].patches[i].transforms[i].string.type`
 * `resources[i].patches[i].transforms[i].math.type`
 
+### `mergeOptions` replaced by `toFieldPath`
+
 Also, the `resources[i].patches[i].policy.mergeOptions` field is no longer
-supported. The same capability can be achieved by setting
-`resources[i].patches[i].policy.toFieldPath` to:
-- `MergeObjects` - equivalent to
-  `resources[i].patches[i].policy.mergeOptions.keepMapValues: true`
-- `MergeObjectsAppendArrays` - equivalent to
-  `resources[i].patches[i].policy.mergeOptions{keepMapValues: true, appendSlice: true}`
-- `ForceMergeObjects` - equivalent to
-  `resources[i].patches[i].policy.mergeOptions.keepMapValues: false`
-- `ForceMergeObjectsAppendArrays` - equivalent to
-  `resources[i].patches[i].policy.mergeOptions.appendSlice: true`
+supported. This functionality has been replaced by the
+`resources[i].patches[i].policy.toFieldPath` field. The table below outlines
+previous behavior that was possible with `mergeOptions` and how to achieve it
+with the new `toFieldPath` field:
+
+| # | `mergeOptions` | `appendSlice`| `keepMapValues` | `toFieldPath` |
+| - | -------------  | ------------ | --------------- | -------------------- |
+| 1 | `nil`  | N/A | N/A | `nil` which defaults to `Replace` |
+| 2 | `non-nil` | `nil` or `false` | `true` | `MergeObjects` |
+| 3 | `non-nil` | `true` | `nil` or `false` | `ForceMergeObjectsAppendArrays` |
+| 4 | `non-nil` | `nil` or `false` |  `nil` or `false` |  `ForceMergeObjects`   |
+| 5 | `non-nil` | `true` | `true` | `MergeObjectsAppendArrays` |
+
+As an example, a previous configuration using the no longer supported `mergeOptions`:
+
+```yaml
+policy:
+  mergeOptions:
+    appendSlice: true
+    keepMapValues: true
+```
+
+Should be replaced with:
+
+```yaml
+policy:
+  toFieldPath: MergeObjectsAppendArrays
+```
+
+Starting with Crossplane v1.16.0, the `convert` command in the [Crossplane
+CLI][cli-convert] will automatically convert `mergeOptions` to `toFieldPath` for
+you.
 
 ## Developing this function
 
@@ -168,3 +194,4 @@ $ crossplane xpkg build -f package --embed-runtime-image=runtime
 [go]: https://go.dev
 [docker]: https://www.docker.com
 [cli]: https://docs.crossplane.io/latest/cli
+[cli-convert]: https://docs.crossplane.io/latest/cli/command-reference/#beta-convert
