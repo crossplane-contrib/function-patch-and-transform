@@ -66,6 +66,10 @@ It's not just patches either. You can use P&T to derive composite resource
 connection details from a resource produced by another function, or use it to
 determine whether a resource produced by another function is ready.
 
+A straightforward example for multistep mix and match pipeline with
+function-patch-and-transform and function-go-templating can be found
+[here](./example/multistep)
+
 ### Decouple P&T development from Crossplane core
 
 When P&T development happens in a function, it's not coupled to the Crossplane
