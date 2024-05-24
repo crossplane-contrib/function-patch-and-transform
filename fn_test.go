@@ -12,7 +12,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 
 	"github.com/crossplane/crossplane-runtime/pkg/logging"
@@ -95,7 +94,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
-					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
+					Context: contextWithEnvironment(nil),
 				},
 			},
 		},
@@ -126,7 +125,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
-					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
+					Context: contextWithEnvironment(nil),
 				},
 			},
 			want: want{
@@ -145,7 +144,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
-					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
+					Context: contextWithEnvironment(nil),
 				},
 			},
 		},
@@ -210,7 +209,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
-					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
+					Context: contextWithEnvironment(nil),
 				},
 			},
 		},
@@ -282,7 +281,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
-					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
+					Context: contextWithEnvironment(nil),
 				},
 			},
 		},
@@ -380,7 +379,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
-					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
+					Context: contextWithEnvironment(nil),
 				},
 			},
 		},
@@ -436,7 +435,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
-					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
+					Context: contextWithEnvironment(nil),
 				},
 			},
 		},
@@ -537,7 +536,7 @@ func TestRunFunction(t *testing.T) {
 							// Note "new-resource" doesn't appear here.
 						},
 					},
-					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
+					Context: contextWithEnvironment(nil),
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_WARNING,
@@ -652,7 +651,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
-					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
+					Context: contextWithEnvironment(nil),
 				},
 			},
 		},
@@ -715,7 +714,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
-					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
+					Context: contextWithEnvironment(nil),
 				},
 			},
 		},
@@ -785,7 +784,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
-					Context: &structpb.Struct{Fields: map[string]*structpb.Value{fncontext.KeyEnvironment: structpb.NewStructValue(nil)}},
+					Context: contextWithEnvironment(nil),
 				},
 			},
 		},
@@ -1227,7 +1226,7 @@ func contextWithEnvironment(data map[string]interface{}) *structpb.Struct {
 		data = map[string]interface{}{}
 	}
 	u := unstructured.Unstructured{Object: data}
-	u.SetGroupVersionKind(schema.GroupVersionKind{Group: "internal.crossplane.io", Version: "v1alpha1", Kind: "Environment"})
+	u.SetGroupVersionKind(internalEnvironmentGVK)
 	d, err := structpb.NewStruct(u.UnstructuredContent())
 	if err != nil {
 		panic(err)
