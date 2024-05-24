@@ -115,6 +115,14 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 		log.Debug("Loaded Composition environment from Function context", "context-key", fncontext.KeyEnvironment)
 	}
 
+	// Patching code assumes that the environment has a GVK, as it uses
+	// runtime.DefaultUnstructuredConverter.FromUnstructured. This is a bit odd,
+	// but it's what we've done in the past. We'll set a default GVK here if one
+	// isn't set.
+	if env.GroupVersionKind().Empty() {
+		env.SetGroupVersionKind(internalEnvironmentGVK)
+	}
+
 	if input.Environment != nil {
 		// Run all patches that are from the (observed) XR to the environment or
 		// from the environment to the (desired) XR.
