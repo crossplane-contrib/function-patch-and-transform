@@ -51,7 +51,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
-							Message:  "invalid Function input: resources: Required value: resources is required",
+							Message:  "invalid Function input: resources: Required value: resources or environment patches are required",
 						},
 					},
 				},
@@ -1197,6 +1197,44 @@ func TestRunFunction(t *testing.T) {
 					Context: contextWithEnvironment(map[string]interface{}{
 						"widgets": "10",
 					})}}},
+		"OnlyEnvironmentPatchesIsAllowed": {
+			reason: "Having only environment patches should be allowed and work as expected.",
+			args: args{
+				req: &fnv1beta1.RunFunctionRequest{
+					Input: resource.MustStructObject(&v1beta1.Resources{
+						Environment: &v1beta1.Environment{
+							Patches: []v1beta1.EnvironmentPatch{
+								{
+									Type: v1beta1.PatchTypeFromCompositeFieldPath,
+									Patch: v1beta1.Patch{
+										FromFieldPath: ptr.To[string]("spec.widgets"),
+										ToFieldPath:   ptr.To[string]("envKey"),
+									},
+								},
+							},
+						},
+					}),
+					Observed: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1beta1.RunFunctionResponse{
+					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
+						},
+					},
+					Context: contextWithEnvironment(map[string]interface{}{
+						"envKey": "10",
+					}),
+				},
+			},
+		},
 	}
 
 	for name, tc := range cases {

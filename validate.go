@@ -39,8 +39,8 @@ func ValidateResources(r *v1beta1.Resources) *field.Error {
 			return err
 		}
 	}
-	if len(r.Resources) == 0 {
-		return field.Required(field.NewPath("resources"), "resources is required")
+	if len(r.Resources) == 0 && (r.Environment == nil || len(r.Environment.Patches) == 0) {
+		return field.Required(field.NewPath("resources"), "resources or environment patches are required")
 	}
 	for i, r := range r.Resources {
 		if err := ValidateComposedTemplate(r); err != nil {
