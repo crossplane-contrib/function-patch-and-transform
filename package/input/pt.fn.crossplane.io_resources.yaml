@@ -371,6 +371,8 @@ spec:
                       - ToCompositeFieldPath
                       - CombineFromComposite
                       - CombineToComposite
+                      - FromEnvironmentFieldPath
+                      - ToEnvironmentFieldPath
                       type: string
                   type: object
                 type: array

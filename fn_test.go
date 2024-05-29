@@ -896,6 +896,114 @@ func TestRunFunction(t *testing.T) {
 					Context: contextWithEnvironment(map[string]interface{}{
 						"widgets": "30",
 					})}}},
+		"PatchToCompositeSupportsFromEnvironmentFieldPath": {
+			reason: "A basic FromEnvironmentFieldPath patch should work with environment.patches.",
+			args: args{
+				req: &fnv1beta1.RunFunctionRequest{
+					Input: resource.MustStructObject(&v1beta1.Resources{
+						Resources: []v1beta1.ComposedTemplate{
+							{
+								Name: "cool-resource",
+								Base: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"example.org/v1","kind":"CD"}`)},
+							}},
+						Environment: &v1beta1.Environment{
+							Patches: []v1beta1.EnvironmentPatch{
+								{
+									Type: v1beta1.PatchTypeFromEnvironmentFieldPath,
+									Patch: v1beta1.Patch{
+										FromFieldPath: ptr.To[string]("widgets"),
+										ToFieldPath:   ptr.To[string]("spec.watchers"),
+										Transforms: []v1beta1.Transform{
+											{
+												Type: v1beta1.TransformTypeConvert,
+												Convert: &v1beta1.ConvertTransform{
+													ToType: v1beta1.TransformIOTypeInt64,
+												},
+											},
+											{
+												Type: v1beta1.TransformTypeMath,
+												Math: &v1beta1.MathTransform{
+													Type:     v1beta1.MathTransformTypeMultiply,
+													Multiply: ptr.To[int64](3),
+												}}}}}}}}),
+					Observed: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{}}`),
+						},
+						Resources: map[string]*fnv1beta1.Resource{},
+					},
+					Context: contextWithEnvironment(map[string]interface{}{
+						"widgets": "10",
+					})},
+			},
+			want: want{
+				rsp: &fnv1beta1.RunFunctionResponse{
+					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							// spec.watchers = 10 * 3 = 30
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":30}}`),
+						},
+						Resources: map[string]*fnv1beta1.Resource{
+							"cool-resource": {
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD"}`),
+							}}},
+					Context: contextWithEnvironment(map[string]interface{}{
+						"widgets": "10",
+					})}}},
+		"EnvironmentPatchSupportsToEnvironmentFieldPath": {
+			reason: "ToEnvironmentFieldPath patch should work with environment.patches.",
+			args: args{
+				req: &fnv1beta1.RunFunctionRequest{
+					Input: resource.MustStructObject(&v1beta1.Resources{
+						Resources: []v1beta1.ComposedTemplate{
+							{
+								Name: "cool-resource",
+								Base: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"example.org/v1","kind":"CD"}`)},
+							}},
+						Environment: &v1beta1.Environment{
+							Patches: []v1beta1.EnvironmentPatch{
+								{
+									Type: v1beta1.PatchTypeToEnvironmentFieldPath,
+									Patch: v1beta1.Patch{
+										FromFieldPath: ptr.To[string]("spec.watchers"),
+										ToFieldPath:   ptr.To[string]("widgets"),
+										Transforms: []v1beta1.Transform{
+											{
+												Type: v1beta1.TransformTypeMath,
+												Math: &v1beta1.MathTransform{
+													Type:     v1beta1.MathTransformTypeMultiply,
+													Multiply: ptr.To[int64](3),
+												},
+											},
+											{
+												Type: v1beta1.TransformTypeConvert,
+												Convert: &v1beta1.ConvertTransform{
+													ToType: v1beta1.TransformIOTypeString,
+												},
+											}}}}}}}),
+					Observed: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":10}}`),
+						},
+						Resources: map[string]*fnv1beta1.Resource{},
+					},
+					Context: contextWithEnvironment(nil)},
+			},
+			want: want{
+				rsp: &fnv1beta1.RunFunctionResponse{
+					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD"}`),
+						},
+						Resources: map[string]*fnv1beta1.Resource{
+							"cool-resource": {
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD"}`),
+							}}},
+					Context: contextWithEnvironment(map[string]interface{}{
+						"widgets": "30",
+					})}}},
 		"EnvironmentPatchOptionalNotFoundSkipped": {
 			reason: "A basic ToEnvironment patch with optional or not field path policy should be skipped",
 			args: args{
