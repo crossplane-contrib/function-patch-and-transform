@@ -198,21 +198,21 @@ func ApplyCombineFromVariablesPatch(p PatchInterface, from, to runtime.Object) e
 func ApplyEnvironmentPatch(p *v1beta1.EnvironmentPatch, env *unstructured.Unstructured, oxr, dxr *composite.Unstructured) error {
 	switch p.GetType() {
 	// From observed XR to environment.
-	case v1beta1.PatchTypeFromCompositeFieldPath:
+	case v1beta1.PatchTypeFromCompositeFieldPath,
+		v1beta1.PatchTypeToEnvironmentFieldPath:
 		return ApplyFromFieldPathPatch(p, oxr, env)
 	case v1beta1.PatchTypeCombineFromComposite:
 		return ApplyCombineFromVariablesPatch(p, oxr, env)
 
 	// From environment to desired XR.
-	case v1beta1.PatchTypeToCompositeFieldPath:
+	case v1beta1.PatchTypeToCompositeFieldPath,
+		v1beta1.PatchTypeFromEnvironmentFieldPath:
 		return ApplyFromFieldPathPatch(p, env, dxr)
 	case v1beta1.PatchTypeCombineToComposite:
 		return ApplyCombineFromVariablesPatch(p, env, dxr)
 
 	// Invalid patch types in this context.
-	case v1beta1.PatchTypeFromEnvironmentFieldPath,
-		v1beta1.PatchTypeCombineFromEnvironment,
-		v1beta1.PatchTypeToEnvironmentFieldPath,
+	case v1beta1.PatchTypeCombineFromEnvironment,
 		v1beta1.PatchTypeCombineToEnvironment:
 		// Nothing to do.
 
