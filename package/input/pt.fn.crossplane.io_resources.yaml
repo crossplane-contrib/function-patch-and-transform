@@ -348,6 +348,8 @@ spec:
                                 - Regexp
                                 type: string
                             type: object
+                            required:
+                              - type
                           type:
                             description: Type of the transform to be run.
                             enum:
