@@ -347,6 +347,8 @@ spec:
                                 - TrimSuffix
                                 - Regexp
                                 type: string
+                            required:
+                            - type
                             type: object
                           type:
                             description: Type of the transform to be run.
@@ -705,6 +707,8 @@ spec:
                                   - TrimSuffix
                                   - Regexp
                                   type: string
+                              required:
+                              - type
                               type: object
                             type:
                               description: Type of the transform to be run.
@@ -1123,6 +1127,8 @@ spec:
                                   - TrimSuffix
                                   - Regexp
                                   type: string
+                              required:
+                              - type
                               type: object
                             type:
                               description: Type of the transform to be run.
