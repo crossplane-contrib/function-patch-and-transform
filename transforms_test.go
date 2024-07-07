@@ -639,6 +639,7 @@ func TestStringResolve(t *testing.T) {
 		convert *v1beta1.StringConversionType
 		trim    *string
 		regexp  *v1beta1.StringTransformRegexp
+		join    *v1beta1.StringTransformJoin
 		i       any
 	}
 	type want struct {
@@ -1003,6 +1004,42 @@ func TestStringResolve(t *testing.T) {
 				err: errors.Wrap(errors.New("json: unsupported type: func()"), errMarshalJSON),
 			},
 		},
+		"JoinString": {
+			args: args{
+				stype: v1beta1.StringTransformTypeJoin,
+				join: &v1beta1.StringTransformJoin{
+					Separator: ",",
+				},
+				i: []interface{}{"cross", "plane"},
+			},
+			want: want{
+				o: "cross,plane",
+			},
+		},
+		"JoinStringEmptySeparator": {
+			args: args{
+				stype: v1beta1.StringTransformTypeJoin,
+				join: &v1beta1.StringTransformJoin{
+					Separator: "",
+				},
+				i: []interface{}{"cross", "plane"},
+			},
+			want: want{
+				o: "crossplane",
+			},
+		},
+		"JoinStringDifferentTypes": {
+			args: args{
+				stype: v1beta1.StringTransformTypeJoin,
+				join: &v1beta1.StringTransformJoin{
+					Separator: "-",
+				},
+				i: []interface{}{"cross", "plane", 42},
+			},
+			want: want{
+				o: "cross-plane-42",
+			},
+		},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -1012,6 +1049,7 @@ func TestStringResolve(t *testing.T) {
 				Convert: tc.convert,
 				Trim:    tc.trim,
 				Regexp:  tc.regexp,
+				Join:    tc.join,
 			}
 
 			got, err := ResolveString(tr, tc.i)

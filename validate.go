@@ -382,6 +382,10 @@ func ValidateStringTransform(s *v1beta1.StringTransform) *field.Error { //nolint
 		if _, err := regexp.Compile(s.Regexp.Match); err != nil {
 			return field.Invalid(field.NewPath("regexp", "match"), s.Regexp.Match, "invalid regexp")
 		}
+	case v1beta1.StringTransformTypeJoin:
+		if s.Join == nil {
+			return field.Required(field.NewPath("join"), "join transform requires a join")
+		}
 	default:
 		return field.Invalid(field.NewPath("type"), s.Type, "unknown string transform type")
 	}
