@@ -267,7 +267,7 @@ func unmarshalJSON(j extv1.JSON, output *any) error {
 }
 
 // ResolveString resolves a String transform.
-func ResolveString(t *v1beta1.StringTransform, input any) (string, error) {
+func ResolveString(t *v1beta1.StringTransform, input any) (string, error) { //nolint:gocyclo // This is a long but simple/same-y switch.
 	switch t.Type {
 	case v1beta1.StringTransformTypeFormat:
 		if t.Format == nil {
@@ -373,9 +373,9 @@ func stringJoinTransform(input any, r v1beta1.StringTransformJoin) (string, erro
 	}
 	if len(r.Separator) > 0 {
 		return result[:len(result)-1], nil
-	} else {
-		return result, nil
-	}
+	} 
+	
+	return result, nil
 }
 
 func stringRegexpTransform(input any, r v1beta1.StringTransformRegexp) (string, error) {
