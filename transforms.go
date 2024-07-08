@@ -373,8 +373,8 @@ func stringJoinTransform(input any, r v1beta1.StringTransformJoin) (string, erro
 	}
 	if len(r.Separator) > 0 {
 		return result[:len(result)-1], nil
-	} 
-	
+	}
+
 	return result, nil
 }
 
