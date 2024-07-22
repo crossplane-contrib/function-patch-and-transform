@@ -639,6 +639,7 @@ func TestStringResolve(t *testing.T) {
 		convert *v1beta1.StringConversionType
 		trim    *string
 		regexp  *v1beta1.StringTransformRegexp
+		replace *v1beta1.StringTransformReplace
 		i       any
 	}
 	type want struct {
@@ -1003,6 +1004,45 @@ func TestStringResolve(t *testing.T) {
 				err: errors.Wrap(errors.New("json: unsupported type: func()"), errMarshalJSON),
 			},
 		},
+		"ReplaceFound": {
+			args: args{
+				stype: v1beta1.StringTransformTypeReplace,
+				replace: &v1beta1.StringTransformReplace{
+					Search:  "Cr",
+					Replace: "B",
+				},
+				i: "Crossplane",
+			},
+			want: want{
+				o: "Bossplane",
+			},
+		},
+		"ReplaceNotFound": {
+			args: args{
+				stype: v1beta1.StringTransformTypeReplace,
+				replace: &v1beta1.StringTransformReplace{
+					Search:  "xx",
+					Replace: "zz",
+				},
+				i: "Crossplane",
+			},
+			want: want{
+				o: "Crossplane",
+			},
+		},
+		"ReplaceRemove": {
+			args: args{
+				stype: v1beta1.StringTransformTypeReplace,
+				replace: &v1beta1.StringTransformReplace{
+					Search:  "ss",
+					Replace: "",
+				},
+				i: "Crossplane",
+			},
+			want: want{
+				o: "Croplane",
+			},
+		},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -1012,6 +1052,7 @@ func TestStringResolve(t *testing.T) {
 				Convert: tc.convert,
 				Trim:    tc.trim,
 				Regexp:  tc.regexp,
+				Replace: tc.replace,
 			}
 
 			got, err := ResolveString(tr, tc.i)
