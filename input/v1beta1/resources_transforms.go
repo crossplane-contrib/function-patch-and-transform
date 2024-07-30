@@ -209,6 +209,7 @@ const (
 	StringTransformTypeTrimSuffix StringTransformType = "TrimSuffix"
 	StringTransformTypeRegexp     StringTransformType = "Regexp"
 	StringTransformTypeJoin       StringTransformType = "Join"
+	StringTransformTypeReplace    StringTransformType = "Replace"
 )
 
 // StringConversionType converts a string.
@@ -231,10 +232,9 @@ const (
 type StringTransform struct {
 
 	// Type of the string transform to be run.
-	// +optional
 	// +kubebuilder:validation:Enum=Format;Convert;TrimPrefix;TrimSuffix;Regexp
 	// +kubebuilder:default=Format
-	Type StringTransformType `json:"type,omitempty"`
+	Type StringTransformType `json:"type"`
 
 	// Format the input using a Go format string. See
 	// https://golang.org/pkg/fmt/ for details.
@@ -260,7 +260,12 @@ type StringTransform struct {
 	Regexp *StringTransformRegexp `json:"regexp,omitempty"`
 
 	// Join the input strings.
+	// +optional
 	Join *StringTransformJoin `json:"join,omitempty"`
+
+	// Search/Replace applied to the input string.
+	// +optional
+	Replace *StringTransformReplace `json:"replace,omitempty"`
 }
 
 // A StringTransformJoin joins the input strings.
@@ -279,6 +284,15 @@ type StringTransformRegexp struct {
 	// Group number to match. 0 (the default) matches the entire expression.
 	// +optional
 	Group *int `json:"group,omitempty"`
+}
+
+// A StringTransformReplace replaces the search string with the replacement string.
+type StringTransformReplace struct {
+	// The Search string to match.
+	Search string `json:"search"`
+
+	// The Replace string replaces all occurrences of the search string.
+	Replace string `json:"replace"`
 }
 
 // TransformIOType defines the type of a ConvertTransform.

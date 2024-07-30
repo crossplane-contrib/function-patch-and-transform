@@ -386,6 +386,13 @@ func ValidateStringTransform(s *v1beta1.StringTransform) *field.Error { //nolint
 		if s.Join == nil {
 			return field.Required(field.NewPath("join"), "join transform requires a join")
 		}
+	case v1beta1.StringTransformTypeReplace:
+		if s.Replace == nil {
+			return field.Required(field.NewPath("replace"), "replace transform requires a replace")
+		}
+		if s.Replace.Search == "" {
+			return field.Required(field.NewPath("replace", "search"), "replace transform requires a search")
+		}
 	default:
 		return field.Invalid(field.NewPath("type"), s.Type, "unknown string transform type")
 	}

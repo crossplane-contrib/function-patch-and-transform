@@ -2,7 +2,7 @@ module github.com/crossplane-contrib/function-patch-and-transform
 
 go 1.21
 
-toolchain go1.22.3
+toolchain go1.22.5
 
 require (
 	github.com/alecthomas/kong v0.9.0
@@ -10,11 +10,11 @@ require (
 	github.com/crossplane/function-sdk-go v0.2.0
 	github.com/google/go-cmp v0.6.0
 	github.com/pkg/errors v0.9.1
-	google.golang.org/protobuf v1.34.1
+	google.golang.org/protobuf v1.34.2
 	k8s.io/api v0.29.3
 	k8s.io/apiextensions-apiserver v0.29.3
 	k8s.io/apimachinery v0.29.3
-	k8s.io/utils v0.0.0-20240502163921-fe8a2dddb1d0
+	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8
 	sigs.k8s.io/controller-tools v0.14.0
 )
 
@@ -62,10 +62,10 @@ require (
 	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/exp v0.0.0-20240112132812-db7319d0e0e3 // indirect
 	golang.org/x/mod v0.14.0 // indirect
-	golang.org/x/net v0.20.0 // indirect
+	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/oauth2 v0.15.0 // indirect
-	golang.org/x/sys v0.16.0 // indirect
-	golang.org/x/term v0.16.0 // indirect
+	golang.org/x/sys v0.18.0 // indirect
+	golang.org/x/term v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.17.0 // indirect
