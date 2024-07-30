@@ -208,6 +208,7 @@ const (
 	StringTransformTypeTrimPrefix StringTransformType = "TrimPrefix"
 	StringTransformTypeTrimSuffix StringTransformType = "TrimSuffix"
 	StringTransformTypeRegexp     StringTransformType = "Regexp"
+	StringTransformTypeJoin       StringTransformType = "Join"
 	StringTransformTypeReplace    StringTransformType = "Replace"
 )
 
@@ -258,9 +259,19 @@ type StringTransform struct {
 	// +optional
 	Regexp *StringTransformRegexp `json:"regexp,omitempty"`
 
+	// Join the input strings.
+	// +optional
+	Join *StringTransformJoin `json:"join,omitempty"`
+
 	// Search/Replace applied to the input string.
 	// +optional
 	Replace *StringTransformReplace `json:"replace,omitempty"`
+}
+
+// A StringTransformJoin joins the input strings.
+type StringTransformJoin struct {
+	// Separator to join the input strings.
+	Separator string `json:"separator"`
 }
 
 // A StringTransformRegexp extracts a match from the input using a regular

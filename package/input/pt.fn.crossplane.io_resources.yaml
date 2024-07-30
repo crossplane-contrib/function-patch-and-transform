@@ -318,6 +318,15 @@ spec:
                                   Format the input using a Go format string. See
                                   https://golang.org/pkg/fmt/ for details.
                                 type: string
+                              join:
+                                description: Join the input strings.
+                                properties:
+                                  separator:
+                                    description: Separator to join the input strings.
+                                    type: string
+                                required:
+                                - separator
+                                type: object
                               regexp:
                                 description: Extract a match from the input using
                                   a regular expression.
@@ -690,6 +699,15 @@ spec:
                                     Format the input using a Go format string. See
                                     https://golang.org/pkg/fmt/ for details.
                                   type: string
+                                join:
+                                  description: Join the input strings.
+                                  properties:
+                                    separator:
+                                      description: Separator to join the input strings.
+                                      type: string
+                                  required:
+                                  - separator
+                                  type: object
                                 regexp:
                                   description: Extract a match from the input using
                                     a regular expression.
@@ -1125,6 +1143,15 @@ spec:
                                     Format the input using a Go format string. See
                                     https://golang.org/pkg/fmt/ for details.
                                   type: string
+                                join:
+                                  description: Join the input strings.
+                                  properties:
+                                    separator:
+                                      description: Separator to join the input strings.
+                                      type: string
+                                  required:
+                                  - separator
+                                  type: object
                                 regexp:
                                   description: Extract a match from the input using
                                     a regular expression.

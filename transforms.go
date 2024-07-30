@@ -50,6 +50,8 @@ const (
 	errStringTransformTypeConvert       = "string transform of type %s convert is not set"
 	errStringTransformTypeTrim          = "string transform of type %s trim is not set"
 	errStringTransformTypeRegexp        = "string transform of type %s regexp is not set"
+	errStringTransformTypeJoin          = "string transform of type %s join is not set"
+	errStringTransformTypeJoinFailed    = "could not parse input array"
 	errStringTransformTypeRegexpFailed  = "could not compile regexp"
 	errStringTransformTypeRegexpNoMatch = "regexp %q had no matches for group %d"
 	errStringTransformTypeReplace       = "string transform of type %s replace is not set"
@@ -288,6 +290,11 @@ func ResolveString(t *v1beta1.StringTransform, input any) (string, error) { //no
 			return "", errors.Errorf(errStringTransformTypeRegexp, string(t.Type))
 		}
 		return stringRegexpTransform(input, *t.Regexp)
+	case v1beta1.StringTransformTypeJoin:
+		if t.Join == nil {
+			return "", errors.Errorf(errStringTransformTypeJoin, string(t.Type))
+		}
+		return stringJoinTransform(input, *t.Join)
 	case v1beta1.StringTransformTypeReplace:
 		if t.Replace == nil {
 			return "", errors.Errorf(errStringTransformTypeReplace, string(t.Type))
@@ -355,6 +362,26 @@ func stringTrimTransform(input any, t v1beta1.StringTransformType, trim string) 
 		return strings.TrimSuffix(str, trim)
 	}
 	return str
+}
+
+func stringJoinTransform(input any, r v1beta1.StringTransformJoin) (string, error) {
+	arr, ok := input.([]interface{})
+	if !ok {
+		return "", errors.New(errStringTransformTypeJoinFailed)
+	}
+	if len(arr) == 0 {
+		return "", nil
+	}
+
+	var result string
+	for _, v := range arr {
+		result += fmt.Sprintf("%v%s", v, r.Separator)
+	}
+	if len(r.Separator) > 0 {
+		return result[:len(result)-1], nil
+	}
+
+	return result, nil
 }
 
 func stringRegexpTransform(input any, r v1beta1.StringTransformRegexp) (string, error) {
