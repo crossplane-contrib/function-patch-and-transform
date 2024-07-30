@@ -334,6 +334,20 @@ spec:
                                 required:
                                 - match
                                 type: object
+                              replace:
+                                description: Search/Replace applied to the input string.
+                                properties:
+                                  replace:
+                                    description: The Replace string replaces all occurrences
+                                      of the search string.
+                                    type: string
+                                  search:
+                                    description: The Search string to match.
+                                    type: string
+                                required:
+                                - replace
+                                - search
+                                type: object
                               trim:
                                 description: Trim the prefix or suffix from the input
                                 type: string
@@ -689,6 +703,21 @@ spec:
                                       type: string
                                   required:
                                   - match
+                                  type: object
+                                replace:
+                                  description: Search/Replace applied to the input
+                                    string.
+                                  properties:
+                                    replace:
+                                      description: The Replace string replaces all
+                                        occurrences of the search string.
+                                      type: string
+                                    search:
+                                      description: The Search string to match.
+                                      type: string
+                                  required:
+                                  - replace
+                                  - search
                                   type: object
                                 trim:
                                   description: Trim the prefix or suffix from the
@@ -1107,6 +1136,21 @@ spec:
                                       type: string
                                   required:
                                   - match
+                                  type: object
+                                replace:
+                                  description: Search/Replace applied to the input
+                                    string.
+                                  properties:
+                                    replace:
+                                      description: The Replace string replaces all
+                                        occurrences of the search string.
+                                      type: string
+                                    search:
+                                      description: The Search string to match.
+                                      type: string
+                                  required:
+                                  - replace
+                                  - search
                                   type: object
                                 trim:
                                   description: Trim the prefix or suffix from the

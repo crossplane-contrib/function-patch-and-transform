@@ -208,6 +208,7 @@ const (
 	StringTransformTypeTrimPrefix StringTransformType = "TrimPrefix"
 	StringTransformTypeTrimSuffix StringTransformType = "TrimSuffix"
 	StringTransformTypeRegexp     StringTransformType = "Regexp"
+	StringTransformTypeReplace    StringTransformType = "Replace"
 )
 
 // StringConversionType converts a string.
@@ -257,6 +258,10 @@ type StringTransform struct {
 	// Extract a match from the input using a regular expression.
 	// +optional
 	Regexp *StringTransformRegexp `json:"regexp,omitempty"`
+
+	// Search/Replace applied to the input string.
+	// +optional
+	Replace *StringTransformReplace `json:"replace,omitempty"`
 }
 
 // A StringTransformRegexp extracts a match from the input using a regular
@@ -269,6 +274,15 @@ type StringTransformRegexp struct {
 	// Group number to match. 0 (the default) matches the entire expression.
 	// +optional
 	Group *int `json:"group,omitempty"`
+}
+
+// A StringTransformReplace replaces the search string with the replacement string.
+type StringTransformReplace struct {
+	// The Search string to match.
+	Search string `json:"search"`
+
+	// The Replace string replaces all occurrences of the search string.
+	Replace string `json:"replace"`
 }
 
 // TransformIOType defines the type of a ConvertTransform.
