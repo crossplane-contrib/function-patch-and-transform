@@ -189,7 +189,12 @@ func ApplyCombineFromVariablesPatch(p PatchInterface, from, to runtime.Object) e
 		return err
 	}
 
-	return errors.Wrap(patchFieldValueToObject(p.GetToFieldPath(), out, to, nil), "cannot patch to object")
+	mo, err := toMergeOption(p)
+	if err != nil {
+		return err
+	}
+
+	return errors.Wrap(patchFieldValueToObject(p.GetToFieldPath(), out, to, mo), "cannot patch to object")
 }
 
 // ApplyEnvironmentPatch applies a patch to or from the environment. Patches to
