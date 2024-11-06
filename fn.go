@@ -5,6 +5,7 @@ import (
 
 	"google.golang.org/protobuf/types/known/structpb"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/json"
 
 	"github.com/crossplane/crossplane-runtime/pkg/errors"
@@ -20,6 +21,7 @@ import (
 	"github.com/crossplane/function-sdk-go/response"
 
 	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
+	"github.com/crossplane-contrib/function-patch-and-transform/pt"
 )
 
 // Function performs patch-and-transform style Composition.
@@ -28,6 +30,10 @@ type Function struct {
 
 	log logging.Logger
 }
+
+var (
+	internalEnvironmentGVK = schema.GroupVersionKind{Group: "internal.crossplane.io", Version: "v1alpha1", Kind: "Environment"}
+)
 
 // RunFunction runs the Function.
 func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRequest) (*fnv1beta1.RunFunctionResponse, error) { //nolint:gocyclo // See below.
@@ -47,7 +53,7 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 
 	// Our input is an opaque object nested in a Composition, so unfortunately
 	// it won't handle validation for us.
-	if err := ValidateResources(input); err != nil {
+	if err := pt.ValidateResources(input); err != nil {
 		response.Fatal(rsp, errors.Wrap(err, "invalid Function input"))
 		return rsp, nil
 	}
@@ -98,7 +104,7 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 		return rsp, nil
 	}
 
-	cts, err := ComposedTemplates(input.PatchSets, input.Resources)
+	cts, err := pt.ComposedTemplates(input.PatchSets, input.Resources)
 	if err != nil {
 		response.Fatal(rsp, errors.Wrap(err, "cannot resolve PatchSets"))
 		return rsp, nil
@@ -128,7 +134,7 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 		// from the environment to the (desired) XR.
 		for i := range input.Environment.Patches {
 			p := &input.Environment.Patches[i]
-			if err := ApplyEnvironmentPatch(p, env, oxr.Resource, dxr.Resource); err != nil {
+			if err := pt.ApplyEnvironmentPatch(p, env, oxr.Resource, dxr.Resource); err != nil {
 
 				// Ignore not found errors if patch policy is set to Optional
 				if fieldpath.IsNotFound(err) && p.GetPolicy().GetFromFieldPathPolicy() == v1beta1.FromFieldPathPolicyOptional {
@@ -217,7 +223,7 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 		skip := false
 		for i := range t.Patches {
 			p := &t.Patches[i]
-			if err := ApplyComposedPatch(p, ocd.Resource, dcd.Resource, oxr.Resource, dxr.Resource, env); err != nil {
+			if err := pt.ApplyComposedPatch(p, ocd.Resource, dcd.Resource, oxr.Resource, dxr.Resource, env); err != nil {
 				if fieldpath.IsNotFound(err) {
 					// This is a patch from a required field path that does not
 					// exist. The point of FromFieldPathPolicyRequired is to
@@ -232,7 +238,7 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 					// we'd treat a patch from an optional field path and skip
 					// it.
 					if p.GetPolicy().GetFromFieldPathPolicy() == v1beta1.FromFieldPathPolicyRequired {
-						if ToComposedResource(p) && !exists {
+						if pt.ToComposedResource(p) && !exists {
 							response.Warning(rsp, errors.Wrapf(err, "not adding new composed resource %q to desired state because %q patch at index %d has 'policy.fromFieldPath: Required'", t.Name, p.GetType(), i))
 
 							// There's no point processing further patches.
@@ -247,7 +253,7 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 
 					// If any optional field path isn't found we just skip this
 					// patch and move on. The path may be populated by a
-					// subsequent patch.
+					// subsequent pt.
 					continue
 				}
 				response.Fatal(rsp, errors.Wrapf(err, "cannot render composed resource %q %q patch at index %d", t.Name, p.GetType(), i))
