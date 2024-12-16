@@ -148,6 +148,9 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 	// composed resource.
 	existing := 0
 
+	// Increments this for each resource template that has been skipped
+	skipped := 0
+
 	for _, t := range cts {
 		log := log.WithValues("resource-template-name", t.Name)
 		log.Debug("Processing resource template")
@@ -258,6 +261,7 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 		// Skip adding this resource to the desired state because it doesn't
 		// exist yet, and a required FromFieldPath was not (yet) found.
 		if skip {
+			skipped++
 			continue
 		}
 
@@ -267,6 +271,10 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 	if err := response.SetDesiredCompositeResource(rsp, dxr); err != nil {
 		response.Fatal(rsp, errors.Wrapf(err, "cannot set desired composite resource in %T", rsp))
 		return rsp, nil
+	}
+
+	if skipped > 0 {
+		rsp.GetDesired().GetComposite().Ready = fnv1beta1.Ready_READY_FALSE
 	}
 
 	if err := response.SetDesiredComposedResources(rsp, desired); err != nil {
@@ -284,7 +292,9 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 	log.Info("Successfully processed patch-and-transform resources",
 		"resource-templates", len(input.Resources),
 		"existing-resources", existing,
-		"warnings", warnings)
+		"warnings", warnings,
+		"skipped", skipped,
+	)
 
 	return rsp, nil
 }

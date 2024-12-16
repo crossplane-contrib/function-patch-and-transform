@@ -525,6 +525,7 @@ func TestRunFunction(t *testing.T) {
 					Desired: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
+							Ready:    fnv1beta1.Ready_READY_FALSE,
 						},
 						Resources: map[string]*fnv1beta1.Resource{
 							// Note that the first patch did work. We only
