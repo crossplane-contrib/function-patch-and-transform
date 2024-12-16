@@ -1,4 +1,4 @@
-package main
+package pt
 
 import (
 	"crypto/sha1" //nolint:gosec // Not used for secure hashing

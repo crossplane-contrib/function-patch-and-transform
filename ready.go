@@ -9,6 +9,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/pkg/resource"
 
 	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
+	"github.com/crossplane-contrib/function-patch-and-transform/pt"
 )
 
 // Error strings
@@ -59,7 +60,7 @@ func IsReady(_ context.Context, o ConditionedObject, rc ...v1beta1.ReadinessChec
 
 // RunReadinessCheck runs the readiness check against the supplied object.
 func RunReadinessCheck(c v1beta1.ReadinessCheck, o ConditionedObject) (bool, error) { //nolint:gocyclo // just a switch
-	if err := ValidateReadinessCheck(c); err != nil {
+	if err := pt.ValidateReadinessCheck(c); err != nil {
 		return false, errors.Wrap(err, errInvalidCheck)
 	}
 

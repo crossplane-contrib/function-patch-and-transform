@@ -10,6 +10,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/pkg/resource"
 
 	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
+	"github.com/crossplane-contrib/function-patch-and-transform/pt"
 )
 
 // ConnectionDetailsExtractor extracts the connection details of a resource.
@@ -33,7 +34,7 @@ func (fn ConnectionDetailsExtractorFn) ExtractConnection(cd resource.Composed, c
 func ExtractConnectionDetails(cd resource.Composed, data managed.ConnectionDetails, cfgs ...v1beta1.ConnectionDetail) (managed.ConnectionDetails, error) {
 	out := map[string][]byte{}
 	for _, cfg := range cfgs {
-		if err := ValidateConnectionDetail(cfg); err != nil {
+		if err := pt.ValidateConnectionDetail(cfg); err != nil {
 			return nil, errors.Wrap(err, "invalid")
 		}
 		switch cfg.Type {
