@@ -22,7 +22,7 @@ RUN --mount=target=. \
     GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o /function .
 
 # Produce the Function image.
-FROM gcr.io/distroless/base-debian11 AS image
+FROM gcr.io/distroless/static-debian12:nonroot AS image
 WORKDIR /
 COPY --from=build /function /function
 EXPOSE 9443
