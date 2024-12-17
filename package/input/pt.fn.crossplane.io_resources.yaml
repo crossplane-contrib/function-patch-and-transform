@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.0
   name: resources.pt.fn.crossplane.io
 spec:
   group: pt.fn.crossplane.io
@@ -31,7 +31,6 @@ spec:
           environment:
             description: |-
               Environment represents the Composition environment.
-
 
               THIS IS AN ALPHA FIELD.
               Do not use it in production. It may be changed or removed without notice.
@@ -164,12 +163,10 @@ spec:
                                 description: |-
                                   The expected input format.
 
-
                                   * `quantity` - parses the input as a K8s [`resource.Quantity`](https://pkg.go.dev/k8s.io/apimachinery/pkg/api/resource#Quantity).
                                   Only used during `string -> float64` conversions.
                                   * `json` - parses the input as a JSON string.
                                   Only used during `string -> object` or `string -> list` conversions.
-
 
                                   If this property is null, the default conversion is applied.
                                 enum:
@@ -244,10 +241,8 @@ spec:
                                       description: |-
                                         Type specifies how the pattern matches the input.
 
-
                                         * `literal` - the pattern value has to exactly match (case sensitive) the
                                         input string. This is the default.
-
 
                                         * `regexp` - the pattern treated as a regular expression against
                                         which the input string is tested. Crossplane will throw an error if the
@@ -545,12 +540,10 @@ spec:
                                   description: |-
                                     The expected input format.
 
-
                                     * `quantity` - parses the input as a K8s [`resource.Quantity`](https://pkg.go.dev/k8s.io/apimachinery/pkg/api/resource#Quantity).
                                     Only used during `string -> float64` conversions.
                                     * `json` - parses the input as a JSON string.
                                     Only used during `string -> object` or `string -> list` conversions.
-
 
                                     If this property is null, the default conversion is applied.
                                   enum:
@@ -625,10 +618,8 @@ spec:
                                         description: |-
                                           Type specifies how the pattern matches the input.
 
-
                                           * `literal` - the pattern value has to exactly match (case sensitive) the
                                           input string. This is the default.
-
 
                                           * `regexp` - the pattern treated as a regular expression against
                                           which the input string is tested. Crossplane will throw an error if the
@@ -989,12 +980,10 @@ spec:
                                   description: |-
                                     The expected input format.
 
-
                                     * `quantity` - parses the input as a K8s [`resource.Quantity`](https://pkg.go.dev/k8s.io/apimachinery/pkg/api/resource#Quantity).
                                     Only used during `string -> float64` conversions.
                                     * `json` - parses the input as a JSON string.
                                     Only used during `string -> object` or `string -> list` conversions.
-
 
                                     If this property is null, the default conversion is applied.
                                   enum:
@@ -1069,10 +1058,8 @@ spec:
                                         description: |-
                                           Type specifies how the pattern matches the input.
 
-
                                           * `literal` - the pattern value has to exactly match (case sensitive) the
                                           input string. This is the default.
-
 
                                           * `regexp` - the pattern treated as a regular expression against
                                           which the input string is tested. Crossplane will throw an error if the
