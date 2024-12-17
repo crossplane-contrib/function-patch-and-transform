@@ -13,7 +13,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/pkg/reconciler/managed"
 
 	fncontext "github.com/crossplane/function-sdk-go/context"
-	fnv1beta1 "github.com/crossplane/function-sdk-go/proto/v1beta1"
+	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"github.com/crossplane/function-sdk-go/request"
 	"github.com/crossplane/function-sdk-go/resource"
 	"github.com/crossplane/function-sdk-go/resource/composed"
@@ -24,13 +24,13 @@ import (
 
 // Function performs patch-and-transform style Composition.
 type Function struct {
-	fnv1beta1.UnimplementedFunctionRunnerServiceServer
+	fnv1.UnimplementedFunctionRunnerServiceServer
 
 	log logging.Logger
 }
 
 // RunFunction runs the Function.
-func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRequest) (*fnv1beta1.RunFunctionResponse, error) { //nolint:gocyclo // See below.
+func (f *Function) RunFunction(ctx context.Context, req *fnv1.RunFunctionRequest) (*fnv1.RunFunctionResponse, error) { //nolint:gocyclo // See below.
 	// This loop is fairly complex, but more readable with less abstraction.
 
 	log := f.log.WithValues("tag", req.GetMeta().GetTag())
@@ -274,7 +274,7 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1beta1.RunFunctionRe
 	}
 
 	if skipped > 0 {
-		rsp.GetDesired().GetComposite().Ready = fnv1beta1.Ready_READY_FALSE
+		rsp.GetDesired().GetComposite().Ready = fnv1.Ready_READY_FALSE
 	}
 
 	if err := response.SetDesiredComposedResources(rsp, desired); err != nil {

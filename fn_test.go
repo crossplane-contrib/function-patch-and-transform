@@ -17,7 +17,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/pkg/logging"
 
 	fncontext "github.com/crossplane/function-sdk-go/context"
-	fnv1beta1 "github.com/crossplane/function-sdk-go/proto/v1beta1"
+	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"github.com/crossplane/function-sdk-go/resource"
 	"github.com/crossplane/function-sdk-go/response"
 
@@ -25,13 +25,12 @@ import (
 )
 
 func TestRunFunction(t *testing.T) {
-
 	type args struct {
 		ctx context.Context
-		req *fnv1beta1.RunFunctionRequest
+		req *fnv1.RunFunctionRequest
 	}
 	type want struct {
-		rsp *fnv1beta1.RunFunctionResponse
+		rsp *fnv1.RunFunctionResponse
 		err error
 	}
 
@@ -43,15 +42,16 @@ func TestRunFunction(t *testing.T) {
 		"NoInput": {
 			reason: "The Function should return a fatal result if no input was specified",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{},
+				req: &fnv1.RunFunctionRequest{},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Results: []*fnv1beta1.Result{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{
 						{
-							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
+							Severity: fnv1.Severity_SEVERITY_FATAL,
 							Message:  "invalid Function input: resources: Required value: resources or environment patches are required",
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},
 				},
@@ -60,7 +60,7 @@ func TestRunFunction(t *testing.T) {
 		"RenderBaseTemplateWithoutPatches": {
 			reason: "A simple base template with no patches should be rendered and returned as a desired object.",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
 							{
@@ -69,26 +69,26 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
 					},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
 					},
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"cool-resource": {
 								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD"}`),
 							},
@@ -101,7 +101,7 @@ func TestRunFunction(t *testing.T) {
 		"DesiredResourcesArePassedThrough": {
 			reason: "Desired resources from previous Functions in the pipeline and without a corresponding ComposedTemplate are passed through untouched.",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
 							{
@@ -110,16 +110,16 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
 					},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"existing-resource": {
 								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"ExistingCD"}`),
 							},
@@ -129,13 +129,13 @@ func TestRunFunction(t *testing.T) {
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"existing-resource": {
 								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"ExistingCD"}`),
 							},
@@ -151,7 +151,7 @@ func TestRunFunction(t *testing.T) {
 		"PatchBaseTemplate": {
 			reason: "A base template with simple patches should be rendered and returned as a desired object.",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
 							{
@@ -184,26 +184,26 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
 						},
 					},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
 						},
 					},
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"cool-resource": {
 								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":30}}`),
 							},
@@ -216,7 +216,7 @@ func TestRunFunction(t *testing.T) {
 		"PatchDesiredResource": {
 			reason: "It should be possible to patch & transform a desired resource returned by a previous Function in the pipeline.",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
 							{
@@ -251,16 +251,16 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
 						},
 					},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"cool-resource": {
 								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD"}`),
 							},
@@ -269,13 +269,13 @@ func TestRunFunction(t *testing.T) {
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"cool-resource": {
 								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":30}}`),
 							},
@@ -288,7 +288,7 @@ func TestRunFunction(t *testing.T) {
 		"NothingToPatch": {
 			reason: "We should return an error if we're trying to patch a desired resource that doesn't exist.",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
 							{
@@ -308,30 +308,31 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
 						},
 					},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
 						},
 					},
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
 						},
 					},
-					Results: []*fnv1beta1.Result{
+					Results: []*fnv1.Result{
 						{
-							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
+							Severity: fnv1.Severity_SEVERITY_FATAL,
 							Message:  fmt.Sprintf("composed resource %q has no base template, and was not produced by a previous Function in the pipeline", "cool-resource"),
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},
 				},
@@ -340,7 +341,7 @@ func TestRunFunction(t *testing.T) {
 		"ReplaceDesiredResource": {
 			reason: "A simple base template with no patches should be rendered and replace an existing desired object with the same name.",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
 							{
@@ -349,16 +350,16 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
 					},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"cool-resource": {
 								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":42}}`),
 							},
@@ -367,13 +368,13 @@ func TestRunFunction(t *testing.T) {
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"cool-resource": {
 								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"widgets":9001}}`),
 							},
@@ -386,7 +387,7 @@ func TestRunFunction(t *testing.T) {
 		"OptionalFieldPathNotFound": {
 			reason: "If we fail to patch a desired resource because an optional field path was not found we should skip the patch.",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
 							{
@@ -413,21 +414,21 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
 						},
 					},
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"cool-resource": {
 								// Watchers becomes "10" because our first patch
 								// worked. We only skipped the second patch.
@@ -442,7 +443,7 @@ func TestRunFunction(t *testing.T) {
 		"RequiredFieldPathNotFound": {
 			reason: "If we fail to patch a desired resource because a required field path was not found, and the resource doesn't exist, we should not add it to desired state (i.e. create it).",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
 							{
@@ -500,11 +501,11 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10", "sourceObject": {"me": "too"}}}`),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							// "existing-resource" exists.
 							"existing-resource": {},
 
@@ -512,22 +513,22 @@ func TestRunFunction(t *testing.T) {
 							// observed resources. It doesn't yet exist.
 						},
 					},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
 						},
 					},
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
-							Ready:    fnv1beta1.Ready_READY_FALSE,
+							Ready:    fnv1.Ready_READY_FALSE,
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							// Note that the first patch did work. We only
 							// skipped the patch from the required field path.
 							"existing-resource": {
@@ -538,14 +539,16 @@ func TestRunFunction(t *testing.T) {
 						},
 					},
 					Context: contextWithEnvironment(nil),
-					Results: []*fnv1beta1.Result{
+					Results: []*fnv1.Result{
 						{
-							Severity: fnv1beta1.Severity_SEVERITY_WARNING,
+							Severity: fnv1.Severity_SEVERITY_WARNING,
 							Message:  `not adding new composed resource "new-resource" to desired state because "FromCompositeFieldPath" patch at index 0 has 'policy.fromFieldPath: Required': spec.doesNotExist: no such field`,
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 						{
-							Severity: fnv1beta1.Severity_SEVERITY_WARNING,
+							Severity: fnv1.Severity_SEVERITY_WARNING,
 							Message:  `cannot render composed resource "existing-resource" "FromCompositeFieldPath" patch at index 2: ignoring 'policy.fromFieldPath: Required' because 'to' resource already exists: spec.doesNotExist: no such field`,
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},
 				},
@@ -554,7 +557,7 @@ func TestRunFunction(t *testing.T) {
 		"PatchErrorIsFatal": {
 			reason: "If we fail to patch a desired resource we should return a fatal result.",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
 							{
@@ -581,30 +584,31 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
 						},
 					},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
 						},
 					},
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
 						},
 					},
-					Results: []*fnv1beta1.Result{
+					Results: []*fnv1.Result{
 						{
-							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
+							Severity: fnv1.Severity_SEVERITY_FATAL,
 							Message:  fmt.Sprintf("cannot render composed resource %q %q patch at index 1: spec.widgets: not an array", "cool-resource", "FromCompositeFieldPath"),
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},
 				},
@@ -613,7 +617,7 @@ func TestRunFunction(t *testing.T) {
 		"ObservedResourceKeepsItsName": {
 			reason: "If a template corresponds to an existing observed resource we should keep its name (and namespace).",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
 							{
@@ -622,31 +626,31 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"cool-resource": {
 								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","metadata":{"namespace":"default","name":"cool-42"}}`),
 							},
 						},
 					},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
 					},
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"cool-resource": {
 								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","metadata":{"namespace":"default","name":"cool-42"}}`),
 							},
@@ -659,7 +663,7 @@ func TestRunFunction(t *testing.T) {
 		"ExtractCompositeConnectionDetails": {
 			reason: "We should extract any XR connection details specified by a composed template.",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
 							{
@@ -675,11 +679,11 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"cool-resource": {
 								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","metadata":{"namespace":"default","name":"cool-42"}}`),
 								ConnectionDetails: map[string][]byte{
@@ -688,8 +692,8 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 							ConnectionDetails: map[string][]byte{
 								"existing": []byte("supersecretvalue"),
@@ -699,17 +703,17 @@ func TestRunFunction(t *testing.T) {
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 							ConnectionDetails: map[string][]byte{
 								"existing": []byte("supersecretvalue"),
 								"very":     []byte("secret"),
 							},
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"cool-resource": {
 								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","metadata":{"namespace":"default","name":"cool-42"}}`),
 							},
@@ -722,7 +726,7 @@ func TestRunFunction(t *testing.T) {
 		"PatchToComposite": {
 			reason: "A basic ToCompositeFieldPath patch should work.",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
 							{
@@ -755,31 +759,31 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"cool-resource": {
 								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","metadata":{"namespace":"default","name":"cool-42"},"spec":{"widgets":"10"}}`),
 							},
 						},
 					},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
 					},
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"watchers":30}}`),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"cool-resource": {
 								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","metadata":{"namespace":"default","name":"cool-42"}}`),
 							},
@@ -792,13 +796,14 @@ func TestRunFunction(t *testing.T) {
 		"PatchToCompositeWithEnvironmentPatches": {
 			reason: "A basic ToCompositeFieldPath patch should work with environment.patches.",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
 							{
 								Name: "cool-resource",
 								Base: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"example.org/v1","kind":"CD"}`)},
-							}},
+							},
+						},
 						Environment: &v1beta1.Environment{
 							Patches: []v1beta1.EnvironmentPatch{
 								{
@@ -818,42 +823,56 @@ func TestRunFunction(t *testing.T) {
 												Math: &v1beta1.MathTransform{
 													Type:     v1beta1.MathTransformTypeMultiply,
 													Multiply: ptr.To[int64](3),
-												}}}}}}}}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{}}`),
 						},
-						Resources: map[string]*fnv1beta1.Resource{},
+						Resources: map[string]*fnv1.Resource{},
 					},
 					Context: contextWithEnvironment(map[string]interface{}{
 						"widgets": "10",
-					})},
+					}),
+				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							// spec.watchers = 10 * 3 = 30
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":30}}`),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"cool-resource": {
 								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD"}`),
-							}}},
+							},
+						},
+					},
 					Context: contextWithEnvironment(map[string]interface{}{
 						"widgets": "10",
-					})}}},
+					}),
+				},
+			},
+		},
 		"EnvironmentPatchToEnvironment": {
 			reason: "A basic ToEnvironment patch should work with environment.patches.",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
 							{
 								Name: "cool-resource",
 								Base: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"example.org/v1","kind":"CD"}`)},
-							}},
+							},
+						},
 						Environment: &v1beta1.Environment{
 							Patches: []v1beta1.EnvironmentPatch{
 								{
@@ -874,39 +893,52 @@ func TestRunFunction(t *testing.T) {
 												Convert: &v1beta1.ConvertTransform{
 													ToType: v1beta1.TransformIOTypeString,
 												},
-											}}}}}}}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+											},
+										},
+									},
+								},
+							},
+						},
+					}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":10}}`),
 						},
-						Resources: map[string]*fnv1beta1.Resource{},
+						Resources: map[string]*fnv1.Resource{},
 					},
-					Context: contextWithEnvironment(nil)},
+					Context: contextWithEnvironment(nil),
+				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD"}`),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"cool-resource": {
 								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD"}`),
-							}}},
+							},
+						},
+					},
 					Context: contextWithEnvironment(map[string]interface{}{
 						"widgets": "30",
-					})}}},
+					}),
+				},
+			},
+		},
 		"PatchToCompositeSupportsFromEnvironmentFieldPath": {
 			reason: "A basic FromEnvironmentFieldPath patch should work with environment.patches.",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
 							{
 								Name: "cool-resource",
 								Base: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"example.org/v1","kind":"CD"}`)},
-							}},
+							},
+						},
 						Environment: &v1beta1.Environment{
 							Patches: []v1beta1.EnvironmentPatch{
 								{
@@ -926,42 +958,56 @@ func TestRunFunction(t *testing.T) {
 												Math: &v1beta1.MathTransform{
 													Type:     v1beta1.MathTransformTypeMultiply,
 													Multiply: ptr.To[int64](3),
-												}}}}}}}}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{}}`),
 						},
-						Resources: map[string]*fnv1beta1.Resource{},
+						Resources: map[string]*fnv1.Resource{},
 					},
 					Context: contextWithEnvironment(map[string]interface{}{
 						"widgets": "10",
-					})},
+					}),
+				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							// spec.watchers = 10 * 3 = 30
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":30}}`),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"cool-resource": {
 								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD"}`),
-							}}},
+							},
+						},
+					},
 					Context: contextWithEnvironment(map[string]interface{}{
 						"widgets": "10",
-					})}}},
+					}),
+				},
+			},
+		},
 		"EnvironmentPatchSupportsToEnvironmentFieldPath": {
 			reason: "ToEnvironmentFieldPath patch should work with environment.patches.",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
 							{
 								Name: "cool-resource",
 								Base: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"example.org/v1","kind":"CD"}`)},
-							}},
+							},
+						},
 						Environment: &v1beta1.Environment{
 							Patches: []v1beta1.EnvironmentPatch{
 								{
@@ -982,39 +1028,52 @@ func TestRunFunction(t *testing.T) {
 												Convert: &v1beta1.ConvertTransform{
 													ToType: v1beta1.TransformIOTypeString,
 												},
-											}}}}}}}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+											},
+										},
+									},
+								},
+							},
+						},
+					}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":10}}`),
 						},
-						Resources: map[string]*fnv1beta1.Resource{},
+						Resources: map[string]*fnv1.Resource{},
 					},
-					Context: contextWithEnvironment(nil)},
+					Context: contextWithEnvironment(nil),
+				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD"}`),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"cool-resource": {
 								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD"}`),
-							}}},
+							},
+						},
+					},
 					Context: contextWithEnvironment(map[string]interface{}{
 						"widgets": "30",
-					})}}},
+					}),
+				},
+			},
+		},
 		"EnvironmentPatchOptionalNotFoundSkipped": {
 			reason: "A basic ToEnvironment patch with optional or not field path policy should be skipped",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
 							{
 								Name: "cool-resource",
 								Base: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"example.org/v1","kind":"CD"}`)},
-							}},
+							},
+						},
 						Environment: &v1beta1.Environment{
 							Patches: []v1beta1.EnvironmentPatch{
 								{
@@ -1035,7 +1094,9 @@ func TestRunFunction(t *testing.T) {
 												Convert: &v1beta1.ConvertTransform{
 													ToType: v1beta1.TransformIOTypeString,
 												},
-											}}},
+											},
+										},
+									},
 								},
 								{
 									// This patch should be skipped, because
@@ -1055,40 +1116,50 @@ func TestRunFunction(t *testing.T) {
 											FromFieldPath: ptr.To(v1beta1.FromFieldPathPolicyOptional),
 										},
 									},
-								}}}}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+								},
+							},
+						},
+					}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":10}}`),
 						},
-						Resources: map[string]*fnv1beta1.Resource{},
+						Resources: map[string]*fnv1.Resource{},
 					},
 					Context: contextWithEnvironment(nil),
-				}},
+				},
+			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD"}`),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"cool-resource": {
 								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD"}`),
-							}}},
+							},
+						},
+					},
 					Context: contextWithEnvironment(map[string]interface{}{
 						"widgets": "30",
 					},
-					)}}},
+					),
+				},
+			},
+		},
 		"EnvironmentPatchRequiredNotFoundError": {
 			reason: "A basic ToEnvironment patch with required field path policy should return an error",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{
 							{
 								Name: "cool-resource",
 								Base: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"example.org/v1","kind":"CD"}`)},
-							}},
+							},
+						},
 						Environment: &v1beta1.Environment{
 							Patches: []v1beta1.EnvironmentPatch{
 								{
@@ -1109,7 +1180,9 @@ func TestRunFunction(t *testing.T) {
 												Convert: &v1beta1.ConvertTransform{
 													ToType: v1beta1.TransformIOTypeString,
 												},
-											}}},
+											},
+										},
+									},
 								},
 								{
 									// This patch should be skipped, because
@@ -1121,30 +1194,37 @@ func TestRunFunction(t *testing.T) {
 											FromFieldPath: ptr.To(v1beta1.FromFieldPathPolicyRequired),
 										},
 									},
-								}}}}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+								},
+							},
+						},
+					}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":10}}`),
 						},
-						Resources: map[string]*fnv1beta1.Resource{},
+						Resources: map[string]*fnv1.Resource{},
 					},
 					Context: contextWithEnvironment(nil),
-				}},
+				},
+			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta:    &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+				rsp: &fnv1.RunFunctionResponse{
+					Meta:    &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
 					Context: contextWithEnvironment(map[string]interface{}{}),
-					Results: []*fnv1beta1.Result{
+					Results: []*fnv1.Result{
 						{
-							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
+							Severity: fnv1.Severity_SEVERITY_FATAL,
 							Message:  `cannot apply the "FromCompositeFieldPath" environment patch at index 1: spec.doesNotExist: no such field`,
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},
-				}}},
+				},
+			},
+		},
 		"PatchComposedResourceFromEnvironment": {
 			reason: "A basic FromEnvironmentPatch should work if defined at spec.resources[*].patches.",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{{
 							Name: "cool-resource",
@@ -1165,151 +1245,186 @@ func TestRunFunction(t *testing.T) {
 											Type:     v1beta1.MathTransformTypeMultiply,
 											Multiply: ptr.To[int64](3),
 										},
-									}}}}},
-						}}}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+									}},
+								},
+							}},
+						}},
+					}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{}}`),
 						},
-						Resources: map[string]*fnv1beta1.Resource{},
+						Resources: map[string]*fnv1.Resource{},
 					},
 					Context: contextWithEnvironment(map[string]interface{}{
 						"widgets": "10",
-					})},
+					}),
+				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD"}`),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"cool-resource": {
 								// spec.watchers = 10 * 3 = 30
 								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":30}}`),
-							}}},
+							},
+						},
+					},
 					Context: contextWithEnvironment(map[string]interface{}{
 						"widgets": "10",
-					})}}},
+					}),
+				},
+			},
+		},
 
 		"PatchComposedResourceFromEnvironmentShadowedNotSet": {
 			reason: "A basic FromEnvironmentPatch should work if defined at spec.resources[*].patches, even if a successive patch shadows it and its source is not set.",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{{
 							Name: "cool-resource",
 							Base: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"example.org/v1","kind":"CD"}`)},
-							Patches: []v1beta1.ComposedPatch{{
-								Type: v1beta1.PatchTypeFromEnvironmentFieldPath,
-								Patch: v1beta1.Patch{
-									FromFieldPath: ptr.To[string]("widgets"),
-									ToFieldPath:   ptr.To[string]("spec.watchers"),
-									Transforms: []v1beta1.Transform{{
-										Type: v1beta1.TransformTypeConvert,
-										Convert: &v1beta1.ConvertTransform{
-											ToType: v1beta1.TransformIOTypeInt64,
-										},
-									}, {
-										Type: v1beta1.TransformTypeMath,
-										Math: &v1beta1.MathTransform{
-											Type:     v1beta1.MathTransformTypeMultiply,
-											Multiply: ptr.To[int64](3),
-										},
-									}}}},
+							Patches: []v1beta1.ComposedPatch{
+								{
+									Type: v1beta1.PatchTypeFromEnvironmentFieldPath,
+									Patch: v1beta1.Patch{
+										FromFieldPath: ptr.To[string]("widgets"),
+										ToFieldPath:   ptr.To[string]("spec.watchers"),
+										Transforms: []v1beta1.Transform{{
+											Type: v1beta1.TransformTypeConvert,
+											Convert: &v1beta1.ConvertTransform{
+												ToType: v1beta1.TransformIOTypeInt64,
+											},
+										}, {
+											Type: v1beta1.TransformTypeMath,
+											Math: &v1beta1.MathTransform{
+												Type:     v1beta1.MathTransformTypeMultiply,
+												Multiply: ptr.To[int64](3),
+											},
+										}},
+									},
+								},
 								{
 									Type: v1beta1.PatchTypeFromCompositeFieldPath,
 									Patch: v1beta1.Patch{
 										FromFieldPath: ptr.To[string]("spec.watchers"),
 										ToFieldPath:   ptr.To[string]("spec.watchers"),
-									}}}}}}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+									},
+								},
+							},
+						}},
+					}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{}}`),
 						},
-						Resources: map[string]*fnv1beta1.Resource{},
+						Resources: map[string]*fnv1.Resource{},
 					},
 					Context: contextWithEnvironment(map[string]interface{}{
 						"widgets": "10",
-					})},
+					}),
+				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD"}`),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"cool-resource": {
 								// spec.watchers = 10 * 3 = 30
 								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":30}}`),
-							}}},
+							},
+						},
+					},
 					Context: contextWithEnvironment(map[string]interface{}{
 						"widgets": "10",
-					})}}},
+					}),
+				},
+			},
+		},
 		"PatchComposedResourceFromEnvironmentShadowedSet": {
 			reason: "A basic FromEnvironmentPatch should work if defined at spec.resources[*].patches, even if a successive patch shadows it and its source is set.",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
 						Resources: []v1beta1.ComposedTemplate{{
 							Name: "cool-resource",
 							Base: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"example.org/v1","kind":"CD"}`)},
-							Patches: []v1beta1.ComposedPatch{{
-								Type: v1beta1.PatchTypeFromEnvironmentFieldPath,
-								Patch: v1beta1.Patch{
-									FromFieldPath: ptr.To[string]("widgets"),
-									ToFieldPath:   ptr.To[string]("spec.watchers"),
-									Transforms: []v1beta1.Transform{{
-										Type: v1beta1.TransformTypeConvert,
-										Convert: &v1beta1.ConvertTransform{
-											ToType: v1beta1.TransformIOTypeInt64,
-										},
-									}, {
-										Type: v1beta1.TransformTypeMath,
-										Math: &v1beta1.MathTransform{
-											Type:     v1beta1.MathTransformTypeMultiply,
-											Multiply: ptr.To[int64](3),
-										},
-									}}}},
+							Patches: []v1beta1.ComposedPatch{
+								{
+									Type: v1beta1.PatchTypeFromEnvironmentFieldPath,
+									Patch: v1beta1.Patch{
+										FromFieldPath: ptr.To[string]("widgets"),
+										ToFieldPath:   ptr.To[string]("spec.watchers"),
+										Transforms: []v1beta1.Transform{{
+											Type: v1beta1.TransformTypeConvert,
+											Convert: &v1beta1.ConvertTransform{
+												ToType: v1beta1.TransformIOTypeInt64,
+											},
+										}, {
+											Type: v1beta1.TransformTypeMath,
+											Math: &v1beta1.MathTransform{
+												Type:     v1beta1.MathTransformTypeMultiply,
+												Multiply: ptr.To[int64](3),
+											},
+										}},
+									},
+								},
 								{
 									Type: v1beta1.PatchTypeFromCompositeFieldPath,
 									Patch: v1beta1.Patch{
 										FromFieldPath: ptr.To[string]("spec.watchers"),
 										ToFieldPath:   ptr.To[string]("spec.watchers"),
-									}}}}}}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+									},
+								},
+							},
+						}},
+					}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							// I want this in the environment, 42
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":42}}`),
 						},
-						Resources: map[string]*fnv1beta1.Resource{},
+						Resources: map[string]*fnv1.Resource{},
 					},
 					Context: contextWithEnvironment(map[string]interface{}{
 						"widgets": "10",
-					})},
+					}),
+				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD"}`),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"cool-resource": {
 								// spec.watchers comes from the composite resource, 42
 								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","spec":{"watchers":42}}`),
-							}}},
+							},
+						},
+					},
 					Context: contextWithEnvironment(map[string]interface{}{
 						"widgets": "10",
-					})}}},
+					}),
+				},
+			},
+		},
 		"OnlyEnvironmentPatchesIsAllowed": {
 			reason: "Having only environment patches should be allowed and work as expected.",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(&v1beta1.Resources{
 						Environment: &v1beta1.Environment{
 							Patches: []v1beta1.EnvironmentPatch{
@@ -1323,18 +1438,18 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","spec":{"widgets":"10"}}`),
 						},
 					},
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
 					},
