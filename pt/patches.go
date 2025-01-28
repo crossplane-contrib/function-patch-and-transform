@@ -1,4 +1,4 @@
-package main
+package pt
 
 import (
 	"fmt"
@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/utils/ptr"
 
@@ -29,10 +28,6 @@ const (
 	errFmtCombineStrategyFailed       = "%s strategy could not combine"
 	errFmtExpandingArrayFieldPaths    = "cannot expand ToFieldPath %s"
 	errFmtInvalidPatchPolicy          = "invalid patch policy %s"
-)
-
-var (
-	internalEnvironmentGVK = schema.GroupVersionKind{Group: "internal.crossplane.io", Version: "v1alpha1", Kind: "Environment"}
 )
 
 // A PatchInterface is a patch that can be applied between resources.
