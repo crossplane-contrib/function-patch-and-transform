@@ -47,7 +47,7 @@ This is the Function's input.
 
 ## Okay, but why?
 
-There are a lot of good reasons to use a function to use a function to do P&T
+There are a lot of good reasons to use a function to do P&T
 composition. In fact, it's so compelling that the Crossplane maintainers are
 considering deprecating native P&T. See Crossplane issue [#4746] for details.
 
@@ -189,9 +189,9 @@ $ crossplane xpkg build -f package --embed-runtime-image=runtime
 ```
 
 [Crossplane]: https://crossplane.io
-[docs-composition]: https://docs.crossplane.io/v1.14/getting-started/provider-aws-part-2/#create-a-deployment-template
-[docs-functions]: https://docs.crossplane.io/v1.14/concepts/composition-functions/
-[docs-pandt]: https://docs.crossplane.io/v1.14/concepts/patch-and-transform/
+[docs-composition]: https://docs.crossplane.io/latest/getting-started/provider-aws-part-2/#create-a-deployment-template
+[docs-functions]: https://docs.crossplane.io/latest/concepts/compositions/
+[docs-pandt]: https://docs.crossplane.io/latest/guides/function-patch-and-transform/
 [fn-go-templating]: https://github.com/crossplane-contrib/function-go-templating
 [#4617]: https://github.com/crossplane/crossplane/issues/4617
 [#4746]: https://github.com/crossplane/crossplane/issues/4746
