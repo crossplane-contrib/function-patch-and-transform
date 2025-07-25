@@ -1,5 +1,5 @@
 ---
-apiVersion: meta.pkg.crossplane.io/v1beta1
+apiVersion: meta.pkg.crossplane.io/v1
 kind: Function
 metadata:
   name: function-patch-and-transform
@@ -15,4 +15,6 @@ metadata:
       Composition, you can use this function. See the
       [README](https://github.com/crossplane-contrib/function-patch-and-transform)
       for examples and documentation.
-spec: {}
+spec:
+  capabilities:
+  - composition
