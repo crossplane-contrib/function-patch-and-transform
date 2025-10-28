@@ -34,7 +34,7 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1.RunFunctionRequest
 	// This loop is fairly complex, but more readable with less abstraction.
 
 	log := f.log.WithValues("tag", req.GetMeta().GetTag())
-	log.Info("Running Function")
+	log.Debug("Running Function")
 
 	// TODO(negz): We can probably use a longer TTL if all resources are ready.
 	rsp := response.To(req, response.DefaultTTL)
@@ -289,7 +289,7 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1.RunFunctionRequest
 	}
 	response.SetContextKey(rsp, fncontext.KeyEnvironment, structpb.NewStructValue(v))
 
-	log.Info("Successfully processed patch-and-transform resources",
+	log.Debug("Successfully processed patch-and-transform resources",
 		"resource-templates", len(input.Resources),
 		"existing-resources", existing,
 		"warnings", warnings,
