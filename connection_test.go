@@ -8,11 +8,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
-	"github.com/crossplane/crossplane-runtime/pkg/errors"
-	"github.com/crossplane/crossplane-runtime/pkg/reconciler/managed"
-	"github.com/crossplane/crossplane-runtime/pkg/resource"
-	"github.com/crossplane/crossplane-runtime/pkg/resource/fake"
-	"github.com/crossplane/crossplane-runtime/pkg/test"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/errors"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/resource/fake"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/test"
 
 	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
 )
@@ -95,11 +95,9 @@ func TestExtractConnectionDetails(t *testing.T) {
 			},
 			want: want{
 				conn: managed.ConnectionDetails{
-					"convfoo":    []byte("a"),
-					"bar":        []byte("b"),
-					"fixed":      []byte("value"),
-					"name":       []byte("test"),
-					"generation": []byte("4"),
+					"convfoo": []byte("a"),
+					"bar":     []byte("b"),
+					"fixed":   []byte("value"),
 				},
 			},
 		},
