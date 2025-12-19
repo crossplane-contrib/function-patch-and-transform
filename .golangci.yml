@@ -232,7 +232,7 @@ formatters:
         - standard
         - default
         - prefix(github.com/crossplane/function-sdk-go)
-        - prefix(github.com/crossplane/function-template-go)
+        - prefix(github.com/crossplane/function-patch-and-transform)
         - blank
         - dot
       custom-order: true

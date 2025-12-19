@@ -93,9 +93,11 @@ func TestExtractConnectionDetails(t *testing.T) {
 			},
 			want: want{
 				conn: managed.ConnectionDetails{
-					"convfoo": []byte("a"),
-					"bar":     []byte("b"),
-					"fixed":   []byte("value"),
+					"convfoo":    []byte("a"),
+					"bar":        []byte("b"),
+					"fixed":      []byte("value"),
+					"name":       []byte("test"),
+					"generation": []byte("4"),
 				},
 			},
 		},
