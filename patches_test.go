@@ -3,6 +3,9 @@ package main
 import (
 	"testing"
 
+	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/fieldpath"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/test"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -11,13 +14,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/utils/ptr"
 
-	"github.com/crossplane/crossplane-runtime/v2/pkg/fieldpath"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/test"
-
 	"github.com/crossplane/function-sdk-go/resource/composed"
 	"github.com/crossplane/function-sdk-go/resource/composite"
-
-	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
 )
 
 func TestApplyFromFieldPathPatch(t *testing.T) {
@@ -312,13 +310,13 @@ func TestApplyFromFieldPathPatch(t *testing.T) {
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			err := ApplyFromFieldPathPatch(tc.args.p, tc.args.from, tc.args.to)
+			err := ApplyFromFieldPathPatch(tc.p, tc.from, tc.args.to)
 
 			if diff := cmp.Diff(tc.want.to, tc.args.to); diff != "" {
 				t.Errorf("\n%s\nApplyFromFieldPathPatch(...): -want, +got:\n%s", tc.reason, diff)
 			}
 
-			if diff := cmp.Diff(tc.want.err, err, test.EquateErrors()); diff != "" {
+			if diff := cmp.Diff(tc.err, err, test.EquateErrors()); diff != "" {
 				t.Errorf("\n%s\nApplyFromFieldPathPatch(): -want error, +got error:\n%s", tc.reason, diff)
 			}
 		})
@@ -437,13 +435,13 @@ func TestApplyCombineFromVariablesPatch(t *testing.T) {
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			err := ApplyCombineFromVariablesPatch(tc.args.p, tc.args.from, tc.args.to)
+			err := ApplyCombineFromVariablesPatch(tc.p, tc.from, tc.args.to)
 
 			if diff := cmp.Diff(tc.want.to, tc.args.to); diff != "" {
 				t.Errorf("\n%s\nApplyCombineFromVariablesPatch(...): -want, +got:\n%s", tc.reason, diff)
 			}
 
-			if diff := cmp.Diff(tc.want.err, err, test.EquateErrors()); diff != "" {
+			if diff := cmp.Diff(tc.err, err, test.EquateErrors()); diff != "" {
 				t.Errorf("\n%s\nApplyCombineFromVariablesPatch(): -want error, +got error:\n%s", tc.reason, diff)
 			}
 		})
@@ -459,7 +457,7 @@ func MustObject(j string) map[string]any {
 }
 
 func TestComposedTemplates(t *testing.T) {
-	asJSON := func(val interface{}) extv1.JSON {
+	asJSON := func(val any) extv1.JSON {
 		raw, err := json.Marshal(val)
 		if err != nil {
 			t.Fatal(err)
@@ -693,12 +691,12 @@ func TestComposedTemplates(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			got, err := ComposedTemplates(tc.args.pss, tc.args.cts)
+			got, err := ComposedTemplates(tc.pss, tc.cts)
 
-			if diff := cmp.Diff(tc.want.ct, got); diff != "" {
+			if diff := cmp.Diff(tc.ct, got); diff != "" {
 				t.Errorf("\n%s\nrs.ComposedTemplates(...): -want, +got:\n%s", tc.reason, diff)
 			}
-			if diff := cmp.Diff(tc.want.err, err, test.EquateErrors()); diff != "" {
+			if diff := cmp.Diff(tc.err, err, test.EquateErrors()); diff != "" {
 				t.Errorf("\n%s\nrs.ComposedTemplates(...)): -want, +got:\n%s", tc.reason, diff)
 			}
 		})
@@ -723,18 +721,18 @@ func TestResolveTransforms(t *testing.T) {
 			name: "NoTransforms",
 			args: args{
 				ts: nil,
-				input: map[string]interface{}{
-					"spec": map[string]interface{}{
-						"parameters": map[string]interface{}{
+				input: map[string]any{
+					"spec": map[string]any{
+						"parameters": map[string]any{
 							"test": "test",
 						},
 					},
 				},
 			},
 			want: want{
-				output: map[string]interface{}{
-					"spec": map[string]interface{}{
-						"parameters": map[string]interface{}{
+				output: map[string]any{
+					"spec": map[string]any{
+						"parameters": map[string]any{
 							"test": "test",
 						},
 					},

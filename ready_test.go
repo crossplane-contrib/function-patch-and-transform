@@ -4,17 +4,15 @@ import (
 	"context"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/utils/ptr"
-
+	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
 	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/errors"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/fieldpath"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource/unstructured/composed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/test"
-
-	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
+	"github.com/google/go-cmp/cmp"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/ptr"
 )
 
 var _ ReadinessChecker = ReadinessCheckerFn(IsReady)
@@ -357,11 +355,11 @@ func TestIsReady(t *testing.T) {
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			ready, err := IsReady(tc.args.ctx, tc.args.o, tc.args.rc...)
-			if diff := cmp.Diff(tc.want.err, err, test.EquateErrors()); diff != "" {
+			ready, err := IsReady(tc.ctx, tc.o, tc.rc...)
+			if diff := cmp.Diff(tc.err, err, test.EquateErrors()); diff != "" {
 				t.Errorf("\n%s\nIsReady(...): -want, +got:\n%s", tc.reason, diff)
 			}
-			if diff := cmp.Diff(tc.want.ready, ready); diff != "" {
+			if diff := cmp.Diff(tc.ready, ready); diff != "" {
 				t.Errorf("\n%s\nIsReady(...): -want, +got:\n%s", tc.reason, diff)
 			}
 		})

@@ -3,15 +3,14 @@ package main
 import (
 	"context"
 
+	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
 	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/errors"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/fieldpath"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
-
-	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
 )
 
-// Error strings
+// Error strings.
 const (
 	errInvalidCheck = "invalid"
 	errPaveObject   = "cannot lookup field paths in supplied object"
@@ -96,13 +95,13 @@ func RunReadinessCheck(c v1beta1.ReadinessCheck, o ConditionedObject) (bool, err
 		if err != nil {
 			return false, resource.Ignore(fieldpath.IsNotFound, err)
 		}
-		return val == false, nil //nolint:gosimple // returning '!val' here as suggested hurts readability
+		return !val, nil //nolint:gosimple // returning '!val' here as suggested hurts readability
 	case v1beta1.ReadinessCheckTypeMatchTrue:
 		val, err := p.GetBool(*c.FieldPath)
 		if err != nil {
 			return false, resource.Ignore(fieldpath.IsNotFound, err)
 		}
-		return val == true, nil //nolint:gosimple // returning 'val' here as suggested hurts readability
+		return val, nil //nolint:gosimple // returning 'val' here as suggested hurts readability
 	}
 
 	return false, nil

@@ -5,20 +5,18 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/errors"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/test"
 	"github.com/google/go-cmp/cmp"
 	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/ptr"
-
-	"github.com/crossplane/crossplane-runtime/v2/pkg/errors"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/test"
-
-	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
 )
 
 func TestMapResolve(t *testing.T) {
-	asJSON := func(val interface{}) extv1.JSON {
+	asJSON := func(val any) extv1.JSON {
 		raw, err := json.Marshal(val)
 		if err != nil {
 			t.Fatal(err)
@@ -90,11 +88,11 @@ func TestMapResolve(t *testing.T) {
 		},
 		"SuccessObject": {
 			args: args{
-				t: &v1beta1.MapTransform{Pairs: map[string]extv1.JSON{"ola": asJSON(map[string]interface{}{"foo": "bar"})}},
+				t: &v1beta1.MapTransform{Pairs: map[string]extv1.JSON{"ola": asJSON(map[string]any{"foo": "bar"})}},
 				i: "ola",
 			},
 			want: want{
-				o: map[string]interface{}{"foo": "bar"},
+				o: map[string]any{"foo": "bar"},
 			},
 		},
 		"SuccessSlice": {
@@ -103,7 +101,7 @@ func TestMapResolve(t *testing.T) {
 				i: "ola",
 			},
 			want: want{
-				o: []interface{}{"foo", "bar"},
+				o: []any{"foo", "bar"},
 			},
 		},
 	}
@@ -111,10 +109,10 @@ func TestMapResolve(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			got, err := ResolveMap(tc.t, tc.i)
 
-			if diff := cmp.Diff(tc.want.o, got); diff != "" {
+			if diff := cmp.Diff(tc.o, got); diff != "" {
 				t.Errorf("Resolve(b): -want, +got:\n%s", diff)
 			}
-			if diff := cmp.Diff(tc.want.err, err, test.EquateErrors()); diff != "" {
+			if diff := cmp.Diff(tc.err, err, test.EquateErrors()); diff != "" {
 				t.Errorf("Resolve(b): -want, +got:\n%s", diff)
 			}
 		})
@@ -122,7 +120,7 @@ func TestMapResolve(t *testing.T) {
 }
 
 func TestMatchResolve(t *testing.T) {
-	asJSON := func(val interface{}) extv1.JSON {
+	asJSON := func(val any) extv1.JSON {
 		raw, err := json.Marshal(val)
 		if err != nil {
 			t.Fatal(err)
@@ -282,7 +280,7 @@ func TestMatchResolve(t *testing.T) {
 						{
 							Type:    v1beta1.MatchTransformPatternTypeLiteral,
 							Literal: ptr.To[string]("foo"),
-							Result: asJSON(map[string]interface{}{
+							Result: asJSON(map[string]any{
 								"Hello": "World",
 							}),
 						},
@@ -291,7 +289,7 @@ func TestMatchResolve(t *testing.T) {
 				i: "foo",
 			},
 			want: want{
-				o: map[string]interface{}{
+				o: map[string]any{
 					"Hello": "World",
 				},
 			},
@@ -431,12 +429,12 @@ func TestMatchResolve(t *testing.T) {
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			got, err := ResolveMatch(tc.args.t, tc.i)
+			got, err := ResolveMatch(tc.t, tc.i)
 
-			if diff := cmp.Diff(tc.want.o, got); diff != "" {
+			if diff := cmp.Diff(tc.o, got); diff != "" {
 				t.Errorf("Resolve(b): -want, +got:\n%s", diff)
 			}
-			if diff := cmp.Diff(tc.want.err, err, test.EquateErrors()); diff != "" {
+			if diff := cmp.Diff(tc.err, err, test.EquateErrors()); diff != "" {
 				t.Errorf("Resolve(b): -want, +got:\n%s", diff)
 			}
 		})
@@ -616,7 +614,7 @@ func TestMathResolve(t *testing.T) {
 			tr := &v1beta1.MathTransform{Type: tc.mathType, Multiply: tc.multiplier, ClampMin: tc.clampMin, ClampMax: tc.clampMax}
 			got, err := ResolveMath(tr, tc.i)
 
-			if diff := cmp.Diff(tc.want.o, got); diff != "" {
+			if diff := cmp.Diff(tc.o, got); diff != "" {
 				t.Errorf("Resolve(b): -want, +got:\n%s", diff)
 			}
 			fieldErr := &field.Error{}
@@ -624,7 +622,7 @@ func TestMathResolve(t *testing.T) {
 				fieldErr.Detail = ""
 				fieldErr.BadValue = nil
 			}
-			if diff := cmp.Diff(tc.want.err, err, test.EquateErrors()); diff != "" {
+			if diff := cmp.Diff(tc.err, err, test.EquateErrors()); diff != "" {
 				t.Errorf("Resolve(b): -want, +got:\n%s", diff)
 			}
 		})
@@ -632,7 +630,6 @@ func TestMathResolve(t *testing.T) {
 }
 
 func TestStringResolve(t *testing.T) {
-
 	type args struct {
 		stype   v1beta1.StringTransformType
 		fmts    *string
@@ -1011,7 +1008,7 @@ func TestStringResolve(t *testing.T) {
 				join: &v1beta1.StringTransformJoin{
 					Separator: ",",
 				},
-				i: []interface{}{"cross", "plane"},
+				i: []any{"cross", "plane"},
 			},
 			want: want{
 				o: "cross,plane",
@@ -1023,7 +1020,7 @@ func TestStringResolve(t *testing.T) {
 				join: &v1beta1.StringTransformJoin{
 					Separator: "",
 				},
-				i: []interface{}{"cross", "plane"},
+				i: []any{"cross", "plane"},
 			},
 			want: want{
 				o: "crossplane",
@@ -1035,7 +1032,7 @@ func TestStringResolve(t *testing.T) {
 				join: &v1beta1.StringTransformJoin{
 					Separator: "-",
 				},
-				i: []interface{}{"cross", "plane", 42},
+				i: []any{"cross", "plane", 42},
 			},
 			want: want{
 				o: "cross-plane-42",
@@ -1083,8 +1080,8 @@ func TestStringResolve(t *testing.T) {
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-
-			tr := &v1beta1.StringTransform{Type: tc.stype,
+			tr := &v1beta1.StringTransform{
+				Type:    tc.stype,
 				Format:  tc.fmts,
 				Convert: tc.convert,
 				Trim:    tc.trim,
@@ -1095,10 +1092,10 @@ func TestStringResolve(t *testing.T) {
 
 			got, err := ResolveString(tr, tc.i)
 
-			if diff := cmp.Diff(tc.want.o, got); diff != "" {
+			if diff := cmp.Diff(tc.o, got); diff != "" {
 				t.Errorf("Resolve(b): -want, +got:\n%s", diff)
 			}
-			if diff := cmp.Diff(tc.want.err, err, test.EquateErrors()); diff != "" {
+			if diff := cmp.Diff(tc.err, err, test.EquateErrors()); diff != "" {
 				t.Errorf("Resolve(b): -want, +got:\n%s", diff)
 			}
 		})
@@ -1245,13 +1242,13 @@ func TestConvertResolve(t *testing.T) {
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			tr := &v1beta1.ConvertTransform{ToType: tc.args.to, Format: tc.format}
+			tr := &v1beta1.ConvertTransform{ToType: tc.to, Format: tc.format}
 			got, err := ResolveConvert(tr, tc.i)
 
-			if diff := cmp.Diff(tc.want.o, got); diff != "" {
+			if diff := cmp.Diff(tc.o, got); diff != "" {
 				t.Errorf("Resolve(b): -want, +got:\n%s", diff)
 			}
-			if diff := cmp.Diff(tc.want.err, err, test.EquateErrors()); diff != "" {
+			if diff := cmp.Diff(tc.err, err, test.EquateErrors()); diff != "" {
 				t.Errorf("Resolve(b): -want, +got:\n%s", diff)
 			}
 		})

@@ -3,9 +3,8 @@ package v1beta1
 import (
 	"encoding/json"
 
-	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-
 	"github.com/crossplane/crossplane-runtime/v2/pkg/errors"
+	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
 // TransformType is type of the transform function to be chosen.
@@ -230,7 +229,6 @@ const (
 
 // A StringTransform returns a string given the supplied input.
 type StringTransform struct {
-
 	// Type of the string transform to be run.
 	// +kubebuilder:validation:Enum=Format;Convert;TrimPrefix;TrimSuffix;Regexp
 	// +kubebuilder:default=Format
