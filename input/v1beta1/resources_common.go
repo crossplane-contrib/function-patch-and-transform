@@ -1,11 +1,10 @@
 package v1beta1
 
 import (
+	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-
-	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 )
 
 // TypeReference is used to refer to a type for declaring compatibility.
@@ -17,7 +16,7 @@ type TypeReference struct {
 	Kind string `json:"kind"`
 }
 
-// TypeReferenceTo returns a reference to the supplied GroupVersionKind
+// TypeReferenceTo returns a reference to the supplied GroupVersionKind.
 func TypeReferenceTo(gvk schema.GroupVersionKind) TypeReference {
 	return TypeReference{APIVersion: gvk.GroupVersion().String(), Kind: gvk.Kind}
 }
@@ -107,7 +106,7 @@ func (t *ReadinessCheckType) IsValid() bool {
 }
 
 // ReadinessCheck is used to indicate how to tell whether a resource is ready
-// for consumption
+// for consumption.
 type ReadinessCheck struct {
 	// Type indicates the type of probe you'd like to use.
 	// +kubebuilder:validation:Enum="MatchString";"MatchInteger";"NonEmpty";"MatchCondition";"MatchTrue";"MatchFalse";"None"
@@ -131,7 +130,7 @@ type ReadinessCheck struct {
 }
 
 // MatchConditionReadinessCheck is used to indicate how to tell whether a resource is ready
-// for consumption
+// for consumption.
 type MatchConditionReadinessCheck struct {
 	// Type indicates the type of condition you'd like to use.
 	// +kubebuilder:default="Ready"

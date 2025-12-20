@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -14,14 +16,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
 
-	"github.com/crossplane/crossplane-runtime/pkg/logging"
-
 	fncontext "github.com/crossplane/function-sdk-go/context"
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"github.com/crossplane/function-sdk-go/resource"
 	"github.com/crossplane/function-sdk-go/response"
-
-	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
 )
 
 func TestRunFunction(t *testing.T) {
@@ -837,7 +835,7 @@ func TestRunFunction(t *testing.T) {
 						},
 						Resources: map[string]*fnv1.Resource{},
 					},
-					Context: contextWithEnvironment(map[string]interface{}{
+					Context: contextWithEnvironment(map[string]any{
 						"widgets": "10",
 					}),
 				},
@@ -856,7 +854,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
-					Context: contextWithEnvironment(map[string]interface{}{
+					Context: contextWithEnvironment(map[string]any{
 						"widgets": "10",
 					}),
 				},
@@ -922,7 +920,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
-					Context: contextWithEnvironment(map[string]interface{}{
+					Context: contextWithEnvironment(map[string]any{
 						"widgets": "30",
 					}),
 				},
@@ -972,7 +970,7 @@ func TestRunFunction(t *testing.T) {
 						},
 						Resources: map[string]*fnv1.Resource{},
 					},
-					Context: contextWithEnvironment(map[string]interface{}{
+					Context: contextWithEnvironment(map[string]any{
 						"widgets": "10",
 					}),
 				},
@@ -991,7 +989,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
-					Context: contextWithEnvironment(map[string]interface{}{
+					Context: contextWithEnvironment(map[string]any{
 						"widgets": "10",
 					}),
 				},
@@ -1057,7 +1055,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
-					Context: contextWithEnvironment(map[string]interface{}{
+					Context: contextWithEnvironment(map[string]any{
 						"widgets": "30",
 					}),
 				},
@@ -1142,7 +1140,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
-					Context: contextWithEnvironment(map[string]interface{}{
+					Context: contextWithEnvironment(map[string]any{
 						"widgets": "30",
 					},
 					),
@@ -1210,7 +1208,7 @@ func TestRunFunction(t *testing.T) {
 			want: want{
 				rsp: &fnv1.RunFunctionResponse{
 					Meta:    &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Context: contextWithEnvironment(map[string]interface{}{}),
+					Context: contextWithEnvironment(map[string]any{}),
 					Results: []*fnv1.Result{
 						{
 							Severity: fnv1.Severity_SEVERITY_FATAL,
@@ -1256,7 +1254,7 @@ func TestRunFunction(t *testing.T) {
 						},
 						Resources: map[string]*fnv1.Resource{},
 					},
-					Context: contextWithEnvironment(map[string]interface{}{
+					Context: contextWithEnvironment(map[string]any{
 						"widgets": "10",
 					}),
 				},
@@ -1275,7 +1273,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
-					Context: contextWithEnvironment(map[string]interface{}{
+					Context: contextWithEnvironment(map[string]any{
 						"widgets": "10",
 					}),
 				},
@@ -1326,7 +1324,7 @@ func TestRunFunction(t *testing.T) {
 						},
 						Resources: map[string]*fnv1.Resource{},
 					},
-					Context: contextWithEnvironment(map[string]interface{}{
+					Context: contextWithEnvironment(map[string]any{
 						"widgets": "10",
 					}),
 				},
@@ -1345,7 +1343,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
-					Context: contextWithEnvironment(map[string]interface{}{
+					Context: contextWithEnvironment(map[string]any{
 						"widgets": "10",
 					}),
 				},
@@ -1396,7 +1394,7 @@ func TestRunFunction(t *testing.T) {
 						},
 						Resources: map[string]*fnv1.Resource{},
 					},
-					Context: contextWithEnvironment(map[string]interface{}{
+					Context: contextWithEnvironment(map[string]any{
 						"widgets": "10",
 					}),
 				},
@@ -1415,7 +1413,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
-					Context: contextWithEnvironment(map[string]interface{}{
+					Context: contextWithEnvironment(map[string]any{
 						"widgets": "10",
 					}),
 				},
@@ -1453,7 +1451,7 @@ func TestRunFunction(t *testing.T) {
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
 					},
-					Context: contextWithEnvironment(map[string]interface{}{
+					Context: contextWithEnvironment(map[string]any{
 						"envKey": "10",
 					}),
 				},
@@ -1483,9 +1481,9 @@ func TestRunFunction(t *testing.T) {
 // That's because the patching code expects a resource to be able to use
 // runtime.DefaultUnstructuredConverter.FromUnstructured to convert it back to
 // an object.
-func contextWithEnvironment(data map[string]interface{}) *structpb.Struct {
+func contextWithEnvironment(data map[string]any) *structpb.Struct {
 	if data == nil {
-		data = map[string]interface{}{}
+		data = map[string]any{}
 	}
 	u := unstructured.Unstructured{Object: data}
 	u.SetGroupVersionKind(internalEnvironmentGVK)
