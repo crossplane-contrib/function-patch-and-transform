@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
+	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/errors"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
@@ -53,6 +54,12 @@ func TestExtractConnectionDetails(t *testing.T) {
 						Name:       "test",
 						Generation: 4,
 					},
+					ConnectionSecretWriterTo: fake.ConnectionSecretWriterTo{
+						Ref: &xpv1.SecretReference{
+							Name:      "cool-secret",
+							Namespace: "cool-namespace",
+						},
+					},
 				},
 				data: managed.ConnectionDetails{
 					"foo": []byte("a"),
@@ -79,25 +86,40 @@ func TestExtractConnectionDetails(t *testing.T) {
 						Name:  "fixed",
 						Value: ptr.To[string]("value"),
 					},
+					// Note that the FromFieldPath values don't include their
+					// initial path segment due to being anonymous embedded
+					// fields in the fake.Composed struct.
 					{
 						Type:          v1beta1.ConnectionDetailTypeFromFieldPath,
 						Name:          "name",
-						FromFieldPath: ptr.To[string]("objectMeta.name"),
+						FromFieldPath: ptr.To[string]("name"),
 					},
 					{
 						Type:          v1beta1.ConnectionDetailTypeFromFieldPath,
 						Name:          "generation",
-						FromFieldPath: ptr.To[string]("objectMeta.generation"),
+						FromFieldPath: ptr.To[string]("generation"),
+					},
+					{
+						Type:          v1beta1.ConnectionDetailTypeFromFieldPath,
+						Name:          "secretName",
+						FromFieldPath: ptr.To[string]("Ref.name"),
+					},
+					{
+						Type:          v1beta1.ConnectionDetailTypeFromFieldPath,
+						Name:          "secretNamespace",
+						FromFieldPath: ptr.To[string]("Ref.namespace"),
 					},
 				},
 			},
 			want: want{
 				conn: managed.ConnectionDetails{
-					"convfoo":    []byte("a"),
-					"bar":        []byte("b"),
-					"fixed":      []byte("value"),
-					"name":       []byte("test"),
-					"generation": []byte("4"),
+					"convfoo":         []byte("a"),
+					"bar":             []byte("b"),
+					"fixed":           []byte("value"),
+					"name":            []byte("test"),
+					"generation":      []byte("4"),
+					"secretName":      []byte("cool-secret"),
+					"secretNamespace": []byte("cool-namespace"),
 				},
 			},
 		},
