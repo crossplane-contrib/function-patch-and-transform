@@ -7,11 +7,12 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/fieldpath"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	xpresource "github.com/crossplane/crossplane-runtime/v2/pkg/resource"
-	"github.com/crossplane/function-sdk-go/resource"
-	"github.com/crossplane/function-sdk-go/resource/composed"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/json"
+
+	"github.com/crossplane/function-sdk-go/resource"
+	"github.com/crossplane/function-sdk-go/resource/composed"
 )
 
 // ConnectionDetailsExtractor extracts the connection details of a resource.
@@ -183,7 +184,7 @@ func applyConnectionSecretPatches(xr *resource.Composite, ref *xpv1.SecretRefere
 	}
 
 	for i, patch := range patches {
-		switch patch.GetType() {
+		switch patch.GetType() { //nolint:exhaustive // we only care about the patch types we support, everything else is an error
 		case v1beta1.PatchTypeFromCompositeFieldPath:
 			if err := ApplyFromFieldPathPatch(&patch, xr.Resource, refObj); err != nil {
 				// we got an error, but if the patch policy is Optional then just skip this patch
