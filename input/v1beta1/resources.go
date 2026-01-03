@@ -35,4 +35,12 @@ type Resources struct {
 	// Resources is a list of resource templates that will be used when a
 	// composite resource is created.
 	Resources []ComposedTemplate `json:"resources"`
+
+	// WriteConnectionSecretToRef specifies the name and namespace of a Secret
+	// to which any connection details for this composite resource should be
+	// written. This field is only used for Crossplane v2 composite resources.
+	// For v1 composite resources, connection details are returned via the
+	// RunFunctionResponse and handled by Crossplane core.
+	// +optional
+	WriteConnectionSecretToRef *WriteConnectionSecretToRef `json:"writeConnectionSecretToRef,omitempty"`
 }

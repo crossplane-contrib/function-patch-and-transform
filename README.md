@@ -36,7 +36,7 @@ spec:
           toFieldPath: "spec.forProvider.region"
           transforms:
           - type: map
-            map: 
+            map:
               EU: "eu-north-1"
               US: "us-east-2"
 ```
@@ -169,6 +169,76 @@ Starting with Crossplane v1.16.0, the `convert` command in the [Crossplane
 CLI][cli-convert] will automatically convert `mergeOptions` to `toFieldPath` for
 you.
 
+## XR Connection details
+
+This function handles composite resource connection details differently
+depending on if the XR is Crossplane `v1` or `v2` style.
+
+* `v1`: Connection details are returned from the function pipeline and Crossplane
+  creates a connection secret for the XR/claim.
+* `v2`: This function automatically composes a `Secret` containing the connection
+  details and includes it along with the XR's other composed resources.
+
+A full [connection details guide][docs-connection-details] can be found in the
+Crossplane documentation.
+
+### Setting name/namespace
+
+You can control the name and namespace of this connection secret in a few ways,
+in order of precedence:
+
+**Function `input`:**
+
+A `writeConnectionSecretToRef` specified in the function `input` that has at
+least one of name or namespace set:
+
+```yaml
+input:
+  apiVersion: pt.fn.crossplane.io/v1beta1
+  kind: Resources
+  writeConnectionSecretToRef:
+    name: my-app-credentials
+    namespace: production
+```
+
+**XR reference:**
+
+If you've manually included a `spec.writeConnectionSecretToRef` in your XR's
+schema, this function will use that reference. This can be useful for maintaining
+consistency with existing XR configurations.
+
+**Default auto generated**
+
+If none of the above options are provided, the function generates a name based
+on the XR's name (`{xr-name}-connection`) and uses the XR's namespace if it has
+one. Note this will not work for cluster scoped XR's because there is no
+namespace to store the `Secret` in. You must specify a connection secret
+namespace for cluster scoped XRs if you want connection secret functionality.
+
+### Patching secret name/namespace
+
+You can also use patches to dynamically construct the secret name or namespace
+from XR fields. This is useful when you want the secret name to include
+environment-specific information or other metadata:
+
+```yaml
+writeConnectionSecretToRef:
+  patches:
+  - type: CombineFromComposite
+    toFieldPath: name
+    combine:
+      variables:
+      - fromFieldPath: metadata.name
+      - fromFieldPath: spec.parameters.environment
+      strategy: string
+      string:
+        fmt: "%s-%s-credentials"
+```
+
+Patches support the same `FromCompositeFieldPath` and `CombineFromComposite`
+types available for resource patches (and only those patch types), and can
+target either `name` or `namespace` fields.
+
 ## Developing this function
 
 This function uses [Go][go], [Docker][docker], and the [Crossplane CLI][cli] to
@@ -189,9 +259,9 @@ $ crossplane xpkg build -f package --embed-runtime-image=runtime
 ```
 
 [Crossplane]: https://crossplane.io
-[docs-composition]: https://docs.crossplane.io/latest/getting-started/provider-aws-part-2/#create-a-deployment-template
 [docs-functions]: https://docs.crossplane.io/latest/concepts/compositions/
 [docs-pandt]: https://docs.crossplane.io/latest/guides/function-patch-and-transform/
+[docs-connection-details]: https://docs.crossplane.io/latest/guides/connection-details-composition/
 [fn-go-templating]: https://github.com/crossplane-contrib/function-go-templating
 [#4617]: https://github.com/crossplane/crossplane/issues/4617
 [#4746]: https://github.com/crossplane/crossplane/issues/4746

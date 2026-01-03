@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"maps"
 
 	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
@@ -262,6 +263,26 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1.RunFunctionRequest
 		}
 
 		desired[resource.Name(t.Name)] = dcd
+	}
+
+	// If the XR doesn't support connection details, but we have some connection
+	// details, we'll transparently create a composed secret resource to store
+	// the connection details and add it to the set of desired resources.
+	if !supportsConnectionDetails(oxr) && len(dxr.ConnectionDetails) > 0 {
+		connectionSecret, err := composeConnectionSecret(oxr, dxr.ConnectionDetails, input.WriteConnectionSecretToRef)
+		if err != nil {
+			response.Fatal(rsp, errors.Wrap(err, "cannot compose connection secret"))
+			return rsp, nil
+		}
+
+		if connectionSecret != nil {
+			// Add the connection secret as a composed resource with a special name
+			// We use a prefix to avoid conflicts with user-defined resource names
+			composedResourceName := resource.Name(fmt.Sprintf("%s-connection-secret", oxr.Resource.GetName()))
+			desired[composedResourceName] = connectionSecret
+			log.Debug("Added connection secret to desired composed resources", "composed-resource-name", composedResourceName,
+				"secret-name", connectionSecret.Resource.GetName(), "secret-namespace", connectionSecret.Resource.GetNamespace())
+		}
 	}
 
 	if err := response.SetDesiredCompositeResource(rsp, dxr); err != nil {
