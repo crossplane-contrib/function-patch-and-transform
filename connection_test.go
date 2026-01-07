@@ -156,8 +156,32 @@ func TestGetConnectionSecretRef(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"InputProvided": {
-			reason: "Should use the provided name and namespace from function input when provided",
+		"XRRefProvidedNoInput": {
+			reason: "Should use the XR's writeConnectionSecretToRef when no input is provided",
+			args: args{
+				xr: &resource.Composite{
+					Resource: func() *composite.Unstructured {
+						xr := composite.New()
+						_ = json.Unmarshal([]byte(`{
+							"apiVersion":"example.org/v1",
+							"kind":"XR",
+							"metadata":{"uid":"test-uid-456"},
+							"spec":{"writeConnectionSecretToRef":{"name":"xr-secret","namespace":"xr-namespace"}}
+						}`), xr)
+						return xr
+					}(),
+				},
+				input: nil,
+			},
+			want: want{
+				ref: xpv1.SecretReference{
+					Name:      "xr-secret",
+					Namespace: "xr-namespace",
+				},
+			},
+		},
+		"InputProvidedNoXRRef": {
+			reason: "Should use the provided name and namespace from function input when no XR ref is provided",
 			args: args{
 				xr: &resource.Composite{
 					Resource: func() *composite.Unstructured {
@@ -182,8 +206,8 @@ func TestGetConnectionSecretRef(t *testing.T) {
 				},
 			},
 		},
-		"XRHasWriteConnectionSecretToRef": {
-			reason: "Should use the XR's writeConnectionSecretToRef when no input is provided",
+		"XRRefAndInputProvided": {
+			reason: "Should use the XR's writeConnectionSecretToRef even when function input is provided",
 			args: args{
 				xr: &resource.Composite{
 					Resource: func() *composite.Unstructured {
@@ -197,7 +221,10 @@ func TestGetConnectionSecretRef(t *testing.T) {
 						return xr
 					}(),
 				},
-				input: nil,
+				input: &v1beta1.WriteConnectionSecretToRef{
+					Name:      "my-custom-secret",
+					Namespace: "custom-namespace",
+				},
 			},
 			want: want{
 				ref: xpv1.SecretReference{

@@ -143,23 +143,23 @@ func getConnectionSecretRef(xr *resource.Composite, input *v1beta1.WriteConnecti
 // getBaseConnectionSecretRef determines the base connection secret reference
 // without any patches. This reference is generated with the following
 // precedence:
-//  1. input.writeConnectionSecretToRef - if name or namespace is provided
-//     then the whole ref will be used
-//  2. xr.writeConnectionSecretToRef - this is no longer automatically added
+//  1. xr.spec.writeConnectionSecretToRef - this is no longer automatically added
 //     to v2 XR schemas, but the community has been adding it manually, so if
 //     it's present we will use it.
+//  2. function input.writeConnectionSecretToRef - if name or namespace is provided
+//     then the whole ref will be used
 //  3. generate the reference from scratch, based on the XR name and namespace
 func getBaseConnectionSecretRef(xr *resource.Composite, input *v1beta1.WriteConnectionSecretToRef) xpv1.SecretReference {
-	// Use the input values if at least one of name or namespace has been provided
-	if input != nil && (input.Name != "" || input.Namespace != "") {
-		return xpv1.SecretReference{Name: input.Name, Namespace: input.Namespace}
-	}
-
 	// Check if XR author manually added writeConnectionSecretToRef to the XR's
 	// schema and just use that if it exists
 	xrRef := xr.Resource.GetWriteConnectionSecretToReference()
 	if xrRef != nil {
 		return *xrRef
+	}
+
+	// Use the input values if at least one of name or namespace has been provided
+	if input != nil && (input.Name != "" || input.Namespace != "") {
+		return xpv1.SecretReference{Name: input.Name, Namespace: input.Namespace}
 	}
 
 	// Nothing has been provided, so generate a default name using the name of the XR

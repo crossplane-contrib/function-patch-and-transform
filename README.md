@@ -184,8 +184,14 @@ Crossplane documentation.
 
 ### Setting name/namespace
 
-You can control the name and namespace of this connection secret in a few ways,
-in order of precedence:
+For v2 XRs, you can control the name and namespace of this connection secret in
+a few ways, in order of precedence:
+
+**XR reference:**
+
+If you've manually included a `spec.writeConnectionSecretToRef` in your XR's
+schema, this function will use that reference. This can be useful for maintaining
+consistency with existing XR configurations.
 
 **Function `input`:**
 
@@ -201,12 +207,6 @@ input:
     namespace: production
 ```
 
-**XR reference:**
-
-If you've manually included a `spec.writeConnectionSecretToRef` in your XR's
-schema, this function will use that reference. This can be useful for maintaining
-consistency with existing XR configurations.
-
 **Default auto generated**
 
 If none of the above options are provided, the function generates a name based
@@ -217,9 +217,9 @@ namespace for cluster scoped XRs if you want connection secret functionality.
 
 ### Patching secret name/namespace
 
-You can also use patches to dynamically construct the secret name or namespace
-from XR fields. This is useful when you want the secret name to include
-environment-specific information or other metadata:
+For v2 XRs, you can also use patches to dynamically construct the secret name or
+namespace from XR fields. This is useful when you want the secret name to
+include environment-specific information or other metadata:
 
 ```yaml
 writeConnectionSecretToRef:
