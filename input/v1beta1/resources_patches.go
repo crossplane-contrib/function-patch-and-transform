@@ -285,3 +285,28 @@ type StringCombine struct {
 	// https://golang.org/pkg/fmt/ for details.
 	Format string `json:"fmt"`
 }
+
+// ConnectionSecretPatch defines a patch to apply to the connection secret reference.
+// This uses the same patching logic as resource patches but targets the secret
+// reference name and namespace fields.
+//
+// Only patch types that make sense for connection secrets
+// (FromCompositeFieldPath, CombineFromComposite) are allowed.
+type ConnectionSecretPatch struct {
+	Patch `json:",inline"`
+
+	// Type sets the patch type. Only FromCompositeFieldPath and CombineFromComposite
+	// are supported for connection secret patches.
+	// +optional
+	// +kubebuilder:validation:Enum=FromCompositeFieldPath;CombineFromComposite
+	// +kubebuilder:default=FromCompositeFieldPath
+	Type PatchType `json:"type,omitempty"`
+}
+
+// GetType returns the patch type. If the type is not set, it returns the default type.
+func (csp *ConnectionSecretPatch) GetType() PatchType {
+	if csp.Type == "" {
+		return PatchTypeFromCompositeFieldPath
+	}
+	return csp.Type
+}
