@@ -13,13 +13,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/errors"
 	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/utils/ptr"
-
-	"github.com/crossplane/crossplane-runtime/pkg/errors"
-
-	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
 )
 
 const (
@@ -141,7 +139,7 @@ func resolveMathMultiply(t *v1beta1.MathTransform, input any) (any, error) {
 // is not a number. depending on the type of clamp, the result will be either
 // the input or the clamp value, preserving their original types.
 func resolveMathClamp(t *v1beta1.MathTransform, input any) (any, error) {
-	in := int64(0)
+	var in int64
 	switch i := input.(type) {
 	case int:
 		in = int64(i)
@@ -176,7 +174,7 @@ func ResolveMap(t *v1beta1.MapTransform, input any) (any, error) {
 		if !ok {
 			return nil, errors.Errorf(errFmtMapNotFound, i)
 		}
-		var val interface{}
+		var val any
 		if err := json.Unmarshal(p.Raw, &val); err != nil {
 			return nil, errors.Wrapf(err, errFmtMapInvalidJSON, i)
 		}
@@ -365,7 +363,7 @@ func stringTrimTransform(input any, t v1beta1.StringTransformType, trim string) 
 }
 
 func stringJoinTransform(input any, r v1beta1.StringTransformJoin) (string, error) {
-	arr, ok := input.([]interface{})
+	arr, ok := input.([]any)
 	if !ok {
 		return "", errors.New(errStringTransformTypeJoinFailed)
 	}
@@ -446,8 +444,8 @@ func GetConversionFunc(t *v1beta1.ConvertTransform, from v1beta1.TransformIOType
 			return input, nil
 		}, nil
 	}
-	f, ok := conversions[conversionPair{from: from, to: to, format: t.GetFormat()}]
-	if !ok {
+	f := getConversion(conversionPair{from: from, to: to, format: t.GetFormat()})
+	if f == nil {
 		return nil, errors.Errorf(v1beta1.ErrFmtConvertFormatPairNotSupported, originalFrom, to, t.GetFormat())
 	}
 	return f, nil
@@ -456,66 +454,132 @@ func GetConversionFunc(t *v1beta1.ConvertTransform, from v1beta1.TransformIOType
 // The unparam linter is complaining that these functions always return a nil
 // error, but we need this to be the case given some other functions in the map
 // may return an error.
-var conversions = map[conversionPair]func(any) (any, error){
-	{from: v1beta1.TransformIOTypeString, to: v1beta1.TransformIOTypeInt64, format: v1beta1.ConvertTransformFormatNone}: func(i any) (any, error) {
+func getConversion(pair conversionPair) func(any) (any, error) { //nolint:gocognit // only slightly more complex than desired
+	conversions := map[conversionPair]func(any) (any, error){
+		{from: v1beta1.TransformIOTypeString, to: v1beta1.TransformIOTypeInt64, format: v1beta1.ConvertTransformFormatNone}: func(i any) (any, error) {
+			s, ok := i.(string)
+			if !ok {
+				return nil, errors.Errorf(errFmtConvertInputTypeNotSupported, i)
+			}
+			return strconv.ParseInt(s, 10, 64)
+		},
+		{from: v1beta1.TransformIOTypeString, to: v1beta1.TransformIOTypeBool, format: v1beta1.ConvertTransformFormatNone}: func(i any) (any, error) {
+			s, ok := i.(string)
+			if !ok {
+				return nil, errors.Errorf(errFmtConvertInputTypeNotSupported, i)
+			}
+			return strconv.ParseBool(s)
+		},
+		{from: v1beta1.TransformIOTypeString, to: v1beta1.TransformIOTypeFloat64, format: v1beta1.ConvertTransformFormatNone}: func(i any) (any, error) {
+			s, ok := i.(string)
+			if !ok {
+				return nil, errors.Errorf(errFmtConvertInputTypeNotSupported, i)
+			}
+			return strconv.ParseFloat(s, 64)
+		},
+		{from: v1beta1.TransformIOTypeString, to: v1beta1.TransformIOTypeFloat64, format: v1beta1.ConvertTransformFormatQuantity}: func(i any) (any, error) {
+			s, ok := i.(string)
+			if !ok {
+				return nil, errors.Errorf(errFmtConvertInputTypeNotSupported, i)
+			}
+			q, err := resource.ParseQuantity(s)
+			if err != nil {
+				return nil, err
+			}
+			return q.AsApproximateFloat64(), nil
+		},
 
-		return strconv.ParseInt(i.(string), 10, 64)
-	},
-	{from: v1beta1.TransformIOTypeString, to: v1beta1.TransformIOTypeBool, format: v1beta1.ConvertTransformFormatNone}: func(i any) (any, error) {
-		return strconv.ParseBool(i.(string))
-	},
-	{from: v1beta1.TransformIOTypeString, to: v1beta1.TransformIOTypeFloat64, format: v1beta1.ConvertTransformFormatNone}: func(i any) (any, error) {
-		return strconv.ParseFloat(i.(string), 64)
-	},
-	{from: v1beta1.TransformIOTypeString, to: v1beta1.TransformIOTypeFloat64, format: v1beta1.ConvertTransformFormatQuantity}: func(i any) (any, error) {
-		q, err := resource.ParseQuantity(i.(string))
-		if err != nil {
-			return nil, err
-		}
-		return q.AsApproximateFloat64(), nil
-	},
+		{from: v1beta1.TransformIOTypeInt64, to: v1beta1.TransformIOTypeString, format: v1beta1.ConvertTransformFormatNone}: func(i any) (any, error) {
+			s, ok := i.(int64)
+			if !ok {
+				return nil, errors.Errorf(errFmtConvertInputTypeNotSupported, i)
+			}
+			return strconv.FormatInt(s, 10), nil
+		},
+		{from: v1beta1.TransformIOTypeInt64, to: v1beta1.TransformIOTypeBool, format: v1beta1.ConvertTransformFormatNone}: func(i any) (any, error) {
+			s, ok := i.(int64)
+			if !ok {
+				return nil, errors.Errorf(errFmtConvertInputTypeNotSupported, i)
+			}
+			return s == 1, nil
+		},
+		{from: v1beta1.TransformIOTypeInt64, to: v1beta1.TransformIOTypeFloat64, format: v1beta1.ConvertTransformFormatNone}: func(i any) (any, error) {
+			s, ok := i.(int64)
+			if !ok {
+				return nil, errors.Errorf(errFmtConvertInputTypeNotSupported, i)
+			}
+			return float64(s), nil
+		},
 
-	{from: v1beta1.TransformIOTypeInt64, to: v1beta1.TransformIOTypeString, format: v1beta1.ConvertTransformFormatNone}: func(i any) (any, error) { //nolint:unparam // See note above.
-		return strconv.FormatInt(i.(int64), 10), nil
-	},
-	{from: v1beta1.TransformIOTypeInt64, to: v1beta1.TransformIOTypeBool, format: v1beta1.ConvertTransformFormatNone}: func(i any) (any, error) { //nolint:unparam // See note above.
-		return i.(int64) == 1, nil
-	},
-	{from: v1beta1.TransformIOTypeInt64, to: v1beta1.TransformIOTypeFloat64, format: v1beta1.ConvertTransformFormatNone}: func(i any) (any, error) { //nolint:unparam // See note above.
-		return float64(i.(int64)), nil
-	},
+		{from: v1beta1.TransformIOTypeBool, to: v1beta1.TransformIOTypeString, format: v1beta1.ConvertTransformFormatNone}: func(i any) (any, error) {
+			s, ok := i.(bool)
+			if !ok {
+				return nil, errors.Errorf(errFmtConvertInputTypeNotSupported, i)
+			}
+			return strconv.FormatBool(s), nil
+		},
+		{from: v1beta1.TransformIOTypeBool, to: v1beta1.TransformIOTypeInt64, format: v1beta1.ConvertTransformFormatNone}: func(i any) (any, error) {
+			s, ok := i.(bool)
+			if !ok {
+				return nil, errors.Errorf(errFmtConvertInputTypeNotSupported, i)
+			}
+			if s {
+				return int64(1), nil
+			}
+			return int64(0), nil
+		},
+		{from: v1beta1.TransformIOTypeBool, to: v1beta1.TransformIOTypeFloat64, format: v1beta1.ConvertTransformFormatNone}: func(i any) (any, error) {
+			s, ok := i.(bool)
+			if !ok {
+				return nil, errors.Errorf(errFmtConvertInputTypeNotSupported, i)
+			}
+			if s {
+				return float64(1), nil
+			}
+			return float64(0), nil
+		},
 
-	{from: v1beta1.TransformIOTypeBool, to: v1beta1.TransformIOTypeString, format: v1beta1.ConvertTransformFormatNone}: func(i any) (any, error) { //nolint:unparam // See note above.
-		return strconv.FormatBool(i.(bool)), nil
-	},
-	{from: v1beta1.TransformIOTypeBool, to: v1beta1.TransformIOTypeInt64, format: v1beta1.ConvertTransformFormatNone}: func(i any) (any, error) { //nolint:unparam // See note above.
-		if i.(bool) {
-			return int64(1), nil
-		}
-		return int64(0), nil
-	},
-	{from: v1beta1.TransformIOTypeBool, to: v1beta1.TransformIOTypeFloat64, format: v1beta1.ConvertTransformFormatNone}: func(i any) (any, error) { //nolint:unparam // See note above.
-		if i.(bool) {
-			return float64(1), nil
-		}
-		return float64(0), nil
-	},
-
-	{from: v1beta1.TransformIOTypeFloat64, to: v1beta1.TransformIOTypeString, format: v1beta1.ConvertTransformFormatNone}: func(i any) (any, error) { //nolint:unparam // See note above.
-		return strconv.FormatFloat(i.(float64), 'f', -1, 64), nil
-	},
-	{from: v1beta1.TransformIOTypeFloat64, to: v1beta1.TransformIOTypeInt64, format: v1beta1.ConvertTransformFormatNone}: func(i any) (any, error) { //nolint:unparam // See note above.
-		return int64(i.(float64)), nil
-	},
-	{from: v1beta1.TransformIOTypeFloat64, to: v1beta1.TransformIOTypeBool, format: v1beta1.ConvertTransformFormatNone}: func(i any) (any, error) { //nolint:unparam // See note above.
-		return i.(float64) == float64(1), nil
-	},
-	{from: v1beta1.TransformIOTypeString, to: v1beta1.TransformIOTypeObject, format: v1beta1.ConvertTransformFormatJSON}: func(i any) (any, error) {
-		o := map[string]any{}
-		return o, json.Unmarshal([]byte(i.(string)), &o)
-	},
-	{from: v1beta1.TransformIOTypeString, to: v1beta1.TransformIOTypeArray, format: v1beta1.ConvertTransformFormatJSON}: func(i any) (any, error) {
-		var o []any
-		return o, json.Unmarshal([]byte(i.(string)), &o)
-	},
+		{from: v1beta1.TransformIOTypeFloat64, to: v1beta1.TransformIOTypeString, format: v1beta1.ConvertTransformFormatNone}: func(i any) (any, error) {
+			s, ok := i.(float64)
+			if !ok {
+				return nil, errors.Errorf(errFmtConvertInputTypeNotSupported, i)
+			}
+			return strconv.FormatFloat(s, 'f', -1, 64), nil
+		},
+		{from: v1beta1.TransformIOTypeFloat64, to: v1beta1.TransformIOTypeInt64, format: v1beta1.ConvertTransformFormatNone}: func(i any) (any, error) {
+			s, ok := i.(float64)
+			if !ok {
+				return nil, errors.Errorf(errFmtConvertInputTypeNotSupported, i)
+			}
+			return int64(s), nil
+		},
+		{from: v1beta1.TransformIOTypeFloat64, to: v1beta1.TransformIOTypeBool, format: v1beta1.ConvertTransformFormatNone}: func(i any) (any, error) {
+			s, ok := i.(float64)
+			if !ok {
+				return nil, errors.Errorf(errFmtConvertInputTypeNotSupported, i)
+			}
+			return s == float64(1), nil
+		},
+		{from: v1beta1.TransformIOTypeString, to: v1beta1.TransformIOTypeObject, format: v1beta1.ConvertTransformFormatJSON}: func(i any) (any, error) {
+			s, ok := i.(string)
+			if !ok {
+				return nil, errors.Errorf(errFmtConvertInputTypeNotSupported, i)
+			}
+			o := map[string]any{}
+			return o, json.Unmarshal([]byte(s), &o)
+		},
+		{from: v1beta1.TransformIOTypeString, to: v1beta1.TransformIOTypeArray, format: v1beta1.ConvertTransformFormatJSON}: func(i any) (any, error) {
+			s, ok := i.(string)
+			if !ok {
+				return nil, errors.Errorf(errFmtConvertInputTypeNotSupported, i)
+			}
+			var o []any
+			return o, json.Unmarshal([]byte(s), &o)
+		},
+	}
+	p, ok := conversions[pair]
+	if !ok {
+		return nil
+	}
+	return p
 }

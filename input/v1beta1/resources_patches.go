@@ -106,14 +106,14 @@ type Environment struct {
 // Type, FromCompositeFieldPath, copies a value from the composite resource
 // to the environment, applying any defined transformers.
 type EnvironmentPatch struct {
+	Patch `json:",inline"`
+
 	// Type sets the patching behaviour to be used. Each patch type may require
 	// its own fields to be set on the Patch object.
 	// +optional
 	// +kubebuilder:validation:Enum=FromCompositeFieldPath;ToCompositeFieldPath;CombineFromComposite;CombineToComposite;FromEnvironmentFieldPath;ToEnvironmentFieldPath
 	// +kubebuilder:default=FromCompositeFieldPath
 	Type PatchType `json:"type,omitempty"`
-
-	Patch `json:",inline"`
 }
 
 // GetType returns the patch type. If the type is not set, it returns the default type.
@@ -129,6 +129,8 @@ func (ep *EnvironmentPatch) GetType() PatchType {
 // FromCompositeFieldPath, copies a value from the composite resource to the
 // composed resource, applying any defined transformers.
 type ComposedPatch struct {
+	Patch `json:",inline"`
+
 	// Type sets the patching behaviour to be used. Each patch type may require
 	// its own fields to be set on the ComposedPatch object.
 	// +optional
@@ -139,8 +141,6 @@ type ComposedPatch struct {
 	// PatchSetName to include patches from. Required when type is PatchSet.
 	// +optional
 	PatchSetName *string `json:"patchSetName,omitempty"`
-
-	Patch `json:",inline"`
 }
 
 // GetType returns the patch type. If the type is not set, it returns the default type.
@@ -163,14 +163,14 @@ func (p *ComposedPatch) GetPatchSetName() string {
 // PatchSetPatch defines a set of Patches that can be referenced by name by
 // other patches of type PatchSet.
 type PatchSetPatch struct {
+	Patch `json:",inline"`
+
 	// Type sets the patching behaviour to be used. Each patch type may require
 	// its own fields to be set on the ComposedPatch object.
 	// +optional
 	// +kubebuilder:validation:Enum=FromCompositeFieldPath;ToCompositeFieldPath;CombineFromComposite;CombineToComposite;FromEnvironmentFieldPath;ToEnvironmentFieldPath;CombineFromEnvironment;CombineToEnvironment
 	// +kubebuilder:default=FromCompositeFieldPath
 	Type PatchType `json:"type,omitempty"`
-
-	Patch `json:",inline"`
 }
 
 // GetType returns the patch type. If the type is not set, it returns the default type.
@@ -284,4 +284,29 @@ type StringCombine struct {
 	// Format the input using a Go format string. See
 	// https://golang.org/pkg/fmt/ for details.
 	Format string `json:"fmt"`
+}
+
+// ConnectionSecretPatch defines a patch to apply to the connection secret reference.
+// This uses the same patching logic as resource patches but targets the secret
+// reference name and namespace fields.
+//
+// Only patch types that make sense for connection secrets
+// (FromCompositeFieldPath, CombineFromComposite) are allowed.
+type ConnectionSecretPatch struct {
+	Patch `json:",inline"`
+
+	// Type sets the patch type. Only FromCompositeFieldPath and CombineFromComposite
+	// are supported for connection secret patches.
+	// +optional
+	// +kubebuilder:validation:Enum=FromCompositeFieldPath;CombineFromComposite
+	// +kubebuilder:default=FromCompositeFieldPath
+	Type PatchType `json:"type,omitempty"`
+}
+
+// GetType returns the patch type. If the type is not set, it returns the default type.
+func (csp *ConnectionSecretPatch) GetType() PatchType {
+	if csp.Type == "" {
+		return PatchTypeFromCompositeFieldPath
+	}
+	return csp.Type
 }

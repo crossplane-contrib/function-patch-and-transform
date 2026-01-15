@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
+	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/fieldpath"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -11,13 +14,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/utils/ptr"
 
-	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
-	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
-
 	"github.com/crossplane/function-sdk-go/resource/composed"
 	"github.com/crossplane/function-sdk-go/resource/composite"
-
-	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
 )
 
 const (
@@ -31,12 +29,10 @@ const (
 	errFmtInvalidPatchPolicy          = "invalid patch policy %s"
 )
 
-var (
-	internalEnvironmentGVK = schema.GroupVersionKind{Group: "internal.crossplane.io", Version: "v1alpha1", Kind: "Environment"}
-)
+var internalEnvironmentGVK = schema.GroupVersionKind{Group: "internal.crossplane.io", Version: "v1alpha1", Kind: "Environment"} //nolint:gochecknoglobals // need to find a better way
 
 // A PatchInterface is a patch that can be applied between resources.
-type PatchInterface interface {
+type PatchInterface interface { //nolint:interfacebloat // legacy interface
 	GetType() v1beta1.PatchType
 	GetFromFieldPath() string
 	GetToFieldPath() string
@@ -164,7 +160,6 @@ func ApplyCombineFromVariablesPatch(p PatchInterface, from, to runtime.Object) e
 	// this code may be better served split out into a dedicated function.
 	for i, sp := range c.Variables {
 		iv, err := fieldpath.Pave(fromMap).GetValue(sp.FromFieldPath)
-
 		// If any source field is not found, we will not
 		// apply the patch. This is to avoid situations
 		// where a combine patch is expecting a fixed
@@ -243,7 +238,6 @@ func ApplyComposedPatch(p *v1beta1.ComposedPatch, ocd, dcd *composed.Unstructure
 	// observed state. Observed state should also eventually be consistent with
 	// desired state.
 	switch t := p.GetType(); t {
-
 	// From observed composed resource to desired XR.
 	case v1beta1.PatchTypeToCompositeFieldPath:
 		return ApplyFromFieldPathPatch(p, ocd, dxr)
@@ -279,7 +273,6 @@ func ApplyComposedPatch(p *v1beta1.ComposedPatch, ocd, dcd *composed.Unstructure
 // resource, not from it.
 func ToComposedResource(p *v1beta1.ComposedPatch) bool {
 	switch p.GetType() {
-
 	// From observed XR to desired composed resource.
 	case v1beta1.PatchTypeFromCompositeFieldPath, v1beta1.PatchTypeCombineFromComposite:
 		return true

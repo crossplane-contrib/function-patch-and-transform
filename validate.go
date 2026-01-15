@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"regexp"
 
-	"k8s.io/apimachinery/pkg/util/validation/field"
-
 	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 )
 
 // WrapFieldError wraps the given field.Error adding the given field.Path as root of the Field.
@@ -59,7 +58,6 @@ func ValidateComposedTemplate(t v1beta1.ComposedTemplate) *field.Error {
 		return field.Required(field.NewPath("name"), "name is required")
 	}
 	for i, p := range t.Patches {
-		p := p
 		if err := ValidatePatch(&p); err != nil {
 			return WrapFieldError(err, field.NewPath("patches").Index(i))
 		}
@@ -83,7 +81,6 @@ func ValidatePatchSet(ps v1beta1.PatchSet) *field.Error {
 		return field.Required(field.NewPath("name"), "name is required")
 	}
 	for i, p := range ps.Patches {
-		p := p
 		if err := ValidatePatch(&p); err != nil {
 			return WrapFieldError(err, field.NewPath("patches").Index(i))
 		}
@@ -97,7 +94,6 @@ func ValidateEnvironment(e *v1beta1.Environment) *field.Error {
 		return nil
 	}
 	for i, p := range e.Patches {
-		p := p
 		switch p.GetType() { //nolint:exhaustive // Only target valid patches according the API spec
 		case
 			v1beta1.PatchTypeFromCompositeFieldPath,

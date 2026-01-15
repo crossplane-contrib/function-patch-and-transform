@@ -2,15 +2,17 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"maps"
 
+	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/errors"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/fieldpath"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"google.golang.org/protobuf/types/known/structpb"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/json"
-
-	"github.com/crossplane/crossplane-runtime/pkg/errors"
-	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
-	"github.com/crossplane/crossplane-runtime/pkg/logging"
-	"github.com/crossplane/crossplane-runtime/pkg/reconciler/managed"
 
 	fncontext "github.com/crossplane/function-sdk-go/context"
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
@@ -18,8 +20,6 @@ import (
 	"github.com/crossplane/function-sdk-go/resource"
 	"github.com/crossplane/function-sdk-go/resource/composed"
 	"github.com/crossplane/function-sdk-go/response"
-
-	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
 )
 
 // Function performs patch-and-transform style Composition.
@@ -30,7 +30,7 @@ type Function struct {
 }
 
 // RunFunction runs the Function.
-func (f *Function) RunFunction(ctx context.Context, req *fnv1.RunFunctionRequest) (*fnv1.RunFunctionResponse, error) { //nolint:gocyclo // See below.
+func (f *Function) RunFunction(ctx context.Context, req *fnv1.RunFunctionRequest) (*fnv1.RunFunctionResponse, error) { //nolint:gocognit // See below.
 	// This loop is fairly complex, but more readable with less abstraction.
 
 	log := f.log.WithValues("tag", req.GetMeta().GetTag())
@@ -129,7 +129,6 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1.RunFunctionRequest
 		for i := range input.Environment.Patches {
 			p := &input.Environment.Patches[i]
 			if err := ApplyEnvironmentPatch(p, env, oxr.Resource, dxr.Resource); err != nil {
-
 				// Ignore not found errors if patch policy is set to Optional
 				if fieldpath.IsNotFound(err) && p.GetPolicy().GetFromFieldPathPolicy() == v1beta1.FromFieldPathPolicyOptional {
 					continue
@@ -196,9 +195,7 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1.RunFunctionRequest
 				log.Info("Cannot extract composite resource connection details from composed resource", "warning", err)
 				warnings++
 			}
-			for k, v := range conn {
-				dxr.ConnectionDetails[k] = v
-			}
+			maps.Copy(dxr.ConnectionDetails, conn)
 
 			ready, err := IsReady(ctx, ocd.Resource, t.ReadinessChecks...)
 			if err != nil {
@@ -266,6 +263,26 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1.RunFunctionRequest
 		}
 
 		desired[resource.Name(t.Name)] = dcd
+	}
+
+	// If the XR doesn't support connection details, but we have some connection
+	// details, we'll transparently create a composed secret resource to store
+	// the connection details and add it to the set of desired resources.
+	if !supportsConnectionDetails(oxr) && len(dxr.ConnectionDetails) > 0 {
+		connectionSecret, err := composeConnectionSecret(oxr, dxr.ConnectionDetails, input.WriteConnectionSecretToRef)
+		if err != nil {
+			response.Fatal(rsp, errors.Wrap(err, "cannot compose connection secret"))
+			return rsp, nil
+		}
+
+		if connectionSecret != nil {
+			// Add the connection secret as a composed resource with a special name
+			// We use a prefix to avoid conflicts with user-defined resource names
+			composedResourceName := resource.Name(fmt.Sprintf("%s-connection-secret", oxr.Resource.GetName()))
+			desired[composedResourceName] = connectionSecret
+			log.Debug("Added connection secret to desired composed resources", "composed-resource-name", composedResourceName,
+				"secret-name", connectionSecret.Resource.GetName(), "secret-namespace", connectionSecret.Resource.GetNamespace())
+		}
 	}
 
 	if err := response.SetDesiredCompositeResource(rsp, dxr); err != nil {

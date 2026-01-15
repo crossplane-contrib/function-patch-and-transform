@@ -19,3 +19,11 @@
 
 # Go workspace file
 go.work
+
+# Crossplane packages
+*.xpkg
+
+# ignore AI tools settings/config
+/.claude
+CLAUDE.md
+AGENTS.md

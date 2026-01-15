@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -14,14 +16,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
 
-	"github.com/crossplane/crossplane-runtime/pkg/logging"
-
 	fncontext "github.com/crossplane/function-sdk-go/context"
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"github.com/crossplane/function-sdk-go/resource"
 	"github.com/crossplane/function-sdk-go/response"
-
-	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
 )
 
 func TestRunFunction(t *testing.T) {
@@ -723,6 +721,80 @@ func TestRunFunction(t *testing.T) {
 				},
 			},
 		},
+		"ExtractCompositeConnectionDetailsV2XR": {
+			reason: "Connection details for a v2 XR get exposed in an automatically composed Secret resource.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Input: resource.MustStructObject(&v1beta1.Resources{
+						WriteConnectionSecretToRef: &v1beta1.WriteConnectionSecretToRef{
+							// the name of the automatically composed connection secret
+							Name: "cool-conn-secret",
+						},
+						Resources: []v1beta1.ComposedTemplate{
+							{
+								Name: "cool-resource",
+								Base: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"example.org/v1","kind":"CD"}`)},
+								ConnectionDetails: []v1beta1.ConnectionDetail{
+									{
+										Type:                    v1beta1.ConnectionDetailTypeFromConnectionSecretKey,
+										Name:                    "very",
+										FromConnectionSecretKey: ptr.To[string]("very"),
+									},
+								},
+							},
+						},
+					}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							// v2 XR that has spec.crossplane
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","metadata":{"namespace":"default","name":"cool-xr-42"},"spec":{"foo":"bar","crossplane":{}}}`),
+						},
+						Resources: map[string]*fnv1.Resource{
+							"cool-resource": {
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","metadata":{"namespace":"default","name":"cool-42"}}`),
+								ConnectionDetails: map[string][]byte{
+									"very": []byte("secret"),
+								},
+							},
+						},
+					},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","metadata":{"namespace":"default","name":"cool-xr-42"},"spec":{"foo":"bar","crossplane":{}}}`),
+							ConnectionDetails: map[string][]byte{
+								"existing": []byte("supersecretvalue"),
+							},
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","metadata":{"namespace":"default","name":"cool-xr-42"},"spec":{"foo":"bar","crossplane":{}}}`),
+							ConnectionDetails: map[string][]byte{
+								"existing": []byte("supersecretvalue"),
+								"very":     []byte("secret"),
+							},
+						},
+						Resources: map[string]*fnv1.Resource{
+							"cool-resource": {
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","metadata":{"namespace":"default","name":"cool-42"}}`),
+							},
+							// automatically generated connection secret with a name from the function input.writeConnectionSecretToRef
+							// and base64-encoded data values from the connection details shown above
+							"cool-xr-42-connection-secret": {
+								Ready:    fnv1.Ready_READY_TRUE,
+								Resource: resource.MustStructJSON(`{"apiVersion":"v1","kind":"Secret","metadata":{"name":"cool-conn-secret"},"data":{"existing":"c3VwZXJzZWNyZXR2YWx1ZQ==","very":"c2VjcmV0"},"type":"connection.crossplane.io/v1alpha1"}`),
+							},
+						},
+					},
+					Context: contextWithEnvironment(nil),
+				},
+			},
+		},
 		"PatchToComposite": {
 			reason: "A basic ToCompositeFieldPath patch should work.",
 			args: args{
@@ -837,7 +909,7 @@ func TestRunFunction(t *testing.T) {
 						},
 						Resources: map[string]*fnv1.Resource{},
 					},
-					Context: contextWithEnvironment(map[string]interface{}{
+					Context: contextWithEnvironment(map[string]any{
 						"widgets": "10",
 					}),
 				},
@@ -856,7 +928,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
-					Context: contextWithEnvironment(map[string]interface{}{
+					Context: contextWithEnvironment(map[string]any{
 						"widgets": "10",
 					}),
 				},
@@ -922,7 +994,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
-					Context: contextWithEnvironment(map[string]interface{}{
+					Context: contextWithEnvironment(map[string]any{
 						"widgets": "30",
 					}),
 				},
@@ -972,7 +1044,7 @@ func TestRunFunction(t *testing.T) {
 						},
 						Resources: map[string]*fnv1.Resource{},
 					},
-					Context: contextWithEnvironment(map[string]interface{}{
+					Context: contextWithEnvironment(map[string]any{
 						"widgets": "10",
 					}),
 				},
@@ -991,7 +1063,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
-					Context: contextWithEnvironment(map[string]interface{}{
+					Context: contextWithEnvironment(map[string]any{
 						"widgets": "10",
 					}),
 				},
@@ -1057,7 +1129,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
-					Context: contextWithEnvironment(map[string]interface{}{
+					Context: contextWithEnvironment(map[string]any{
 						"widgets": "30",
 					}),
 				},
@@ -1142,7 +1214,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
-					Context: contextWithEnvironment(map[string]interface{}{
+					Context: contextWithEnvironment(map[string]any{
 						"widgets": "30",
 					},
 					),
@@ -1210,7 +1282,7 @@ func TestRunFunction(t *testing.T) {
 			want: want{
 				rsp: &fnv1.RunFunctionResponse{
 					Meta:    &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Context: contextWithEnvironment(map[string]interface{}{}),
+					Context: contextWithEnvironment(map[string]any{}),
 					Results: []*fnv1.Result{
 						{
 							Severity: fnv1.Severity_SEVERITY_FATAL,
@@ -1256,7 +1328,7 @@ func TestRunFunction(t *testing.T) {
 						},
 						Resources: map[string]*fnv1.Resource{},
 					},
-					Context: contextWithEnvironment(map[string]interface{}{
+					Context: contextWithEnvironment(map[string]any{
 						"widgets": "10",
 					}),
 				},
@@ -1275,7 +1347,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
-					Context: contextWithEnvironment(map[string]interface{}{
+					Context: contextWithEnvironment(map[string]any{
 						"widgets": "10",
 					}),
 				},
@@ -1326,7 +1398,7 @@ func TestRunFunction(t *testing.T) {
 						},
 						Resources: map[string]*fnv1.Resource{},
 					},
-					Context: contextWithEnvironment(map[string]interface{}{
+					Context: contextWithEnvironment(map[string]any{
 						"widgets": "10",
 					}),
 				},
@@ -1345,7 +1417,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
-					Context: contextWithEnvironment(map[string]interface{}{
+					Context: contextWithEnvironment(map[string]any{
 						"widgets": "10",
 					}),
 				},
@@ -1396,7 +1468,7 @@ func TestRunFunction(t *testing.T) {
 						},
 						Resources: map[string]*fnv1.Resource{},
 					},
-					Context: contextWithEnvironment(map[string]interface{}{
+					Context: contextWithEnvironment(map[string]any{
 						"widgets": "10",
 					}),
 				},
@@ -1415,7 +1487,7 @@ func TestRunFunction(t *testing.T) {
 							},
 						},
 					},
-					Context: contextWithEnvironment(map[string]interface{}{
+					Context: contextWithEnvironment(map[string]any{
 						"widgets": "10",
 					}),
 				},
@@ -1453,7 +1525,7 @@ func TestRunFunction(t *testing.T) {
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
 						},
 					},
-					Context: contextWithEnvironment(map[string]interface{}{
+					Context: contextWithEnvironment(map[string]any{
 						"envKey": "10",
 					}),
 				},
@@ -1483,9 +1555,9 @@ func TestRunFunction(t *testing.T) {
 // That's because the patching code expects a resource to be able to use
 // runtime.DefaultUnstructuredConverter.FromUnstructured to convert it back to
 // an object.
-func contextWithEnvironment(data map[string]interface{}) *structpb.Struct {
+func contextWithEnvironment(data map[string]any) *structpb.Struct {
 	if data == nil {
-		data = map[string]interface{}{}
+		data = map[string]any{}
 	}
 	u := unstructured.Unstructured{Object: data}
 	u.SetGroupVersionKind(internalEnvironmentGVK)
