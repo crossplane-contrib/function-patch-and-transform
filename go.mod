@@ -13,7 +13,7 @@ require (
 	k8s.io/apiextensions-apiserver v0.34.0
 	k8s.io/apimachinery v0.34.0
 	k8s.io/utils v0.0.0-20251219084037-98d557b7f1e7
-	sigs.k8s.io/controller-tools v0.18.0
+	sigs.k8s.io/controller-tools v0.20.0
 )
 
 require (
