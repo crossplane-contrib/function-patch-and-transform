@@ -15,4 +15,6 @@ metadata:
       Composition, you can use this function. See the
       [README](https://github.com/crossplane-contrib/function-patch-and-transform)
       for examples and documentation.
-spec: {}
+spec:
+  capabilities:
+  - composition
