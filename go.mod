@@ -1,6 +1,6 @@
 module github.com/crossplane-contrib/function-patch-and-transform
 
-go 1.24.11
+go 1.24.13
 
 require (
 	github.com/alecthomas/kong v1.13.0
