@@ -16,5 +16,6 @@ repository maintainers in their own `OWNERS.md` file.
 * Fatih Turken <fatih@upbound.io> ([turkenf](https://github.com/turkenf))
 * Steven Borrelli <steven@upbound.io> ([stevendborrelli](https://github.com/stevendborrelli))
 * Philippe Scorsolini <philippe.scorsolini@upbound.io> ([phisco](https://github.com/phisco))
+* Alper Ulucinar <alper@upbound.io> ([ulucinar](https://github.com/ulucinar))
 
 See [CODEOWNERS](./CODEOWNERS) for automatic PR assignment.
