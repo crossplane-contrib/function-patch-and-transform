@@ -230,7 +230,7 @@ const (
 // A StringTransform returns a string given the supplied input.
 type StringTransform struct {
 	// Type of the string transform to be run.
-	// +kubebuilder:validation:Enum=Format;Convert;TrimPrefix;TrimSuffix;Regexp
+	// +kubebuilder:validation:Enum=Format;Convert;TrimPrefix;TrimSuffix;Regexp;Join;Replace
 	// +kubebuilder:default=Format
 	Type StringTransformType `json:"type"`
 
