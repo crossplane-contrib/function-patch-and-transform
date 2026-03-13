@@ -18,6 +18,7 @@ import (
 
 	"github.com/crossplane/function-sdk-go/resource"
 	"github.com/crossplane/function-sdk-go/resource/composite"
+	"github.com/crossplane/function-sdk-go/resource/composed"
 )
 
 func TestExtractConnectionDetails(t *testing.T) {
@@ -421,6 +422,118 @@ func TestGetConnectionSecretRef(t *testing.T) {
 			}
 			if diff := cmp.Diff(tc.want.ref, got); diff != "" {
 				t.Errorf("%s\ngetConnectionSecretRef(...): -want, +got:\n%s", tc.reason, diff)
+			}
+		})
+	}
+}
+
+func TestComposeConnectionSecret(t *testing.T) {
+	type args struct {
+		xr      *resource.Composite
+		details resource.ConnectionDetails
+		ref     *v1beta1.WriteConnectionSecretToRef
+		current *resource.DesiredComposed
+	}
+	type want struct {
+		secret *resource.DesiredComposed
+		err    error
+	}
+
+	cases := map[string]struct {
+		reason string
+		args   args
+		want   want
+	}{
+		"StickyNamespace": {
+			reason: "Should preserve non-empty namespace from current desired secret when new ref has empty namespace",
+			args: args{
+				xr: &resource.Composite{
+					Resource: func() *composite.Unstructured {
+						xr := composite.New()
+						_ = json.Unmarshal([]byte(`{"metadata":{"name":"my-xr"}}`), xr)
+						return xr
+					}(),
+				},
+				details: resource.ConnectionDetails{"foo": []byte("bar")},
+				ref: &v1beta1.WriteConnectionSecretToRef{
+					Name: "new-name",
+					// Namespace is empty here
+				},
+				current: &resource.DesiredComposed{
+					Resource: func() *composed.Unstructured {
+						s := composed.New()
+						s.SetName("old-name")
+						s.SetNamespace("old-namespace")
+						return s
+					}(),
+				},
+			},
+			want: want{
+				secret: &resource.DesiredComposed{
+					Resource: func() *composed.Unstructured {
+						s := composed.New()
+						s.SetAPIVersion("v1")
+						s.SetKind("Secret")
+						s.SetName("new-name")
+						s.SetNamespace("old-namespace")
+						_ = s.SetValue("data", resource.ConnectionDetails{"foo": []byte("bar")})
+						_ = s.SetValue("type", xpresource.SecretTypeConnection)
+						return s
+					}(),
+					Ready: resource.ReadyTrue,
+				},
+			},
+		},
+		"StickyName": {
+			reason: "Should preserve non-empty name from current desired secret when new ref has empty name",
+			args: args{
+				xr: &resource.Composite{
+					Resource: func() *composite.Unstructured {
+						xr := composite.New()
+						_ = json.Unmarshal([]byte(`{"metadata":{"name":"my-xr"}}`), xr)
+						return xr
+					}(),
+				},
+				details: resource.ConnectionDetails{"foo": []byte("bar")},
+				ref: &v1beta1.WriteConnectionSecretToRef{
+					Namespace: "new-namespace",
+					// Name is empty here
+				},
+				current: &resource.DesiredComposed{
+					Resource: func() *composed.Unstructured {
+						s := composed.New()
+						s.SetName("old-name")
+						s.SetNamespace("old-namespace")
+						return s
+					}(),
+				},
+			},
+			want: want{
+				secret: &resource.DesiredComposed{
+					Resource: func() *composed.Unstructured {
+						s := composed.New()
+						s.SetAPIVersion("v1")
+						s.SetKind("Secret")
+						s.SetName("old-name")
+						s.SetNamespace("new-namespace")
+						_ = s.SetValue("data", resource.ConnectionDetails{"foo": []byte("bar")})
+						_ = s.SetValue("type", xpresource.SecretTypeConnection)
+						return s
+					}(),
+					Ready: resource.ReadyTrue,
+				},
+			},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			got, err := composeConnectionSecret(tc.args.xr, tc.args.details, tc.args.ref, tc.args.current)
+			if diff := cmp.Diff(tc.want.err, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("\n%s\ncomposeConnectionSecret(...): -want, +got:\n%s", tc.reason, diff)
+			}
+			if diff := cmp.Diff(tc.want.secret, got, cmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("\n%s\ncomposeConnectionSecret(...): -want, +got:\n%s", tc.reason, diff)
 			}
 		})
 	}
