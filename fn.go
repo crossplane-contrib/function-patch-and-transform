@@ -274,9 +274,13 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1.RunFunctionRequest
 
 		var existingConnectionSecretRef *xpv1.SecretReference
 		if dcd, ok := desired[composedResourceName]; ok && dcd != nil && dcd.Resource != nil {
-			existingConnectionSecretRef = &xpv1.SecretReference{
-				Name:      dcd.Resource.GetName(),
-				Namespace: dcd.Resource.GetNamespace(),
+			name := dcd.Resource.GetName()
+			namespace := dcd.Resource.GetNamespace()
+			if name != "" && namespace != "" {
+				existingConnectionSecretRef = &xpv1.SecretReference{
+					Name:      name,
+					Namespace: namespace,
+				}
 			}
 		}
 
