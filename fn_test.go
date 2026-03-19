@@ -795,6 +795,151 @@ func TestRunFunction(t *testing.T) {
 				},
 			},
 		},
+		"ExtractCompositeConnectionDetailsV2XRPreservesExistingSecretNamespace": {
+			reason: "A later patch-and-transform step should preserve an existing desired connection secret namespace when input.writeConnectionSecretToRef is omitted.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Input: resource.MustStructObject(&v1beta1.Resources{
+						Resources: []v1beta1.ComposedTemplate{
+							{
+								Name: "cool-resource",
+								Base: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"example.org/v1","kind":"CD"}`)},
+								ConnectionDetails: []v1beta1.ConnectionDetail{
+									{
+										Type:                    v1beta1.ConnectionDetailTypeFromConnectionSecretKey,
+										Name:                    "very",
+										FromConnectionSecretKey: ptr.To[string]("very"),
+									},
+								},
+							},
+						},
+					}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							// v2 XR without namespace (cluster-scoped style).
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr-42"},"spec":{"foo":"bar","crossplane":{}}}`),
+						},
+						Resources: map[string]*fnv1.Resource{
+							"cool-resource": {
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","metadata":{"namespace":"default","name":"cool-42"}}`),
+								ConnectionDetails: map[string][]byte{
+									"very": []byte("secret"),
+								},
+							},
+						},
+					},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr-42"},"spec":{"foo":"bar","crossplane":{}}}`),
+							ConnectionDetails: map[string][]byte{
+								"existing": []byte("supersecretvalue"),
+							},
+						},
+						Resources: map[string]*fnv1.Resource{
+							"cool-xr-42-connection-secret": {
+								Ready:    fnv1.Ready_READY_TRUE,
+								Resource: resource.MustStructJSON(`{"apiVersion":"v1","kind":"Secret","metadata":{"name":"cool-conn-secret","namespace":"tenant-a"},"data":{"old":"dmFsdWU="},"type":"connection.crossplane.io/v1alpha1"}`),
+							},
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr-42"},"spec":{"foo":"bar","crossplane":{}}}`),
+							ConnectionDetails: map[string][]byte{
+								"existing": []byte("supersecretvalue"),
+								"very":     []byte("secret"),
+							},
+						},
+						Resources: map[string]*fnv1.Resource{
+							"cool-resource": {
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","metadata":{"namespace":"default","name":"cool-42"}}`),
+							},
+							"cool-xr-42-connection-secret": {
+								Ready:    fnv1.Ready_READY_TRUE,
+								Resource: resource.MustStructJSON(`{"apiVersion":"v1","kind":"Secret","metadata":{"name":"cool-conn-secret","namespace":"tenant-a"},"data":{"existing":"c3VwZXJzZWNyZXR2YWx1ZQ==","very":"c2VjcmV0"},"type":"connection.crossplane.io/v1alpha1"}`),
+							},
+						},
+					},
+					Context: contextWithEnvironment(nil),
+				},
+			},
+		},
+		"ExtractCompositeConnectionDetailsV2XRIgnoresIncompleteExistingSecretRef": {
+			reason: "A later step should ignore an incomplete existing secret ref and derive a valid reference from the XR when input.writeConnectionSecretToRef is omitted.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Input: resource.MustStructObject(&v1beta1.Resources{
+						Resources: []v1beta1.ComposedTemplate{
+							{
+								Name: "cool-resource",
+								Base: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"example.org/v1","kind":"CD"}`)},
+								ConnectionDetails: []v1beta1.ConnectionDetail{
+									{
+										Type:                    v1beta1.ConnectionDetailTypeFromConnectionSecretKey,
+										Name:                    "very",
+										FromConnectionSecretKey: ptr.To[string]("very"),
+									},
+								},
+							},
+						},
+					}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							// v2 XR with namespace available for default secret derivation.
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr-42","namespace":"tenant-a"},"spec":{"foo":"bar","crossplane":{}}}`),
+						},
+						Resources: map[string]*fnv1.Resource{
+							"cool-resource": {
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","metadata":{"namespace":"default","name":"cool-42"}}`),
+								ConnectionDetails: map[string][]byte{
+									"very": []byte("secret"),
+								},
+							},
+						},
+					},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr-42","namespace":"tenant-a"},"spec":{"foo":"bar","crossplane":{}}}`),
+						},
+						Resources: map[string]*fnv1.Resource{
+							// Existing desired ref is incomplete (empty namespace) and should not be reused.
+							"cool-xr-42-connection-secret": {
+								Ready:    fnv1.Ready_READY_TRUE,
+								Resource: resource.MustStructJSON(`{"apiVersion":"v1","kind":"Secret","metadata":{"name":"cool-conn-secret"},"data":{"old":"dmFsdWU="},"type":"connection.crossplane.io/v1alpha1"}`),
+							},
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr-42","namespace":"tenant-a"},"spec":{"foo":"bar","crossplane":{}}}`),
+							ConnectionDetails: map[string][]byte{
+								"very": []byte("secret"),
+							},
+						},
+						Resources: map[string]*fnv1.Resource{
+							"cool-resource": {
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","metadata":{"namespace":"default","name":"cool-42"}}`),
+							},
+							"cool-xr-42-connection-secret": {
+								Ready:    fnv1.Ready_READY_TRUE,
+								Resource: resource.MustStructJSON(`{"apiVersion":"v1","kind":"Secret","metadata":{"name":"cool-xr-42-connection","namespace":"tenant-a"},"data":{"very":"c2VjcmV0"},"type":"connection.crossplane.io/v1alpha1"}`),
+							},
+						},
+					},
+					Context: contextWithEnvironment(nil),
+				},
+			},
+		},
 		"PatchToComposite": {
 			reason: "A basic ToCompositeFieldPath patch should work.",
 			args: args{
