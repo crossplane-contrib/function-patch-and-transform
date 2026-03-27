@@ -143,8 +143,9 @@ func TestExtractConnectionDetails(t *testing.T) {
 
 func TestGetConnectionSecretRef(t *testing.T) {
 	type args struct {
-		xr    *resource.Composite
-		input *v1beta1.WriteConnectionSecretToRef
+		xr          *resource.Composite
+		input       *v1beta1.WriteConnectionSecretToRef
+		existingRef *xpv1.SecretReference
 	}
 	type want struct {
 		ref xpv1.SecretReference
@@ -253,6 +254,62 @@ func TestGetConnectionSecretRef(t *testing.T) {
 				ref: xpv1.SecretReference{
 					Name:      "my-xr-connection",
 					Namespace: "xr-namespace",
+				},
+			},
+		},
+		"ExistingRefProvidedNoInput": {
+			reason: "Should reuse an existing desired secret reference when no input values are provided",
+			args: args{
+				xr: &resource.Composite{
+					Resource: func() *composite.Unstructured {
+						xr := composite.New()
+						_ = json.Unmarshal([]byte(`{
+							"apiVersion":"example.org/v1",
+							"kind":"XR",
+							"metadata":{"name":"my-xr","uid":"test-uid-existing"}
+						}`), xr)
+						return xr
+					}(),
+				},
+				input: nil,
+				existingRef: &xpv1.SecretReference{
+					Name:      "existing-secret",
+					Namespace: "tenant-a",
+				},
+			},
+			want: want{
+				ref: xpv1.SecretReference{
+					Name:      "existing-secret",
+					Namespace: "tenant-a",
+				},
+			},
+		},
+		"ExistingRefWithPartialInputOverride": {
+			reason: "Should keep existing namespace when input overrides only the name",
+			args: args{
+				xr: &resource.Composite{
+					Resource: func() *composite.Unstructured {
+						xr := composite.New()
+						_ = json.Unmarshal([]byte(`{
+							"apiVersion":"example.org/v1",
+							"kind":"XR",
+							"metadata":{"name":"my-xr","uid":"test-uid-partial"}
+						}`), xr)
+						return xr
+					}(),
+				},
+				input: &v1beta1.WriteConnectionSecretToRef{
+					Name: "new-secret-name",
+				},
+				existingRef: &xpv1.SecretReference{
+					Name:      "existing-secret",
+					Namespace: "tenant-a",
+				},
+			},
+			want: want{
+				ref: xpv1.SecretReference{
+					Name:      "new-secret-name",
+					Namespace: "tenant-a",
 				},
 			},
 		},
@@ -415,7 +472,7 @@ func TestGetConnectionSecretRef(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			got, err := getConnectionSecretRef(tc.args.xr, tc.args.input)
+			got, err := getConnectionSecretRef(tc.args.xr, tc.args.input, tc.args.existingRef)
 			if diff := cmp.Diff(tc.want.err, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("\n%s\ngetConnectionSecretRef(...): -want, +got:\n%s", tc.reason, diff)
 			}

@@ -93,7 +93,7 @@ func supportsConnectionDetails(xr *resource.Composite) bool {
 
 // composeConnectionSecret creates a Secret composed resource containing the
 // provided connection details.
-func composeConnectionSecret(xr *resource.Composite, details resource.ConnectionDetails, ref *v1beta1.WriteConnectionSecretToRef) (*resource.DesiredComposed, error) {
+func composeConnectionSecret(xr *resource.Composite, details resource.ConnectionDetails, ref *v1beta1.WriteConnectionSecretToRef, existingRef *xpv1.SecretReference) (*resource.DesiredComposed, error) {
 	if len(details) == 0 {
 		return nil, nil
 	}
@@ -102,7 +102,7 @@ func composeConnectionSecret(xr *resource.Composite, details resource.Connection
 	secret.SetAPIVersion("v1")
 	secret.SetKind("Secret")
 
-	secretRef, err := getConnectionSecretRef(xr, ref)
+	secretRef, err := getConnectionSecretRef(xr, ref, existingRef)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot generate connection secret reference")
 	}
@@ -126,9 +126,9 @@ func composeConnectionSecret(xr *resource.Composite, details resource.Connection
 // getConnectionSecretRef creates a connection secret reference from the given
 // XR and input. The patches for the reference will be applied before the
 // reference is returned.
-func getConnectionSecretRef(xr *resource.Composite, input *v1beta1.WriteConnectionSecretToRef) (xpv1.SecretReference, error) {
+func getConnectionSecretRef(xr *resource.Composite, input *v1beta1.WriteConnectionSecretToRef, existingRef *xpv1.SecretReference) (xpv1.SecretReference, error) {
 	// Get the base connection secret ref to start with
-	ref := getBaseConnectionSecretRef(xr, input)
+	ref := getBaseConnectionSecretRef(xr, input, existingRef)
 
 	// Apply patches to the base connection secret ref if they've been provided
 	if input != nil && len(input.Patches) > 0 {
@@ -146,10 +146,11 @@ func getConnectionSecretRef(xr *resource.Composite, input *v1beta1.WriteConnecti
 //  1. xr.spec.writeConnectionSecretToRef - this is no longer automatically added
 //     to v2 XR schemas, but the community has been adding it manually, so if
 //     it's present we will use it.
-//  2. function input.writeConnectionSecretToRef - if name or namespace is provided
-//     then the whole ref will be used
-//  3. generate the reference from scratch, based on the XR name and namespace
-func getBaseConnectionSecretRef(xr *resource.Composite, input *v1beta1.WriteConnectionSecretToRef) xpv1.SecretReference {
+//  2. existing desired composed connection secret (from a previous function step)
+//  3. function input.writeConnectionSecretToRef - if name/namespace is provided,
+//     non-empty values override the base ref field-by-field
+//  4. generate the reference from scratch, based on the XR name and namespace
+func getBaseConnectionSecretRef(xr *resource.Composite, input *v1beta1.WriteConnectionSecretToRef, existingRef *xpv1.SecretReference) xpv1.SecretReference {
 	// Check if XR author manually added writeConnectionSecretToRef to the XR's
 	// schema and just use that if it exists
 	xrRef := xr.Resource.GetWriteConnectionSecretToReference()
@@ -157,12 +158,29 @@ func getBaseConnectionSecretRef(xr *resource.Composite, input *v1beta1.WriteConn
 		return *xrRef
 	}
 
-	// Use the input values if at least one of name or namespace has been provided
+	// Reuse an existing desired secret reference from an earlier pipeline step.
+	// This prevents accidentally dropping a non-empty namespace in subsequent
+	// patch-and-transform steps that omit writeConnectionSecretToRef values.
+	if existingRef != nil {
+		ref := *existingRef
+		if input != nil {
+			if input.Name != "" {
+				ref.Name = input.Name
+			}
+			if input.Namespace != "" {
+				ref.Namespace = input.Namespace
+			}
+		}
+		return ref
+	}
+
+	// Preserve existing behavior when there is no previously desired secret:
+	// if at least one input field is provided, use the full input ref as-is.
 	if input != nil && (input.Name != "" || input.Namespace != "") {
 		return xpv1.SecretReference{Name: input.Name, Namespace: input.Namespace}
 	}
 
-	// Nothing has been provided, so generate a default name using the name of the XR
+	// Nothing has been provided, so generate a default name using the name of the XR.
 	return xpv1.SecretReference{
 		Name:      xr.Resource.GetName() + "-connection",
 		Namespace: xr.Resource.GetNamespace(),
