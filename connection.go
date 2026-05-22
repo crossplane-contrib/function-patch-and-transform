@@ -2,11 +2,11 @@ package main
 
 import (
 	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/errors"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/fieldpath"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	xpresource "github.com/crossplane/crossplane-runtime/v2/pkg/resource"
+	xpv2 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/json"
@@ -126,14 +126,14 @@ func composeConnectionSecret(xr *resource.Composite, details resource.Connection
 // getConnectionSecretRef creates a connection secret reference from the given
 // XR and input. The patches for the reference will be applied before the
 // reference is returned.
-func getConnectionSecretRef(xr *resource.Composite, input *v1beta1.WriteConnectionSecretToRef) (xpv1.SecretReference, error) {
+func getConnectionSecretRef(xr *resource.Composite, input *v1beta1.WriteConnectionSecretToRef) (xpv2.SecretReference, error) {
 	// Get the base connection secret ref to start with
 	ref := getBaseConnectionSecretRef(xr, input)
 
 	// Apply patches to the base connection secret ref if they've been provided
 	if input != nil && len(input.Patches) > 0 {
 		if err := applyConnectionSecretPatches(xr, &ref, input.Patches); err != nil {
-			return xpv1.SecretReference{}, errors.Wrap(err, "cannot apply connection secret patches")
+			return xpv2.SecretReference{}, errors.Wrap(err, "cannot apply connection secret patches")
 		}
 	}
 
@@ -149,7 +149,7 @@ func getConnectionSecretRef(xr *resource.Composite, input *v1beta1.WriteConnecti
 //  2. function input.writeConnectionSecretToRef - if name or namespace is provided
 //     then the whole ref will be used
 //  3. generate the reference from scratch, based on the XR name and namespace
-func getBaseConnectionSecretRef(xr *resource.Composite, input *v1beta1.WriteConnectionSecretToRef) xpv1.SecretReference {
+func getBaseConnectionSecretRef(xr *resource.Composite, input *v1beta1.WriteConnectionSecretToRef) xpv2.SecretReference {
 	// Check if XR author manually added writeConnectionSecretToRef to the XR's
 	// schema and just use that if it exists
 	xrRef := xr.Resource.GetWriteConnectionSecretToReference()
@@ -159,11 +159,11 @@ func getBaseConnectionSecretRef(xr *resource.Composite, input *v1beta1.WriteConn
 
 	// Use the input values if at least one of name or namespace has been provided
 	if input != nil && (input.Name != "" || input.Namespace != "") {
-		return xpv1.SecretReference{Name: input.Name, Namespace: input.Namespace}
+		return xpv2.SecretReference{Name: input.Name, Namespace: input.Namespace}
 	}
 
 	// Nothing has been provided, so generate a default name using the name of the XR
-	return xpv1.SecretReference{
+	return xpv2.SecretReference{
 		Name:      xr.Resource.GetName() + "-connection",
 		Namespace: xr.Resource.GetNamespace(),
 	}
@@ -171,7 +171,7 @@ func getBaseConnectionSecretRef(xr *resource.Composite, input *v1beta1.WriteConn
 
 // applyConnectionSecretPatches applies all patches provided on the input to the
 // connection secret reference.
-func applyConnectionSecretPatches(xr *resource.Composite, ref *xpv1.SecretReference, patches []v1beta1.ConnectionSecretPatch) error {
+func applyConnectionSecretPatches(xr *resource.Composite, ref *xpv2.SecretReference, patches []v1beta1.ConnectionSecretPatch) error {
 	// Convert the secret reference to an unstructured object so we can pass it to the patching logic
 	// We use a fake (but reasonable) apiVersion and kind because the unstructured converter requires them.
 	refObj := &unstructured.Unstructured{

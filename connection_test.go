@@ -4,12 +4,12 @@ import (
 	"testing"
 
 	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/errors"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	xpresource "github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource/fake"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/test"
+	xpv2 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -59,7 +59,7 @@ func TestExtractConnectionDetails(t *testing.T) {
 						Generation: 4,
 					},
 					ConnectionSecretWriterTo: fake.ConnectionSecretWriterTo{
-						Ref: &xpv1.SecretReference{
+						Ref: &xpv2.SecretReference{
 							Name:      "cool-secret",
 							Namespace: "cool-namespace",
 						},
@@ -147,7 +147,7 @@ func TestGetConnectionSecretRef(t *testing.T) {
 		input *v1beta1.WriteConnectionSecretToRef
 	}
 	type want struct {
-		ref xpv1.SecretReference
+		ref xpv2.SecretReference
 		err error
 	}
 
@@ -174,7 +174,7 @@ func TestGetConnectionSecretRef(t *testing.T) {
 				input: nil,
 			},
 			want: want{
-				ref: xpv1.SecretReference{
+				ref: xpv2.SecretReference{
 					Name:      "xr-secret",
 					Namespace: "xr-namespace",
 				},
@@ -200,7 +200,7 @@ func TestGetConnectionSecretRef(t *testing.T) {
 				},
 			},
 			want: want{
-				ref: xpv1.SecretReference{
+				ref: xpv2.SecretReference{
 					Name:      "my-custom-secret",
 					Namespace: "custom-namespace",
 				},
@@ -227,7 +227,7 @@ func TestGetConnectionSecretRef(t *testing.T) {
 				},
 			},
 			want: want{
-				ref: xpv1.SecretReference{
+				ref: xpv2.SecretReference{
 					Name:      "xr-secret",
 					Namespace: "xr-namespace",
 				},
@@ -250,7 +250,7 @@ func TestGetConnectionSecretRef(t *testing.T) {
 				input: nil,
 			},
 			want: want{
-				ref: xpv1.SecretReference{
+				ref: xpv2.SecretReference{
 					Name:      "my-xr-connection",
 					Namespace: "xr-namespace",
 				},
@@ -300,7 +300,7 @@ func TestGetConnectionSecretRef(t *testing.T) {
 				},
 			},
 			want: want{
-				ref: xpv1.SecretReference{
+				ref: xpv2.SecretReference{
 					Name:      "test-uid-456-cool-creds",
 					Namespace: "prod",
 				},
@@ -343,7 +343,7 @@ func TestGetConnectionSecretRef(t *testing.T) {
 				},
 			},
 			want: want{
-				ref: xpv1.SecretReference{
+				ref: xpv2.SecretReference{
 					Name:      "myapp-staging-cool-creds",
 					Namespace: "default", // we didn't patch this, but it picks it up from the XR's namespace
 				},
@@ -379,7 +379,7 @@ func TestGetConnectionSecretRef(t *testing.T) {
 				},
 			},
 			want: want{
-				ref: xpv1.SecretReference{
+				ref: xpv2.SecretReference{
 					Name:      "base-secret-name", // only namespace was patched
 					Namespace: "custom-ns",
 				},

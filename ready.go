@@ -4,10 +4,10 @@ import (
 	"context"
 
 	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/errors"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/fieldpath"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
+	xpv2 "github.com/crossplane/crossplane/apis/v2/core/v2"
 )
 
 // Error strings.
@@ -41,7 +41,7 @@ type ConditionedObject interface {
 func IsReady(_ context.Context, o ConditionedObject, rc ...v1beta1.ReadinessCheck) (bool, error) {
 	// We don't have API server defaulting, so we default here.
 	if len(rc) == 0 {
-		return resource.IsConditionTrue(o.GetCondition(xpv1.TypeReady)), nil
+		return resource.IsConditionTrue(o.GetCondition(xpv2.TypeReady)), nil
 	}
 
 	for i := range rc {

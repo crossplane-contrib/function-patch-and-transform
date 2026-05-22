@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/fieldpath"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -115,7 +114,7 @@ func toValidJSON(value any) (any, error) {
 }
 
 // toMergeOption returns the MergeOptions from the PatchPolicy's ToFieldPathPolicy, if defined.
-func toMergeOption(p PatchInterface) (mo *xpv1.MergeOptions, err error) {
+func toMergeOption(p PatchInterface) (mo *fieldpath.MergeOptions, err error) {
 	if p == nil {
 		return nil, nil
 	}
@@ -127,13 +126,13 @@ func toMergeOption(p PatchInterface) (mo *xpv1.MergeOptions, err error) {
 	case v1beta1.ToFieldPathPolicyReplace:
 		// nothing to do, this is the default
 	case v1beta1.ToFieldPathPolicyMergeObjects, v1beta1.ToFieldPathPolicyMergeObject: //nolint:staticcheck // MergeObject is deprecated but we must still support it.
-		mo = &xpv1.MergeOptions{KeepMapValues: ptr.To(true)}
+		mo = &fieldpath.MergeOptions{KeepMapValues: ptr.To(true)}
 	case v1beta1.ToFieldPathPolicyMergeObjectsAppendArrays:
-		mo = &xpv1.MergeOptions{KeepMapValues: ptr.To(true), AppendSlice: ptr.To(true)}
+		mo = &fieldpath.MergeOptions{KeepMapValues: ptr.To(true), AppendSlice: ptr.To(true)}
 	case v1beta1.ToFieldPathPolicyForceMergeObjects:
-		mo = &xpv1.MergeOptions{KeepMapValues: ptr.To(false)}
+		mo = &fieldpath.MergeOptions{KeepMapValues: ptr.To(false)}
 	case v1beta1.ToFieldPathPolicyForceMergeObjectsAppendArrays, v1beta1.ToFieldPathPolicyAppendArray: //nolint:staticcheck // AppendArray is deprecated but we must still support it.
-		mo = &xpv1.MergeOptions{AppendSlice: ptr.To(true)}
+		mo = &fieldpath.MergeOptions{AppendSlice: ptr.To(true)}
 	default:
 		// should never happen
 		return nil, errors.Errorf(errFmtInvalidPatchPolicy, pp.GetToFieldPathPolicy())
@@ -360,7 +359,7 @@ func ComposedTemplates(pss []v1beta1.PatchSet, cts []v1beta1.ComposedTemplate) (
 // path, returning any errors as they occur.
 // If no merge options is supplied, then destination field is replaced
 // with the given value.
-func patchFieldValueToObject(fieldPath string, value any, to runtime.Object, mo *xpv1.MergeOptions) error {
+func patchFieldValueToObject(fieldPath string, value any, to runtime.Object, mo *fieldpath.MergeOptions) error {
 	paved, err := fieldpath.PaveObject(to)
 	if err != nil {
 		return err
@@ -376,7 +375,7 @@ func patchFieldValueToObject(fieldPath string, value any, to runtime.Object, mo 
 // patchFieldValueToMultiple, given a path with wildcards in an array index,
 // expands the arrays paths in the "to" object and patches the value into each
 // of the resulting fields, returning any errors as they occur.
-func patchFieldValueToMultiple(fieldPath string, value any, to runtime.Object, mo *xpv1.MergeOptions) error {
+func patchFieldValueToMultiple(fieldPath string, value any, to runtime.Object, mo *fieldpath.MergeOptions) error {
 	paved, err := fieldpath.PaveObject(to)
 	if err != nil {
 		return err

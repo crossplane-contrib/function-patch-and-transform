@@ -5,11 +5,11 @@ import (
 	"testing"
 
 	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/errors"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/fieldpath"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource/unstructured/composed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/test"
+	xpv2 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
@@ -35,7 +35,7 @@ func TestIsReady(t *testing.T) {
 		"NoCustomCheckReady": {
 			reason: "If no custom check is given, Ready condition should be used",
 			args: args{
-				o: composed.New(composed.WithConditions(xpv1.Available())),
+				o: composed.New(composed.WithConditions(xpv2.Available())),
 			},
 			want: want{
 				ready: true,
@@ -44,7 +44,7 @@ func TestIsReady(t *testing.T) {
 		"NoCustomCheckNotReady": {
 			reason: "If no custom check is given, Ready condition should be used",
 			args: args{
-				o: composed.New(composed.WithConditions(xpv1.Unavailable())),
+				o: composed.New(composed.WithConditions(xpv2.Unavailable())),
 			},
 			want: want{
 				ready: false,
@@ -53,11 +53,11 @@ func TestIsReady(t *testing.T) {
 		"MatchConditionReady": {
 			reason: "If a match condition is explicitly specified it should be used",
 			args: args{
-				o: composed.New(composed.WithConditions(xpv1.Available())),
+				o: composed.New(composed.WithConditions(xpv2.Available())),
 				rc: []v1beta1.ReadinessCheck{{
 					Type: v1beta1.ReadinessCheckTypeMatchCondition,
 					MatchCondition: &v1beta1.MatchConditionReadinessCheck{
-						Type:   xpv1.TypeReady,
+						Type:   xpv2.TypeReady,
 						Status: corev1.ConditionTrue,
 					},
 				}},
@@ -69,11 +69,11 @@ func TestIsReady(t *testing.T) {
 		"MatchConditionNotReady": {
 			reason: "If a match condition is explicitly specified it should be used",
 			args: args{
-				o: composed.New(composed.WithConditions(xpv1.Unavailable())),
+				o: composed.New(composed.WithConditions(xpv2.Unavailable())),
 				rc: []v1beta1.ReadinessCheck{{
 					Type: v1beta1.ReadinessCheckTypeMatchCondition,
 					MatchCondition: &v1beta1.MatchConditionReadinessCheck{
-						Type:   xpv1.TypeReady,
+						Type:   xpv2.TypeReady,
 						Status: corev1.ConditionTrue,
 					},
 				}},
