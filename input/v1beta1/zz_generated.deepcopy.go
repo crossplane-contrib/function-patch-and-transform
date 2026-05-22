@@ -457,7 +457,7 @@ func (in *ReadinessCheck) DeepCopyInto(out *ReadinessCheck) {
 	if in.MatchCondition != nil {
 		in, out := &in.MatchCondition, &out.MatchCondition
 		*out = new(MatchConditionReadinessCheck)
-		(*in).DeepCopyInto(*out)
+		**out = **in
 	}
 }
 

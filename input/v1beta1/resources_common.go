@@ -1,7 +1,7 @@
 package v1beta1
 
 import (
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
+	xpv2 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -134,7 +134,7 @@ type ReadinessCheck struct {
 type MatchConditionReadinessCheck struct {
 	// Type indicates the type of condition you'd like to use.
 	// +kubebuilder:default="Ready"
-	Type xpv1.ConditionType `json:"type"`
+	Type xpv2.ConditionType `json:"type"`
 
 	// Status is the status of the condition you'd like to match.
 	// +kubebuilder:default="True"
