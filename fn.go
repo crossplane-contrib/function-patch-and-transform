@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"time"
 
 	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/errors"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/fieldpath"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/json"
@@ -27,6 +29,7 @@ type Function struct {
 	fnv1.UnimplementedFunctionRunnerServiceServer
 
 	log logging.Logger
+	ttl time.Duration
 }
 
 // RunFunction runs the Function.
@@ -37,12 +40,21 @@ func (f *Function) RunFunction(ctx context.Context, req *fnv1.RunFunctionRequest
 	log.Debug("Running Function")
 
 	// TODO(negz): We can probably use a longer TTL if all resources are ready.
-	rsp := response.To(req, response.DefaultTTL)
+	rsp := response.To(req, f.ttl)
 
 	input := &v1beta1.Resources{}
 	if err := request.GetInput(req, input); err != nil {
 		response.Fatal(rsp, errors.Wrap(err, "cannot get Function input"))
 		return rsp, nil
+	}
+
+	if input.TTL != "" {
+		dur, err := time.ParseDuration(input.TTL)
+		if err != nil {
+			response.Fatal(rsp, errors.Wrapf(err, "cannot set ttl"))
+			return rsp, nil
+		}
+		rsp.Meta.Ttl = durationpb.New(dur)
 	}
 
 	// Our input is an opaque object nested in a Composition, so unfortunately

@@ -1286,6 +1286,10 @@ spec:
               - name
               type: object
             type: array
+          ttl:
+            description: TTL for which a response can be cached in time.Duration format.
+              Default "1m".
+            type: string
           writeConnectionSecretToRef:
             description: |-
               WriteConnectionSecretToRef specifies the name and namespace of a Secret
