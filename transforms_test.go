@@ -977,6 +977,19 @@ func TestStringResolve(t *testing.T) {
 				err: errors.Errorf(errStringTransformTypeRegexpNoMatch, "my-([0-9]+)-string", 2),
 			},
 		},
+		"RegexpNegativeCaptureGroup": {
+			args: args{
+				stype: v1beta1.StringTransformTypeRegexp,
+				regexp: &v1beta1.StringTransformRegexp{
+					Match: "my-([0-9]+)-string",
+					Group: ptr.To[int](-1),
+				},
+				i: "my-1-string",
+			},
+			want: want{
+				err: errors.Errorf(errStringTransformTypeRegexpNoMatch, "my-([0-9]+)-string", -1),
+			},
+		},
 		"ConvertToJSONSuccess": {
 			args: args{
 				stype:   v1beta1.StringTransformTypeConvert,
