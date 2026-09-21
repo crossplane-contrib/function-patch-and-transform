@@ -159,8 +159,8 @@ func TestRunFunction(t *testing.T) {
 									{
 										Type: v1beta1.PatchTypeFromCompositeFieldPath,
 										Patch: v1beta1.Patch{
-											FromFieldPath: ptr.To[string]("spec.widgets"),
-											ToFieldPath:   ptr.To[string]("spec.watchers"),
+											FromFieldPath: new("spec.widgets"),
+											ToFieldPath:   new("spec.watchers"),
 											Transforms: []v1beta1.Transform{
 												{
 													Type: v1beta1.TransformTypeConvert,
@@ -226,8 +226,8 @@ func TestRunFunction(t *testing.T) {
 									{
 										Type: v1beta1.PatchTypeFromCompositeFieldPath,
 										Patch: v1beta1.Patch{
-											FromFieldPath: ptr.To[string]("spec.widgets"),
-											ToFieldPath:   ptr.To[string]("spec.watchers"),
+											FromFieldPath: new("spec.widgets"),
+											ToFieldPath:   new("spec.watchers"),
 											Transforms: []v1beta1.Transform{
 												{
 													Type: v1beta1.TransformTypeConvert,
@@ -298,8 +298,8 @@ func TestRunFunction(t *testing.T) {
 									{
 										Type: v1beta1.PatchTypeFromCompositeFieldPath,
 										Patch: v1beta1.Patch{
-											FromFieldPath: ptr.To[string]("spec.widgets"),
-											ToFieldPath:   ptr.To[string]("spec.watchers"),
+											FromFieldPath: new("spec.widgets"),
+											ToFieldPath:   new("spec.watchers"),
 										},
 									},
 								},
@@ -396,8 +396,8 @@ func TestRunFunction(t *testing.T) {
 										// This patch should work.
 										Type: v1beta1.PatchTypeFromCompositeFieldPath,
 										Patch: v1beta1.Patch{
-											FromFieldPath: ptr.To[string]("spec.widgets"),
-											ToFieldPath:   ptr.To[string]("spec.watchers"),
+											FromFieldPath: new("spec.widgets"),
+											ToFieldPath:   new("spec.watchers"),
 										},
 									},
 									{
@@ -405,7 +405,7 @@ func TestRunFunction(t *testing.T) {
 										// the path is not found
 										Type: v1beta1.PatchTypeFromCompositeFieldPath,
 										Patch: v1beta1.Patch{
-											FromFieldPath: ptr.To[string]("spec.doesNotExist"),
+											FromFieldPath: new("spec.doesNotExist"),
 										},
 									},
 								},
@@ -453,7 +453,7 @@ func TestRunFunction(t *testing.T) {
 										// is not found.
 										Type: v1beta1.PatchTypeFromCompositeFieldPath,
 										Patch: v1beta1.Patch{
-											FromFieldPath: ptr.To[string]("spec.doesNotExist"),
+											FromFieldPath: new("spec.doesNotExist"),
 											Policy: &v1beta1.PatchPolicy{
 												FromFieldPath: ptr.To[v1beta1.FromFieldPathPolicy](v1beta1.FromFieldPathPolicyRequired),
 											},
@@ -469,18 +469,18 @@ func TestRunFunction(t *testing.T) {
 										// This patch should work.
 										Type: v1beta1.PatchTypeFromCompositeFieldPath,
 										Patch: v1beta1.Patch{
-											FromFieldPath: ptr.To[string]("spec.widgets"),
-											ToFieldPath:   ptr.To[string]("spec.watchers"),
+											FromFieldPath: new("spec.widgets"),
+											ToFieldPath:   new("spec.watchers"),
 										},
 									},
 									{
 										// This patch should work too and properly handle mergeOptions.
 										Type: v1beta1.PatchTypeFromCompositeFieldPath,
 										Patch: v1beta1.Patch{
-											FromFieldPath: ptr.To[string]("spec.sourceObject"),
-											ToFieldPath:   ptr.To[string]("spec.targetObject"),
+											FromFieldPath: new("spec.sourceObject"),
+											ToFieldPath:   new("spec.targetObject"),
 											Policy: &v1beta1.PatchPolicy{
-												ToFieldPath: ptr.To(v1beta1.ToFieldPathPolicyMergeObjects),
+												ToFieldPath: new(v1beta1.ToFieldPathPolicyMergeObjects),
 											},
 										},
 									},
@@ -489,7 +489,7 @@ func TestRunFunction(t *testing.T) {
 										// is not found.
 										Type: v1beta1.PatchTypeFromCompositeFieldPath,
 										Patch: v1beta1.Patch{
-											FromFieldPath: ptr.To[string]("spec.doesNotExist"),
+											FromFieldPath: new("spec.doesNotExist"),
 											Policy: &v1beta1.PatchPolicy{
 												FromFieldPath: ptr.To[v1beta1.FromFieldPathPolicy](v1beta1.FromFieldPathPolicyRequired),
 											},
@@ -566,8 +566,8 @@ func TestRunFunction(t *testing.T) {
 										// This patch should work.
 										Type: v1beta1.PatchTypeFromCompositeFieldPath,
 										Patch: v1beta1.Patch{
-											FromFieldPath: ptr.To[string]("spec.widgets"),
-											ToFieldPath:   ptr.To[string]("spec.watchers"),
+											FromFieldPath: new("spec.widgets"),
+											ToFieldPath:   new("spec.watchers"),
 										},
 									},
 									{
@@ -575,7 +575,7 @@ func TestRunFunction(t *testing.T) {
 										// because the path is not an array.
 										Type: v1beta1.PatchTypeFromCompositeFieldPath,
 										Patch: v1beta1.Patch{
-											FromFieldPath: ptr.To[string]("spec.widgets[0]"),
+											FromFieldPath: new("spec.widgets[0]"),
 										},
 									},
 								},
@@ -671,7 +671,7 @@ func TestRunFunction(t *testing.T) {
 									{
 										Type:                    v1beta1.ConnectionDetailTypeFromConnectionSecretKey,
 										Name:                    "very",
-										FromConnectionSecretKey: ptr.To[string]("very"),
+										FromConnectionSecretKey: new("very"),
 									},
 								},
 							},
@@ -738,7 +738,7 @@ func TestRunFunction(t *testing.T) {
 									{
 										Type:                    v1beta1.ConnectionDetailTypeFromConnectionSecretKey,
 										Name:                    "very",
-										FromConnectionSecretKey: ptr.To[string]("very"),
+										FromConnectionSecretKey: new("very"),
 									},
 								},
 							},
@@ -808,8 +808,8 @@ func TestRunFunction(t *testing.T) {
 									{
 										Type: v1beta1.PatchTypeToCompositeFieldPath,
 										Patch: v1beta1.Patch{
-											FromFieldPath: ptr.To[string]("spec.widgets"),
-											ToFieldPath:   ptr.To[string]("spec.watchers"),
+											FromFieldPath: new("spec.widgets"),
+											ToFieldPath:   new("spec.watchers"),
 											Transforms: []v1beta1.Transform{
 												{
 													Type: v1beta1.TransformTypeConvert,
@@ -881,8 +881,8 @@ func TestRunFunction(t *testing.T) {
 								{
 									Type: v1beta1.PatchTypeToCompositeFieldPath,
 									Patch: v1beta1.Patch{
-										FromFieldPath: ptr.To[string]("widgets"),
-										ToFieldPath:   ptr.To[string]("spec.watchers"),
+										FromFieldPath: new("widgets"),
+										ToFieldPath:   new("spec.watchers"),
 										Transforms: []v1beta1.Transform{
 											{
 												Type: v1beta1.TransformTypeConvert,
@@ -950,8 +950,8 @@ func TestRunFunction(t *testing.T) {
 								{
 									Type: v1beta1.PatchTypeFromCompositeFieldPath,
 									Patch: v1beta1.Patch{
-										FromFieldPath: ptr.To[string]("spec.watchers"),
-										ToFieldPath:   ptr.To[string]("widgets"),
+										FromFieldPath: new("spec.watchers"),
+										ToFieldPath:   new("widgets"),
 										Transforms: []v1beta1.Transform{
 											{
 												Type: v1beta1.TransformTypeMath,
@@ -1016,8 +1016,8 @@ func TestRunFunction(t *testing.T) {
 								{
 									Type: v1beta1.PatchTypeFromEnvironmentFieldPath,
 									Patch: v1beta1.Patch{
-										FromFieldPath: ptr.To[string]("widgets"),
-										ToFieldPath:   ptr.To[string]("spec.watchers"),
+										FromFieldPath: new("widgets"),
+										ToFieldPath:   new("spec.watchers"),
 										Transforms: []v1beta1.Transform{
 											{
 												Type: v1beta1.TransformTypeConvert,
@@ -1085,8 +1085,8 @@ func TestRunFunction(t *testing.T) {
 								{
 									Type: v1beta1.PatchTypeToEnvironmentFieldPath,
 									Patch: v1beta1.Patch{
-										FromFieldPath: ptr.To[string]("spec.watchers"),
-										ToFieldPath:   ptr.To[string]("widgets"),
+										FromFieldPath: new("spec.watchers"),
+										ToFieldPath:   new("widgets"),
 										Transforms: []v1beta1.Transform{
 											{
 												Type: v1beta1.TransformTypeMath,
@@ -1151,8 +1151,8 @@ func TestRunFunction(t *testing.T) {
 								{
 									Type: v1beta1.PatchTypeFromCompositeFieldPath,
 									Patch: v1beta1.Patch{
-										FromFieldPath: ptr.To[string]("spec.watchers"),
-										ToFieldPath:   ptr.To[string]("widgets"),
+										FromFieldPath: new("spec.watchers"),
+										ToFieldPath:   new("widgets"),
 										Transforms: []v1beta1.Transform{
 											{
 												Type: v1beta1.TransformTypeMath,
@@ -1175,7 +1175,7 @@ func TestRunFunction(t *testing.T) {
 									// the path is not found
 									Type: v1beta1.PatchTypeFromCompositeFieldPath,
 									Patch: v1beta1.Patch{
-										FromFieldPath: ptr.To[string]("spec.doesNotExist"),
+										FromFieldPath: new("spec.doesNotExist"),
 									},
 								},
 								{
@@ -1183,9 +1183,9 @@ func TestRunFunction(t *testing.T) {
 									// the path is not found
 									Type: v1beta1.PatchTypeFromCompositeFieldPath,
 									Patch: v1beta1.Patch{
-										FromFieldPath: ptr.To[string]("spec.doesNotExist"),
+										FromFieldPath: new("spec.doesNotExist"),
 										Policy: &v1beta1.PatchPolicy{
-											FromFieldPath: ptr.To(v1beta1.FromFieldPathPolicyOptional),
+											FromFieldPath: new(v1beta1.FromFieldPathPolicyOptional),
 										},
 									},
 								},
@@ -1237,8 +1237,8 @@ func TestRunFunction(t *testing.T) {
 								{
 									Type: v1beta1.PatchTypeFromCompositeFieldPath,
 									Patch: v1beta1.Patch{
-										FromFieldPath: ptr.To[string]("spec.watchers"),
-										ToFieldPath:   ptr.To[string]("widgets"),
+										FromFieldPath: new("spec.watchers"),
+										ToFieldPath:   new("widgets"),
 										Transforms: []v1beta1.Transform{
 											{
 												Type: v1beta1.TransformTypeMath,
@@ -1261,9 +1261,9 @@ func TestRunFunction(t *testing.T) {
 									// the path is not found
 									Type: v1beta1.PatchTypeFromCompositeFieldPath,
 									Patch: v1beta1.Patch{
-										FromFieldPath: ptr.To[string]("spec.doesNotExist"),
+										FromFieldPath: new("spec.doesNotExist"),
 										Policy: &v1beta1.PatchPolicy{
-											FromFieldPath: ptr.To(v1beta1.FromFieldPathPolicyRequired),
+											FromFieldPath: new(v1beta1.FromFieldPathPolicyRequired),
 										},
 									},
 								},
@@ -1304,8 +1304,8 @@ func TestRunFunction(t *testing.T) {
 							Patches: []v1beta1.ComposedPatch{{
 								Type: v1beta1.PatchTypeFromEnvironmentFieldPath,
 								Patch: v1beta1.Patch{
-									FromFieldPath: ptr.To[string]("widgets"),
-									ToFieldPath:   ptr.To[string]("spec.watchers"),
+									FromFieldPath: new("widgets"),
+									ToFieldPath:   new("spec.watchers"),
 									Transforms: []v1beta1.Transform{{
 										Type: v1beta1.TransformTypeConvert,
 										Convert: &v1beta1.ConvertTransform{
@@ -1366,8 +1366,8 @@ func TestRunFunction(t *testing.T) {
 								{
 									Type: v1beta1.PatchTypeFromEnvironmentFieldPath,
 									Patch: v1beta1.Patch{
-										FromFieldPath: ptr.To[string]("widgets"),
-										ToFieldPath:   ptr.To[string]("spec.watchers"),
+										FromFieldPath: new("widgets"),
+										ToFieldPath:   new("spec.watchers"),
 										Transforms: []v1beta1.Transform{{
 											Type: v1beta1.TransformTypeConvert,
 											Convert: &v1beta1.ConvertTransform{
@@ -1385,8 +1385,8 @@ func TestRunFunction(t *testing.T) {
 								{
 									Type: v1beta1.PatchTypeFromCompositeFieldPath,
 									Patch: v1beta1.Patch{
-										FromFieldPath: ptr.To[string]("spec.watchers"),
-										ToFieldPath:   ptr.To[string]("spec.watchers"),
+										FromFieldPath: new("spec.watchers"),
+										ToFieldPath:   new("spec.watchers"),
 									},
 								},
 							},
@@ -1435,8 +1435,8 @@ func TestRunFunction(t *testing.T) {
 								{
 									Type: v1beta1.PatchTypeFromEnvironmentFieldPath,
 									Patch: v1beta1.Patch{
-										FromFieldPath: ptr.To[string]("widgets"),
-										ToFieldPath:   ptr.To[string]("spec.watchers"),
+										FromFieldPath: new("widgets"),
+										ToFieldPath:   new("spec.watchers"),
 										Transforms: []v1beta1.Transform{{
 											Type: v1beta1.TransformTypeConvert,
 											Convert: &v1beta1.ConvertTransform{
@@ -1454,8 +1454,8 @@ func TestRunFunction(t *testing.T) {
 								{
 									Type: v1beta1.PatchTypeFromCompositeFieldPath,
 									Patch: v1beta1.Patch{
-										FromFieldPath: ptr.To[string]("spec.watchers"),
-										ToFieldPath:   ptr.To[string]("spec.watchers"),
+										FromFieldPath: new("spec.watchers"),
+										ToFieldPath:   new("spec.watchers"),
 									},
 								},
 							},
@@ -1503,8 +1503,8 @@ func TestRunFunction(t *testing.T) {
 								{
 									Type: v1beta1.PatchTypeFromCompositeFieldPath,
 									Patch: v1beta1.Patch{
-										FromFieldPath: ptr.To[string]("spec.widgets"),
-										ToFieldPath:   ptr.To[string]("envKey"),
+										FromFieldPath: new("spec.widgets"),
+										ToFieldPath:   new("envKey"),
 									},
 								},
 							},

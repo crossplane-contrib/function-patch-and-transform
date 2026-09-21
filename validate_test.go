@@ -37,8 +37,8 @@ func TestValidateReadinessCheck(t *testing.T) {
 			args: args{
 				r: v1beta1.ReadinessCheck{
 					Type:        v1beta1.ReadinessCheckTypeMatchString,
-					MatchString: ptr.To[string]("foo"),
-					FieldPath:   ptr.To[string]("spec.foo"),
+					MatchString: new("foo"),
+					FieldPath:   new("spec.foo"),
 				},
 			},
 		},
@@ -51,7 +51,7 @@ func TestValidateReadinessCheck(t *testing.T) {
 						Type:   "someType",
 						Status: "someStatus",
 					},
-					FieldPath: ptr.To[string]("spec.foo"),
+					FieldPath: new("spec.foo"),
 				},
 			},
 		},
@@ -60,7 +60,7 @@ func TestValidateReadinessCheck(t *testing.T) {
 			args: args{
 				r: v1beta1.ReadinessCheck{
 					Type:      v1beta1.ReadinessCheckTypeMatchTrue,
-					FieldPath: ptr.To[string]("spec.foo"),
+					FieldPath: new("spec.foo"),
 				},
 			},
 		},
@@ -69,7 +69,7 @@ func TestValidateReadinessCheck(t *testing.T) {
 			args: args{
 				r: v1beta1.ReadinessCheck{
 					Type:      v1beta1.ReadinessCheckTypeMatchFalse,
-					FieldPath: ptr.To[string]("spec.foo"),
+					FieldPath: new("spec.foo"),
 				},
 			},
 		},
@@ -190,7 +190,7 @@ func TestValidateConnectionDetail(t *testing.T) {
 				cd: v1beta1.ConnectionDetail{
 					Type:  v1beta1.ConnectionDetailTypeFromValue,
 					Name:  "cool",
-					Value: ptr.To[string]("cooler"),
+					Value: new("cooler"),
 				},
 			},
 			want: want{
@@ -203,7 +203,7 @@ func TestValidateConnectionDetail(t *testing.T) {
 				cd: v1beta1.ConnectionDetail{
 					Type:                    v1beta1.ConnectionDetailTypeFromConnectionSecretKey,
 					Name:                    "cool",
-					FromConnectionSecretKey: ptr.To[string]("key"),
+					FromConnectionSecretKey: new("key"),
 				},
 			},
 			want: want{
@@ -216,7 +216,7 @@ func TestValidateConnectionDetail(t *testing.T) {
 				cd: v1beta1.ConnectionDetail{
 					Type:          v1beta1.ConnectionDetailTypeFromFieldPath,
 					Name:          "cool",
-					FromFieldPath: ptr.To[string]("status.coolness"),
+					FromFieldPath: new("status.coolness"),
 				},
 			},
 			want: want{
@@ -254,7 +254,7 @@ func TestValidatePatch(t *testing.T) {
 				patch: v1beta1.ComposedPatch{
 					Type: v1beta1.PatchTypeFromCompositeFieldPath,
 					Patch: v1beta1.Patch{
-						FromFieldPath: ptr.To[string]("spec.forProvider.foo"),
+						FromFieldPath: new("spec.forProvider.foo"),
 					},
 				},
 			},
@@ -265,7 +265,7 @@ func TestValidatePatch(t *testing.T) {
 				patch: v1beta1.ComposedPatch{
 					Type: v1beta1.PatchTypeFromCompositeFieldPath,
 					Patch: v1beta1.Patch{
-						FromFieldPath: ptr.To[string]("spec.forProvider.foo"),
+						FromFieldPath: new("spec.forProvider.foo"),
 						Transforms: []v1beta1.Transform{
 							{
 								Type: v1beta1.TransformTypeMath,
@@ -656,7 +656,7 @@ func TestValidateTransform(t *testing.T) {
 						Patterns: []v1beta1.MatchTransformPattern{
 							{
 								Type:   v1beta1.MatchTransformPatternTypeRegexp,
-								Regexp: ptr.To[string](".*"),
+								Regexp: new(".*"),
 							},
 						},
 					},
@@ -672,7 +672,7 @@ func TestValidateTransform(t *testing.T) {
 						Patterns: []v1beta1.MatchTransformPattern{
 							{
 								Type:   v1beta1.MatchTransformPatternTypeRegexp,
-								Regexp: ptr.To[string]("?"),
+								Regexp: new("?"),
 							},
 						},
 					},
@@ -694,10 +694,10 @@ func TestValidateTransform(t *testing.T) {
 						Patterns: []v1beta1.MatchTransformPattern{
 							{
 								Type:    v1beta1.MatchTransformPatternTypeLiteral,
-								Literal: ptr.To[string]("foo"),
+								Literal: new("foo"),
 							},
 							{
-								Literal: ptr.To[string]("bar"),
+								Literal: new("bar"),
 							},
 						},
 					},
@@ -726,7 +726,7 @@ func TestValidateTransform(t *testing.T) {
 					Type: v1beta1.TransformTypeString,
 					String: &v1beta1.StringTransform{
 						Type:   v1beta1.StringTransformTypeFormat,
-						Format: ptr.To[string]("foo"),
+						Format: new("foo"),
 					},
 				},
 			},

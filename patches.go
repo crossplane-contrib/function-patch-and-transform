@@ -11,7 +11,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/json"
-	"k8s.io/utils/ptr"
 
 	"github.com/crossplane/function-sdk-go/resource/composed"
 	"github.com/crossplane/function-sdk-go/resource/composite"
@@ -126,13 +125,13 @@ func toMergeOption(p PatchInterface) (mo *fieldpath.MergeOptions, err error) {
 	case v1beta1.ToFieldPathPolicyReplace:
 		// nothing to do, this is the default
 	case v1beta1.ToFieldPathPolicyMergeObjects, v1beta1.ToFieldPathPolicyMergeObject: //nolint:staticcheck // MergeObject is deprecated but we must still support it.
-		mo = &fieldpath.MergeOptions{KeepMapValues: ptr.To(true)}
+		mo = &fieldpath.MergeOptions{KeepMapValues: new(true)}
 	case v1beta1.ToFieldPathPolicyMergeObjectsAppendArrays:
-		mo = &fieldpath.MergeOptions{KeepMapValues: ptr.To(true), AppendSlice: ptr.To(true)}
+		mo = &fieldpath.MergeOptions{KeepMapValues: new(true), AppendSlice: new(true)}
 	case v1beta1.ToFieldPathPolicyForceMergeObjects:
-		mo = &fieldpath.MergeOptions{KeepMapValues: ptr.To(false)}
+		mo = &fieldpath.MergeOptions{KeepMapValues: new(false)}
 	case v1beta1.ToFieldPathPolicyForceMergeObjectsAppendArrays, v1beta1.ToFieldPathPolicyAppendArray: //nolint:staticcheck // AppendArray is deprecated but we must still support it.
-		mo = &fieldpath.MergeOptions{AppendSlice: ptr.To(true)}
+		mo = &fieldpath.MergeOptions{AppendSlice: new(true)}
 	default:
 		// should never happen
 		return nil, errors.Errorf(errFmtInvalidPatchPolicy, pp.GetToFieldPathPolicy())

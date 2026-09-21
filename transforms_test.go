@@ -12,7 +12,6 @@ import (
 	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"k8s.io/utils/ptr"
 )
 
 func TestMapResolve(t *testing.T) {
@@ -151,7 +150,7 @@ func TestMatchResolve(t *testing.T) {
 					Patterns: []v1beta1.MatchTransformPattern{
 						{
 							Type:    v1beta1.MatchTransformPatternTypeLiteral,
-							Literal: ptr.To[string]("5"),
+							Literal: new("5"),
 						},
 					},
 				},
@@ -240,7 +239,7 @@ func TestMatchResolve(t *testing.T) {
 					Patterns: []v1beta1.MatchTransformPattern{
 						{
 							Type:    v1beta1.MatchTransformPatternTypeLiteral,
-							Literal: ptr.To[string]("foo"),
+							Literal: new("foo"),
 							Result:  asJSON("bar"),
 						},
 					},
@@ -257,12 +256,12 @@ func TestMatchResolve(t *testing.T) {
 					Patterns: []v1beta1.MatchTransformPattern{
 						{
 							Type:    v1beta1.MatchTransformPatternTypeLiteral,
-							Literal: ptr.To[string]("foo"),
+							Literal: new("foo"),
 							Result:  asJSON("bar"),
 						},
 						{
 							Type:    v1beta1.MatchTransformPatternTypeLiteral,
-							Literal: ptr.To[string]("foo"),
+							Literal: new("foo"),
 							Result:  asJSON("not this"),
 						},
 					},
@@ -279,7 +278,7 @@ func TestMatchResolve(t *testing.T) {
 					Patterns: []v1beta1.MatchTransformPattern{
 						{
 							Type:    v1beta1.MatchTransformPatternTypeLiteral,
-							Literal: ptr.To[string]("foo"),
+							Literal: new("foo"),
 							Result: asJSON(map[string]any{
 								"Hello": "World",
 							}),
@@ -300,7 +299,7 @@ func TestMatchResolve(t *testing.T) {
 					Patterns: []v1beta1.MatchTransformPattern{
 						{
 							Type:    v1beta1.MatchTransformPatternTypeLiteral,
-							Literal: ptr.To[string]("foo"),
+							Literal: new("foo"),
 							Result: asJSON([]string{
 								"Hello", "World",
 							}),
@@ -321,7 +320,7 @@ func TestMatchResolve(t *testing.T) {
 					Patterns: []v1beta1.MatchTransformPattern{
 						{
 							Type:    v1beta1.MatchTransformPatternTypeLiteral,
-							Literal: ptr.To[string]("foo"),
+							Literal: new("foo"),
 							Result:  asJSON(5),
 						},
 					},
@@ -338,7 +337,7 @@ func TestMatchResolve(t *testing.T) {
 					Patterns: []v1beta1.MatchTransformPattern{
 						{
 							Type:    v1beta1.MatchTransformPatternTypeLiteral,
-							Literal: ptr.To[string]("foo"),
+							Literal: new("foo"),
 							Result:  asJSON(true),
 						},
 					},
@@ -355,7 +354,7 @@ func TestMatchResolve(t *testing.T) {
 					Patterns: []v1beta1.MatchTransformPattern{
 						{
 							Type:    v1beta1.MatchTransformPatternTypeLiteral,
-							Literal: ptr.To[string]("foo"),
+							Literal: new("foo"),
 							Result:  asJSON(nil),
 						},
 					},
@@ -370,7 +369,7 @@ func TestMatchResolve(t *testing.T) {
 					Patterns: []v1beta1.MatchTransformPattern{
 						{
 							Type:   v1beta1.MatchTransformPatternTypeRegexp,
-							Regexp: ptr.To[string]("^foo.*$"),
+							Regexp: new("^foo.*$"),
 							Result: asJSON("Hello World"),
 						},
 					},
@@ -401,7 +400,7 @@ func TestMatchResolve(t *testing.T) {
 					Patterns: []v1beta1.MatchTransformPattern{
 						{
 							Type:   v1beta1.MatchTransformPatternTypeRegexp,
-							Regexp: ptr.To[string]("?="),
+							Regexp: new("?="),
 						},
 					},
 				},
@@ -956,7 +955,7 @@ func TestStringResolve(t *testing.T) {
 				stype: v1beta1.StringTransformTypeRegexp,
 				regexp: &v1beta1.StringTransformRegexp{
 					Match: "my-([0-9]+)-string",
-					Group: ptr.To[int](1),
+					Group: new(1),
 				},
 				i: "my-1-string",
 			},
@@ -969,7 +968,7 @@ func TestStringResolve(t *testing.T) {
 				stype: v1beta1.StringTransformTypeRegexp,
 				regexp: &v1beta1.StringTransformRegexp{
 					Match: "my-([0-9]+)-string",
-					Group: ptr.To[int](2),
+					Group: new(2),
 				},
 				i: "my-1-string",
 			},
@@ -1139,7 +1138,7 @@ func TestConvertResolve(t *testing.T) {
 			args: args{
 				i:      "1000m",
 				to:     v1beta1.TransformIOTypeFloat64,
-				format: (*v1beta1.ConvertTransformFormat)(ptr.To[string](string(v1beta1.ConvertTransformFormatQuantity))),
+				format: (*v1beta1.ConvertTransformFormat)(new(string(v1beta1.ConvertTransformFormatQuantity))),
 			},
 			want: want{
 				o: 1.0,
@@ -1149,7 +1148,7 @@ func TestConvertResolve(t *testing.T) {
 			args: args{
 				i:      "1000 blabla",
 				to:     v1beta1.TransformIOTypeFloat64,
-				format: (*v1beta1.ConvertTransformFormat)(ptr.To[string](string(v1beta1.ConvertTransformFormatQuantity))),
+				format: (*v1beta1.ConvertTransformFormat)(new(string(v1beta1.ConvertTransformFormatQuantity))),
 			},
 			want: want{
 				err: resource.ErrFormatWrong,
@@ -1177,7 +1176,7 @@ func TestConvertResolve(t *testing.T) {
 			args: args{
 				i:      "{\"foo\":\"bar\"}",
 				to:     v1beta1.TransformIOTypeObject,
-				format: (*v1beta1.ConvertTransformFormat)(ptr.To[string](string(v1beta1.ConvertTransformFormatJSON))),
+				format: (*v1beta1.ConvertTransformFormat)(new(string(v1beta1.ConvertTransformFormatJSON))),
 			},
 			want: want{
 				o: map[string]any{
@@ -1189,7 +1188,7 @@ func TestConvertResolve(t *testing.T) {
 			args: args{
 				i:      "[\"foo\", \"bar\", \"baz\"]",
 				to:     v1beta1.TransformIOTypeArray,
-				format: (*v1beta1.ConvertTransformFormat)(ptr.To[string](string(v1beta1.ConvertTransformFormatJSON))),
+				format: (*v1beta1.ConvertTransformFormat)(new(string(v1beta1.ConvertTransformFormatJSON))),
 			},
 			want: want{
 				o: []any{
@@ -1210,7 +1209,7 @@ func TestConvertResolve(t *testing.T) {
 			args: args{
 				i:      100,
 				to:     v1beta1.TransformIOTypeString,
-				format: (*v1beta1.ConvertTransformFormat)(ptr.To[string](string(v1beta1.ConvertTransformFormatQuantity))),
+				format: (*v1beta1.ConvertTransformFormat)(new(string(v1beta1.ConvertTransformFormatQuantity))),
 			},
 			want: want{
 				err: errors.Errorf(errFmtConvertFormatPairNotSupported, "int", "string", string(v1beta1.ConvertTransformFormatQuantity)),

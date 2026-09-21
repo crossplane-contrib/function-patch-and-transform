@@ -14,7 +14,6 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/json"
-	"k8s.io/utils/ptr"
 
 	"github.com/crossplane/function-sdk-go/resource"
 	"github.com/crossplane/function-sdk-go/resource/composite"
@@ -73,22 +72,22 @@ func TestExtractConnectionDetails(t *testing.T) {
 					{
 						Type:                    v1beta1.ConnectionDetailTypeFromConnectionSecretKey,
 						Name:                    "bar",
-						FromConnectionSecretKey: ptr.To[string]("bar"),
+						FromConnectionSecretKey: new("bar"),
 					},
 					{
 						Type:                    v1beta1.ConnectionDetailTypeFromConnectionSecretKey,
 						Name:                    "none",
-						FromConnectionSecretKey: ptr.To[string]("none"),
+						FromConnectionSecretKey: new("none"),
 					},
 					{
 						Type:                    v1beta1.ConnectionDetailTypeFromConnectionSecretKey,
 						Name:                    "convfoo",
-						FromConnectionSecretKey: ptr.To[string]("foo"),
+						FromConnectionSecretKey: new("foo"),
 					},
 					{
 						Type:  v1beta1.ConnectionDetailTypeFromValue,
 						Name:  "fixed",
-						Value: ptr.To[string]("value"),
+						Value: new("value"),
 					},
 					// Note that the FromFieldPath values don't include their
 					// initial path segment due to being anonymous embedded
@@ -96,22 +95,22 @@ func TestExtractConnectionDetails(t *testing.T) {
 					{
 						Type:          v1beta1.ConnectionDetailTypeFromFieldPath,
 						Name:          "name",
-						FromFieldPath: ptr.To[string]("name"),
+						FromFieldPath: new("name"),
 					},
 					{
 						Type:          v1beta1.ConnectionDetailTypeFromFieldPath,
 						Name:          "generation",
-						FromFieldPath: ptr.To[string]("generation"),
+						FromFieldPath: new("generation"),
 					},
 					{
 						Type:          v1beta1.ConnectionDetailTypeFromFieldPath,
 						Name:          "secretName",
-						FromFieldPath: ptr.To[string]("Ref.name"),
+						FromFieldPath: new("Ref.name"),
 					},
 					{
 						Type:          v1beta1.ConnectionDetailTypeFromFieldPath,
 						Name:          "secretNamespace",
-						FromFieldPath: ptr.To[string]("Ref.namespace"),
+						FromFieldPath: new("Ref.namespace"),
 					},
 				},
 			},
@@ -276,14 +275,14 @@ func TestGetConnectionSecretRef(t *testing.T) {
 						{
 							Type: v1beta1.PatchTypeFromCompositeFieldPath,
 							Patch: v1beta1.Patch{
-								FromFieldPath: ptr.To("metadata.uid"),
-								ToFieldPath:   ptr.To("name"),
+								FromFieldPath: new("metadata.uid"),
+								ToFieldPath:   new("name"),
 								Transforms: []v1beta1.Transform{
 									{
 										Type: v1beta1.TransformTypeString,
 										String: &v1beta1.StringTransform{
 											Type:   v1beta1.StringTransformTypeFormat,
-											Format: ptr.To("%s-cool-creds"),
+											Format: new("%s-cool-creds"),
 										},
 									},
 								},
@@ -292,8 +291,8 @@ func TestGetConnectionSecretRef(t *testing.T) {
 						{
 							Type: v1beta1.PatchTypeFromCompositeFieldPath,
 							Patch: v1beta1.Patch{
-								FromFieldPath: ptr.To("spec.parameters.env"),
-								ToFieldPath:   ptr.To("namespace"),
+								FromFieldPath: new("spec.parameters.env"),
+								ToFieldPath:   new("namespace"),
 							},
 						},
 					},
@@ -336,7 +335,7 @@ func TestGetConnectionSecretRef(t *testing.T) {
 										Format: "%s-%s-cool-creds",
 									},
 								},
-								ToFieldPath: ptr.To("name"),
+								ToFieldPath: new("name"),
 							},
 						},
 					},
@@ -371,8 +370,8 @@ func TestGetConnectionSecretRef(t *testing.T) {
 						{
 							Type: v1beta1.PatchTypeFromCompositeFieldPath,
 							Patch: v1beta1.Patch{
-								FromFieldPath: ptr.To("spec.targetNamespace"),
-								ToFieldPath:   ptr.To("namespace"),
+								FromFieldPath: new("spec.targetNamespace"),
+								ToFieldPath:   new("namespace"),
 							},
 						},
 					},
