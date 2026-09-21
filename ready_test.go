@@ -99,7 +99,7 @@ func TestIsReady(t *testing.T) {
 				o: composed.New(),
 				rc: []v1beta1.ReadinessCheck{{
 					Type:      v1beta1.ReadinessCheckTypeNonEmpty,
-					FieldPath: ptr.To[string]("metadata..uid"),
+					FieldPath: new("metadata..uid"),
 				}},
 			},
 			want: want{
@@ -112,7 +112,7 @@ func TestIsReady(t *testing.T) {
 				o: composed.New(),
 				rc: []v1beta1.ReadinessCheck{{
 					Type:      v1beta1.ReadinessCheckTypeNonEmpty,
-					FieldPath: ptr.To[string]("metadata.uid"),
+					FieldPath: new("metadata.uid"),
 				}},
 			},
 			want: want{
@@ -127,7 +127,7 @@ func TestIsReady(t *testing.T) {
 				}),
 				rc: []v1beta1.ReadinessCheck{{
 					Type:      v1beta1.ReadinessCheckTypeNonEmpty,
-					FieldPath: ptr.To[string]("metadata.uid"),
+					FieldPath: new("metadata.uid"),
 				}},
 			},
 			want: want{
@@ -140,8 +140,8 @@ func TestIsReady(t *testing.T) {
 				o: composed.New(),
 				rc: []v1beta1.ReadinessCheck{{
 					Type:        v1beta1.ReadinessCheckTypeMatchString,
-					FieldPath:   ptr.To[string]("metadata..uid"),
-					MatchString: ptr.To[string]("cool"),
+					FieldPath:   new("metadata..uid"),
+					MatchString: new("cool"),
 				}},
 			},
 			want: want{
@@ -154,8 +154,8 @@ func TestIsReady(t *testing.T) {
 				o: composed.New(),
 				rc: []v1beta1.ReadinessCheck{{
 					Type:        v1beta1.ReadinessCheckTypeMatchString,
-					FieldPath:   ptr.To[string]("metadata.uid"),
-					MatchString: ptr.To[string]("olala"),
+					FieldPath:   new("metadata.uid"),
+					MatchString: new("olala"),
 				}},
 			},
 			want: want{
@@ -170,8 +170,8 @@ func TestIsReady(t *testing.T) {
 				}),
 				rc: []v1beta1.ReadinessCheck{{
 					Type:        v1beta1.ReadinessCheckTypeMatchString,
-					FieldPath:   ptr.To[string]("metadata.uid"),
-					MatchString: ptr.To[string]("olala"),
+					FieldPath:   new("metadata.uid"),
+					MatchString: new("olala"),
 				}},
 			},
 			want: want{
@@ -184,7 +184,7 @@ func TestIsReady(t *testing.T) {
 				o: composed.New(),
 				rc: []v1beta1.ReadinessCheck{{
 					Type:         v1beta1.ReadinessCheckTypeMatchInteger,
-					FieldPath:    ptr.To[string]("metadata..uid"),
+					FieldPath:    new("metadata..uid"),
 					MatchInteger: ptr.To[int64](42),
 				}},
 			},
@@ -204,7 +204,7 @@ func TestIsReady(t *testing.T) {
 				}),
 				rc: []v1beta1.ReadinessCheck{{
 					Type:         v1beta1.ReadinessCheckTypeMatchInteger,
-					FieldPath:    ptr.To[string]("spec.someNum"),
+					FieldPath:    new("spec.someNum"),
 					MatchInteger: ptr.To[int64](5),
 				}},
 			},
@@ -224,7 +224,7 @@ func TestIsReady(t *testing.T) {
 				}),
 				rc: []v1beta1.ReadinessCheck{{
 					Type:         v1beta1.ReadinessCheckTypeMatchInteger,
-					FieldPath:    ptr.To[string]("spec.someNum"),
+					FieldPath:    new("spec.someNum"),
 					MatchInteger: ptr.To[int64](5),
 				}},
 			},
@@ -242,7 +242,7 @@ func TestIsReady(t *testing.T) {
 				}),
 				rc: []v1beta1.ReadinessCheck{{
 					Type:      v1beta1.ReadinessCheckTypeMatchTrue,
-					FieldPath: ptr.To[string]("spec.someBool"),
+					FieldPath: new("spec.someBool"),
 				}},
 			},
 			want: want{
@@ -261,7 +261,7 @@ func TestIsReady(t *testing.T) {
 				}),
 				rc: []v1beta1.ReadinessCheck{{
 					Type:      v1beta1.ReadinessCheckTypeMatchTrue,
-					FieldPath: ptr.To[string]("spec.someBool"),
+					FieldPath: new("spec.someBool"),
 				}},
 			},
 			want: want{
@@ -280,7 +280,7 @@ func TestIsReady(t *testing.T) {
 				}),
 				rc: []v1beta1.ReadinessCheck{{
 					Type:      v1beta1.ReadinessCheckTypeMatchTrue,
-					FieldPath: ptr.To[string]("spec.someBool"),
+					FieldPath: new("spec.someBool"),
 				}},
 			},
 			want: want{
@@ -297,7 +297,7 @@ func TestIsReady(t *testing.T) {
 				}),
 				rc: []v1beta1.ReadinessCheck{{
 					Type:      v1beta1.ReadinessCheckTypeMatchFalse,
-					FieldPath: ptr.To[string]("spec.someBool"),
+					FieldPath: new("spec.someBool"),
 				}},
 			},
 			want: want{
@@ -316,7 +316,7 @@ func TestIsReady(t *testing.T) {
 				}),
 				rc: []v1beta1.ReadinessCheck{{
 					Type:      v1beta1.ReadinessCheckTypeMatchFalse,
-					FieldPath: ptr.To[string]("spec.someBool"),
+					FieldPath: new("spec.someBool"),
 				}},
 			},
 			want: want{
@@ -335,7 +335,7 @@ func TestIsReady(t *testing.T) {
 				}),
 				rc: []v1beta1.ReadinessCheck{{
 					Type:      v1beta1.ReadinessCheckTypeMatchFalse,
-					FieldPath: ptr.To[string]("spec.someBool"),
+					FieldPath: new("spec.someBool"),
 				}},
 			},
 			want: want{

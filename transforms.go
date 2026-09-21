@@ -371,15 +371,15 @@ func stringJoinTransform(input any, r v1beta1.StringTransformJoin) (string, erro
 		return "", nil
 	}
 
-	var result string
+	var result strings.Builder
 	for _, v := range arr {
-		result += fmt.Sprintf("%v%s", v, r.Separator)
+		_, _ = fmt.Fprintf(&result, "%v%s", v, r.Separator)
 	}
 	if len(r.Separator) > 0 {
-		return result[:len(result)-1], nil
+		return result.String()[:len(result.String())-1], nil
 	}
 
-	return result, nil
+	return result.String(), nil
 }
 
 func stringRegexpTransform(input any, r v1beta1.StringTransformRegexp) (string, error) {

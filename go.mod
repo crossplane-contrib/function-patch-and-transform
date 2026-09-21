@@ -1,11 +1,11 @@
 module github.com/crossplane-contrib/function-patch-and-transform
 
-go 1.25.14
+go 1.26.0
 
 require (
 	github.com/alecthomas/kong v1.16.0
 	github.com/crossplane/crossplane-runtime/v2 v2.3.4
-	github.com/crossplane/crossplane/apis/v2 v2.3.4
+	github.com/crossplane/crossplane/apis/v2 v2.3.6
 	github.com/crossplane/function-sdk-go v0.7.1
 	github.com/google/go-cmp v0.7.0
 	github.com/pkg/errors v0.9.1
