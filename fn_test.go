@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/crossplane-contrib/function-patch-and-transform/input/v1beta1"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
@@ -1535,7 +1536,7 @@ func TestRunFunction(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			f := &Function{log: logging.NewNopLogger()}
+			f := &Function{log: logging.NewNopLogger(), ttl: response.DefaultTTL}
 			rsp, err := f.RunFunction(tc.args.ctx, tc.args.req)
 
 			if diff := cmp.Diff(tc.want.rsp, rsp, protocmp.Transform()); diff != "" {
@@ -1546,6 +1547,39 @@ func TestRunFunction(t *testing.T) {
 				t.Errorf("%s\nf.RunFunction(...): -want err, +got err:\n%s", tc.reason, diff)
 			}
 		})
+	}
+}
+
+func TestRunFunctionCacheTTL(t *testing.T) {
+	f := &Function{log: logging.NewNopLogger(), ttl: response.DefaultTTL}
+	rsp, err := f.RunFunction(context.Background(), &fnv1.RunFunctionRequest{
+		Input: resource.MustStructObject(&v1beta1.Resources{
+			TTL: "5m",
+			Resources: []v1beta1.ComposedTemplate{
+				{
+					Name: "cool-resource",
+					Base: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"example.org/v1","kind":"CD"}`)},
+				},
+			},
+		}),
+		Observed: &fnv1.State{
+			Composite: &fnv1.Resource{
+				Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
+			},
+		},
+		Desired: &fnv1.State{
+			Composite: &fnv1.Resource{
+				Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR"}`),
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("RunFunction(...): %v", err)
+	}
+
+	want := durationpb.New(5 * time.Minute)
+	if diff := cmp.Diff(want, rsp.GetMeta().GetTtl(), protocmp.Transform()); diff != "" {
+		t.Errorf("RunFunction(...): -want TTL, +got TTL:\n%s", diff)
 	}
 }
 

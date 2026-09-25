@@ -36,6 +36,10 @@ type Resources struct {
 	// composite resource is created.
 	Resources []ComposedTemplate `json:"resources"`
 
+	// TTL for which a response can be cached in time.Duration format. Default "1m".
+	// +optional
+	TTL string `json:"ttl,omitempty"`
+
 	// WriteConnectionSecretToRef specifies the name and namespace of a Secret
 	// to which any connection details for this composite resource should be
 	// written. This field is only used for Crossplane v2 composite resources.
