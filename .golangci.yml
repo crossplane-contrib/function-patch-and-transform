@@ -98,11 +98,6 @@ linters:
     # against idiomatic Go programming, which encourages this approach - e.g.
     # to scope errors.
     - noinlineerr
-
-    # In golangci-lint v2.x, suggests replacing ptr.To(x) with new(x). This is
-    # a stylistic preference that would require broad changes across the codebase.
-    # We prefer ptr.To for clarity that we're creating a pointer.
-    - modernize
   settings:
     depguard:
       rules:
@@ -140,6 +135,11 @@ linters:
       max: 5
     lll:
       tab-width: 1
+    modernize:
+      disable:
+        # Go 1.26's new(expr) can replace ptr.To(x); adopting it is a broad
+        # style change we haven't decided on, so this check is off for now.
+        - newexpr
     nakedret:
       max-func-lines: 30
     nolintlint:
@@ -167,6 +167,7 @@ linters:
           - gochecknoglobals
           - gochecknoinits
           - gocognit
+          - goconst
           - gosec
           - scopelint
           - unparam
