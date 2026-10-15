@@ -62,6 +62,7 @@ linters:
     # useful in theory to catch fields that are accidentally omitted. Seems like
     # it would have many more false positives than useful catches, though.
     - exhaustruct
+    - exhaustruct_v5
 
     # Warns about TODO comments. The rationale being they should be issues
     # instead. We're okay with using TODO to track minor cleanups for next time
@@ -97,6 +98,11 @@ linters:
     # against idiomatic Go programming, which encourages this approach - e.g.
     # to scope errors.
     - noinlineerr
+
+    # In golangci-lint v2.x, suggests replacing ptr.To(x) with new(x). This is
+    # a stylistic preference that would require broad changes across the codebase.
+    # We prefer ptr.To for clarity that we're creating a pointer.
+    - modernize
   settings:
     depguard:
       rules:
