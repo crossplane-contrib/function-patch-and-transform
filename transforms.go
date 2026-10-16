@@ -371,10 +371,11 @@ func stringJoinTransform(input any, r v1beta1.StringTransformJoin) (string, erro
 		return "", nil
 	}
 
-	var result string
+	var b strings.Builder
 	for _, v := range arr {
-		result += fmt.Sprintf("%v%s", v, r.Separator)
+		fmt.Fprintf(&b, "%v%s", v, r.Separator)
 	}
+	result := b.String()
 	if len(r.Separator) > 0 {
 		return result[:len(result)-1], nil
 	}

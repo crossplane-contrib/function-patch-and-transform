@@ -62,6 +62,7 @@ linters:
     # useful in theory to catch fields that are accidentally omitted. Seems like
     # it would have many more false positives than useful catches, though.
     - exhaustruct
+    - exhaustruct_v5
 
     # Warns about TODO comments. The rationale being they should be issues
     # instead. We're okay with using TODO to track minor cleanups for next time
@@ -134,6 +135,11 @@ linters:
       max: 5
     lll:
       tab-width: 1
+    modernize:
+      disable:
+        # Go 1.26's new(expr) can replace ptr.To(x); adopting it is a broad
+        # style change we haven't decided on, so this check is off for now.
+        - newexpr
     nakedret:
       max-func-lines: 30
     nolintlint:
@@ -161,6 +167,7 @@ linters:
           - gochecknoglobals
           - gochecknoinits
           - gocognit
+          - goconst
           - gosec
           - scopelint
           - unparam
