@@ -392,7 +392,7 @@ func stringRegexpTransform(input any, r v1beta1.StringTransformRegexp) (string, 
 
 	// Return the entire match (group zero) by default.
 	g := ptr.Deref[int](r.Group, 0)
-	if len(groups) == 0 || g >= len(groups) {
+	if len(groups) == 0 || g < 0 || g >= len(groups) {
 		return "", errors.Errorf(errStringTransformTypeRegexpNoMatch, r.Match, g)
 	}
 
