@@ -259,7 +259,7 @@ $ crossplane xpkg build -f package --embed-runtime-image=runtime
 ```
 
 [Crossplane]: https://crossplane.io
-[docs-functions]: https://docs.crossplane.io/latest/concepts/compositions/
+[docs-functions]: https://docs.crossplane.io/latest/composition/compositions/
 [docs-pandt]: https://docs.crossplane.io/latest/guides/function-patch-and-transform/
 [docs-connection-details]: https://docs.crossplane.io/latest/guides/connection-details-composition/
 [fn-go-templating]: https://github.com/crossplane-contrib/function-go-templating
@@ -268,4 +268,4 @@ $ crossplane xpkg build -f package --embed-runtime-image=runtime
 [go]: https://go.dev
 [docker]: https://www.docker.com
 [cli]: https://docs.crossplane.io/latest/cli
-[cli-convert]: https://docs.crossplane.io/latest/cli/command-reference/#beta-convert
+[cli-convert]: https://docs.crossplane.io/v1.20/cli/command-reference/#beta-convert
